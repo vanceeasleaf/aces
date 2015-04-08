@@ -1,0 +1,14 @@
+units            metal
+atom_style atomic
+boundary p p p
+dimension 3
+ newton off
+ read_data ../structure
+pair_style        lj/cut 19
+pair_coeff      * * 1 1
+compute myRDF all rdf_diff 1000 1 1 
+
+fix 1 all ave/time 100 1 100 c_myRDF file rdf.txt mode vector
+variable disorder equal trap(c_myRDF[4]/c_myRDF[2])
+fix 1 all ave/time 100 1 100 v_disorder file disorder.txt 
+run 1

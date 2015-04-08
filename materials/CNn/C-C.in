@@ -1,0 +1,17 @@
+units            metal 
+atom_style atomic
+boundary p p p
+dimension 3
+  
+read_data bond
+ 
+
+pair_style        tersoff
+pair_coeff      * * ../../potentials/BNC.tersoff  C N
+ 
+timestep          0.000182 
+
+thermo_style custom step pe etotal
+fix 1 ave/time 1 1 1 etotal file dump.txt
+thermo 10000
+run 0

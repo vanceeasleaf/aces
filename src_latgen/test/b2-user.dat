@@ -1,0 +1,7 @@
+4                     # lattice constant
+1 0 0                 # crystal vector A1
+0 1 0                 # crystal vector A2
+0 0 1                 # crystal vector A3
+1 1                   # number of atoms for each atomic type
+0.  0.  0.            # fractional atomic coordinates for each atom; one line for one atom
+0.5 0.5 0.5           # the sequence is the same as vasp POSCAR (direct)

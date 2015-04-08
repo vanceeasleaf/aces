@@ -1,0 +1,18 @@
+units            lj
+atom_style atomic
+boundary p p p
+dimension 3
+ newton off
+ #read_data ../structure
+read_restart ../restart.minimize
+pair_style        lj/cut 6
+pair_coeff      * * 1 1
+compute myRDF all rdf_diff 1000 1 1 
+compute myRDF1 all rdf_diff 1000 1 2 
+compute myRDF2 all rdf_diff 1000 2 1 
+compute myRDF3 all rdf_diff 1000 1 1 
+fix 1 all ave/time 1 1 1 c_myRDF3[1] c_myRDF3[2] c_myRDF1[2] c_myRDF2[2] c_myRDF[2] file rdf.txt mode vector
+variable disorder equal trap(c_myRDF[4]/c_myRDF[2])
+variable rd equal trap(c_myRDF[2])
+fix 2 all ave/time 1 1 1 v_disorder  v_rd file disorder.txt 
+run 0

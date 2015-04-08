@@ -1,0 +1,43 @@
+  <?php
+	  $home=dirname(__FILE__);
+	require_once("$home/../../discript.php");
+	$file=fopen("in.disp","w");
+	if($isZigzag){
+		$dx=$bond;
+		$dy=$bond*1.7321;
+		$type=6;
+	}else{
+		$dx=$bond*1.7321;
+		$dy=$bond;
+		$type=5;
+	}
+//ÐÞ¸Älatgen´úÂë
+	if(!$usinglat){
+$latx=floor($xlen/$dx);
+$laty=floor($ylen/$dy);
+$latz=1;
+	}
+	$content="3
+$bond
+10
+5
+$type
+y
+$latx $laty $latz 
+1
+1
+5
+1
+$ratio
+2
+3
+C N
+0
+CN.xyz
+structure
+map.in
+";
+	fprintf($file,$content);
+	  $home=dirname(__FILE__);	
+	shell_exec("$home/../../latgen <in.disp");
+?>

@@ -1,0 +1,62 @@
+LAMMPS (24 Apr 2013)
+units            lj
+atom_style atomic
+boundary p p p
+dimension 3
+
+lattice            fcc    0.844
+Lattice spacing in x,y,z = 1.67973 1.67973 1.67973
+region            box  block 0  8  0 8  0 8  units box
+create_box     1  box
+Created orthogonal box = (0 0 0) to (8 8 8)
+  2 by 2 by 3 MPI processor grid
+create_atoms     1  box
+Created 500 atoms
+
+
+pair_style        lj/cut 2.8
+pair_coeff        1  1   1 1    #  LJ parameters for Ar-Ar
+
+timestep          0.000466
+
+mass 1 1
+
+thermo_style custom step pe etotal
+thermo 10000
+
+write_restart /home1/xggong/zhouy/tcscripts/minimize/restart.minimize
+dump dump1 all xyz 1 /home1/xggong/zhouy/tcscripts/minimize/minimize.xyz
+
+dump_modify dump1 element Ar
+
+dump kaka all atom 1 /home1/xggong/zhouy/tcscripts/minimize/range
+run 0
+WARNING: No fixes defined, atoms won't move (../verlet.cpp:54)
+Memory usage per processor = 2.12513 Mbytes
+Step PotEng TotEng 
+       0    60.372683    60.372683 
+Loop time of 3.71933e-05 on 12 procs for 0 steps with 500 atoms
+
+Pair  time (%) = 0 (0)
+Neigh time (%) = 0 (0)
+Comm  time (%) = 0 (0)
+Outpt time (%) = 0 (0)
+Other time (%) = 3.71933e-05 (100)
+
+Nlocal:    41.6667 ave 50 max 37 min
+Histogram: 8 0 0 0 0 0 0 0 0 4
+Nghost:    817.75 ave 892 max 742 min
+Histogram: 3 0 0 0 2 4 0 0 0 3
+Neighs:    2362.17 ave 2744 max 1790 min
+Histogram: 2 1 1 0 0 0 1 1 3 3
+
+Total # of neighbors = 28346
+Ave neighs/atom = 56.692
+Neighbor list builds = 0
+Dangerous builds = 0
+#fix frelax all nve
+#fix controltemp all temp/rescale 100 10.0 10.0 10.0 1.0
+#run 1000
+#unfix controltemp
+#unfix frelax
+#undump Graphene

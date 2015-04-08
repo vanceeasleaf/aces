@@ -1,0 +1,39 @@
+units            metal 
+atom_style atomic
+boundary p p p
+dimension 3
+
+read_data /home1/xggong/zhouy/tcscripts/src/minimize/structure
+ 
+
+pair_style        tersoff
+pair_coeff      * * /home1/xggong/zhouy/tcscripts/src/potentials/BNC.tersoff  C N  C
+ 
+timestep          0.000182 
+
+mass 1 12.01
+mass 2 14
+mass 3 32
+ 
+thermo_style custom step pe etotal
+thermo 10000 
+
+fix 1 all box/relax x 0.0 y 0.0 nreset 1
+#dump 1 all custom 10 dump.minimize.* type id x y z
+#dump Graphene all xyz 1000000 graphene.*.xyz
+#dump_modify Graphene element C N C
+
+min_style cg
+minimize 1e-12 1e-12 1000000 1000000
+ 
+write_restart /home1/xggong/zhouy/tcscripts/src/project/1/minimize/restart.minimize 
+dump dump1 all xyz 1 /home1/xggong/zhouy/tcscripts/src/project/1/minimize/minimize.xyz 
+ 
+dump kaka all atom 1 /home1/xggong/zhouy/tcscripts/src/project/1/minimize/range 
+run 0
+#fix frelax all nve
+#fix controltemp all temp/rescale 100 10.0 10.0 10.0 1.0
+#run 1000
+#unfix controltemp
+#unfix frelax
+#undump Graphene

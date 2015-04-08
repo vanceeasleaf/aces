@@ -1,0 +1,39 @@
+latgen : a lattice generation code
+
+Author: Ling-Ti Kong,  konglt_AT_sjtu.edu.cn
+
+This code helps to prepare the atomic position file needed by MD codes,
+as well as the map file needed by fix-phonon. Several typical lattices
+with different orientations have been coded, yet the user can provide
+their unit cell info and uses this code to generate the atomic position
+file for their system of interest as well.
+
+When one wants to create the atomic position based on their own lattice
+(option 7 in the main menu), one can choose to input the unit cell related
+info step by step or by providing an input file.
+In the latter case, the format of the input file is similar to that of POSCAR
+of VASP, but differs slightly. Here is an example of FCC Cu, with the conventional
+orientation:
+
+########################################
+3.615
+1  0  0
+0  1  0
+0  0  1
+4
+0.  0.  0. 
+0.5 0.5 0.
+0.5 0.  0.5
+0.  0.5 0.5 
+########################################
+
+The first line is the lattice constant or scaling factor of the lattice,
+the 2nd-4th lines are the basis vectors that define the unit cell.
+The 5th line lists the number of atoms for each kind of element; here we
+just have one kind of element, and 4 atoms in a convention cell of FCC Cu.
+From the 6th line, the coordinates are listed. The coordinates are in the
+reduced unit, i.e., in unit of alat * A1, alat * A2, alat * A3.
+
+Please note that this code is written for personal use only, no support
+or warranty will be provided. But if any bug found, feel free to drop a line
+to konglt@sjtu.edu.cn.

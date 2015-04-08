@@ -1,0 +1,36 @@
+LAMMPS (24 Apr 2013)
+Reading data file ...
+  orthogonal box = (0 0 0) to (5 5 5)
+  1 by 1 by 1 MPI processor grid
+  2 atoms
+WARNING: No fixes defined, atoms won't move (../verlet.cpp:54)
+Setting up run ...
+Memory usage per processor = 1.53628 Mbytes
+TotEng 
+  -1.0081866 
+Loop time of 2.86102e-06 on 1 procs for 0 steps with 2 atoms
+
+Pair  time (%) = 0 (0)
+Neigh time (%) = 0 (0)
+Comm  time (%) = 0 (0)
+Outpt time (%) = 0 (0)
+Other time (%) = 2.86102e-06 (100)
+
+Nlocal:    2 ave 2 max 2 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:    18 ave 18 max 18 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:    0 ave 0 max 0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:  4 ave 4 max 4 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 4
+Ave neighs/atom = 2
+Neighbor list builds = 0
+Dangerous builds = 0
+ memory:     65536 MiB
+  Total memory:            96930 MiB
+
+Your MPI job will continue, but may be behave poorly and/or hang.
+--------------------------------------------------------------------------
