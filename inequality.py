@@ -54,7 +54,7 @@ class inequality:
 	def run(self):
 		self.readDump()
 		self.buildNeighborList()
-		print self.nonequ5()	
+		return self.nonequ5()	
 		
 		
 	def sort_nei(self,i):
@@ -78,4 +78,4 @@ class inequality:
 				
 if __name__=='__main__':
 	ie=inequality()
-	ie.run()
+	print ie.run()
