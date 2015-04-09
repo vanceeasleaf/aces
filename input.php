@@ -3,7 +3,19 @@ require_once("discript.php");
 require_once("postMini.php");
 if(!$langevin)$langevin=0;
 if(!$nvt)$nvt=0;
-@passthru("python $home/input.py $units $xp $yp $zp $dumpRate $timestep $method $kb $nktv '$masses' '$potential' $T $seed $dtime $equTime $langevin $nvt $aveRate $deta $jprofile $dumpRate $corRate $computeTc $lx $ly $lz $fourierTc $tcfactor $zfactor $gstart $jcf  $nswap $excRate $lp $S $excNum $swapEnergyRate $dumpxyz $dumpv $runTime>input1");
+if(!$jprofile)$jprofile=0;
+if(!$computeTc)$computeTc=0;
+if(!$fourierTc)$fourierTc=0;
+if(!$gstart)$gstart=0;
+if(!$jcf)$jcf=0;
+if(!$dumpxyz)$dumpxyz=0;
+if(!$dumpv)$dumpv=0;#$potential='b';$masses="b";
+$kb=$boltz[$units];
+$nktv=$nktv2p[$units];
+if(!$hdeta)$hdeta=$deta;
+$bb="python $home/input.py $units $xp $yp $zp $dumpRate $timestep $method $kb $nktv '$masses' '$potential' $T $seed $dtime $equTime $langevin $nvt $aveRate $deta $jprofile $dumpRate $corRate $computeTc $lx $ly $lz $fourierTc $tcfactor $zfactor $gstart $jcf  $nswap $excRate $lp $S $excNum $swapEnergyRate $dumpxyz $dumpv $runTime $upP $wfix $hdeta $nstat '$enforceThick' '$thick' $Thi $Tlo ";
+passthru($bb);
+die();
 /* 空格*/
 $s='  ';
 ?>

@@ -212,17 +212,14 @@ class profile:
 			
 if __name__=='__main__':
 	import sys
-	method,begin,timestep,S,conti,lz,excRate,swapEnergyRate,upP,deta,tcfactor,zfactor,lx,fourierTc ,computeTc ,corRate ,kb ,ly ,T=sys.argv[1:]
-
+	method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick=sys.argv[1:]
+	#lx,ly,S,zfactor from postMini
 	p=profile()
 	p.method=method
-	tcfactor=float(tcfactor);zfactor=float(zfactor)
-	deta=float(deta)
-	S=float(S)
-	upP=int(upP)
-	begin=int(begin)
-	timestep=float(timestep)
-	conti=int(conti);lz=float(lz);excRate=float(excRate);swapEnergyRate=float(swapEnergyRate);lx=float(lx);fourierTc=int(fourierTc);computeTc=int(computeTc);corRate=float(corRate);kb=float(kb);ly=float(ly);T=float(T);
+	tcfactor,deta,timestep,excRate,swapEnergyRate,corRate,kb,T,thick=map(float,[tcfactor,deta,timestep,excRate,swapEnergyRate,corRate,kb,T,thick])
+	upP,begin,conti,fourierTc,computeTc,xp,yp,zp,enforceThick=map(int,[upP,begin,conti,fourierTc,computeTc,xp,yp,zp,enforceThick])
+	from input import postMini;
+	lx,ly,lz,zfactor,S=postMini(xp,yp,zp,enforceThick,thick)[:5]
 	if method=='greenkubo':
 		f=open('result.txt','w')
 		if(computeTc):
