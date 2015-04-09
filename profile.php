@@ -5,7 +5,6 @@
  */
  
 require_once("discript.php");
-#require_once("postMini.php");
 
 if(!$conti)$conti=0;
 if(!$fourierTc)$fourierTc=0;

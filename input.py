@@ -44,9 +44,9 @@ def postMini(xp,yp,zp,enforceThick,thick):
 
 if __name__=='__main__':
 
-	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc ,lx ,ly ,lz ,fourierTc ,tcfactor ,zfactor ,gstart ,jcf  ,nswap ,excRate ,lp ,S ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,hdeta,nstat,enforceThick,thick,Thi,Tlo=sys.argv[1:]
+	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta=sys.argv[1:]
 	xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile ,dumpRate ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick=map(int,[xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile ,dumpRate ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick])
-	timestep,kb ,nktv,T,dtime,deta,tcfactor ,zfactor,lp ,S,swapEnergyRate,hdeta,thick,Thi,Tlo=map(float,[timestep,kb ,nktv,T,dtime,deta,tcfactor ,zfactor,lp ,S,swapEnergyRate,hdeta,thick,Thi,Tlo])
+	timestep,kb ,nktv,T,dtime,deta,tcfactor ,swapEnergyRate,thick,Thi,Tlo,hdeta=map(float,[timestep,kb ,nktv,T,dtime,deta,tcfactor,swapEnergyRate,thick,Thi,Tlo,hdeta])
 
 	lx,ly,lz,zfactor,S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(xp,yp,zp,enforceThick,thick)
 	if method=="nvt":
@@ -141,7 +141,7 @@ if __name__=='__main__':
 		print "variable   jx atom (c_pe+c_ke)*vx-(c_stress[1]*vx+c_stress[4]*vy+c_stress[5]*vz)/%f"%nktv
 		print "variable   jy atom (c_pe+c_ke)*vy-(c_stress[4]*vx+c_stress[2]*vy+c_stress[6]*vz)/%f"%nktv
 		print "variable   jz atom (c_pe+c_ke)*vz-(c_stress[5]*vx+c_stress[6]*vy+c_stress[3]*vz)/%f"%nktv
-		print "temp atom c_ke/(1.5*%f)"%kb
+		print "variable temp atom c_ke/(1.5*%f)"%kb
 		print "variable te atom c_ke+c_pe"
 		print "variable jcx atom v_te*vx"
 		print "variable jcy atom v_te*vy"
@@ -200,7 +200,7 @@ if __name__=='__main__':
 			scold+="+f_%s"%cold[i]
 		print shot
 		print scold
-		print "j_hot all ave/time 1 %d  %d v_hot  v_cold file nvtWork.txt "%(aveRate,aveRate)
+		print "fix j_hot all ave/time 1 %d  %d v_hot  v_cold file nvtWork.txt "%(aveRate,aveRate)
 
 	if method != "greenkubo":
 		print "fix	temp_profile    all    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(aveRate,aveRate,deta)
