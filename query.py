@@ -159,14 +159,19 @@ def query(projHome,srcHome,universe,php):
 				pwrite(result,"\t%s"%Natom);
 				epn=float(totalE)/float(Natom);        	          
 				pwrite(result,"\t%f"%epn);
-			
+			APP_PATH="/home/xggong/home1/zhouy/lmp_ubuntu"
 
 			# 无序度*/
-			disorderLine=shell_exec("cd %s/minimize;"%curPath+"mkdir disorder 2>err;cd disorder;cp %s"%srcHome+"/in.disorder .;APP_PATH<in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
-			k=disorderLine.split()[1:3]
-			if len(k)>2:
-				disorder,rd=k
-				pwrite(result,"\t%s\t%s"%(disorder,rd));
+			os.chdir('%s/minimize'%curPath)
+			mkdir('disorder');os.chdir('disorder')
+			disorderLine=shell_exec("cp %s"%srcHome+"/in.disorder .;"+APP_PATH+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
+			k=disorderLine.split()[1:3]				
+			if len(k)==1:
+				k.append("")
+			disorder,rd=k
+			os.chdir(curPath)
+			pwrite(result,"\t%s\t%s"%(disorder,rd));
+
 			#    disorderLine=shell_exec("cd projHome/id/minimize;mkdir disorderdist 2>err;cd disorderdist;cp srcHome/indist.disorder .;APP_PATH<indist.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
 			#   list(null,disorder,rd)=sscanf(disorderLine,"%d%f%f");
 			#pwrite(result,"\tdisorder\trd");
@@ -245,7 +250,66 @@ def mkdir(path):
         # 如果目录存在则不创建，并提示目录已存在
         #print path+' 目录已存在'
         return False
- 			
+def clean(projHome,projName,single):
+	print "Comfirm to clean all the files in this project?[y/n]",	
+	sys.stdout.flush()
+	s=raw_input();
+
+	if(s!="y"):sys.exit();
+	comfirmStop(projHome,projName,single);
+	
+	#/*删除原始代码以外的文件*/	
+	files=shell_exec("cd %s;ls "%projHome);
+	files=files.split('\n')
+	for ls in files:
+		if(ls in ["sub.php","post.php","data",""] ):continue;
+		print "deleting:%s"%ls;
+		sys.stdout.flush()
+		#shell_exec("cd projHome;rm -r ls");
+def stop(projHome,projName,single):
+	print "Comfirm to stop all the simulation in this project?[y/n]",	
+	sys.stdout.flush()
+	s=raw_input(); 
+	if(s!="y"):os.exit("exit with no change.");
+	comfirmStop(projHome,projName,single);
+			
+
+def comfirmStop(projHome,projName,single):
+	
+	#/* 容易kill掉同名工程程序*/
+	if(single):
+		obj=getObjs("projHome/qloops.txt");
+		for pa in obj:
+			pid=pa["pid"];
+         		print "kill:pid\n";
+         	 	#exec::kill(pid);
+		return;
+	
+	tarname="zy_projName"+"_";
+	works=shell_exec("qstat|grep tarname").split('\n');
+	for work in works:
+		if work.strip()=="":continue;
+		pid=work.split()[0]
+		if(len(tarname)<10):
+			print "qdel:%s"%pid
+			sys.stdout.flush()
+			#shell_exec("qdel %s 2 >log"%pid)
+		else:
+			jobnameString=shell_exec("qstat -f pid |grep Job_Name");
+			jobname=jobnameString.split()[2]
+			if(jobname.find(tarname)>=0):
+				print "qdel:%s"%pid
+				#shell_exec("qdel %s 2 >log"%pid)
+				
+	
+		
+	
+		
 if __name__=='__main__':
-	projHome,srcHome,universe,php=sys.argv[1:]
-	query(projHome,srcHome,universe,php)
+	cmd,projHome,srcHome,universe,php,projName,single=sys.argv[1:]
+	if cmd=='q':
+		query(projHome,srcHome,universe,php)
+	elif cmd=='clean':
+		clean(projHome,projName,single)
+	elif cmd=='stop':
+		stop(projHome,projName,single)
