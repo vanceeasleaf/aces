@@ -21,31 +21,5 @@ function rm($file){
 	}
 }
 
-/* 获得一个数组的平均值*/
-function arr_ave($array){
-	$n=count($array);
-	$sum=0;
-	for($i=0;$i<$n;$i++){
-	$sum+=$array[$i];
-	}
-	return $sum/$n;
-}
 
-/* 逐项生成一个数组的绝对值*/
-function arr_abs($array){
-	$out=array();
-	for($i=0;$i<count($array);$i++){
-	$out[$i]=abs($array[$i]);
-	}
-	return $out;
-}
-
-/* 向量内积*/
-function arr_mul($array,$b){
-	$out=array();
-	for($i=0;$i<count($array);$i++){
-	$out[$i]=$array[$i]*$b[$i];
-	}
-	return $out;
-}
 ?>

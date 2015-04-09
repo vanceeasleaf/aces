@@ -1,7 +1,9 @@
 <?php
 require_once("discript.php");
 require_once("postMini.php");
-
+if(!$langevin)$langevin=0;
+if(!$nvt)$nvt=0;
+@passthru("python $home/input.py $units $xp $yp $zp $dumpRate $timestep $method $kb $nktv '$masses' '$potential' $T $seed $dtime $equTime $langevin $nvt $aveRate $deta $jprofile $dumpRate $corRate $computeTc $lx $ly $lz $fourierTc $tcfactor $zfactor $gstart $jcf  $nswap $excRate $lp $S $excNum $swapEnergyRate $dumpxyz $dumpv $runTime>input1");
 /* 空格*/
 $s='  ';
 ?>

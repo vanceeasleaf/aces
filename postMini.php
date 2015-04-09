@@ -70,17 +70,7 @@ $lp=$up11-$down11;
     	if($enforceThick)$zfactor=$lz/$thick;
     	else $zfactor=1;
     	$S=$ly*$lz;
-    	function slope($x,$y,$pt1,$pt2){
-	$n=$pt2-$pt1+1;
-	$sxy=0;$sx=0;$sy=0;$sx2=0;
-	for($i=$pt1;$i<=$pt2;$i++){
-		$sxy+=$x[$i]*$y[$i];
-		$sx+=$x[$i];
-		$sy+=$y[$i];
-		$sx2+=$x[$i]*$x[$i];
-	}
-	return ($n*$sxy-$sx*$sy)/($n*$sx2-$sx*$sx);
-}
+
 $icoldl=$xlo;
 $icoldr=$icoldl+$nswap*$deta;
 $ihotl=$xlo+$lx/2;
