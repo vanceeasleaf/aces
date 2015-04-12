@@ -261,6 +261,7 @@ def mkdir(path):
         #print path+' 目录已存在'
         return False
 def clean(projHome,projName,single):
+	if projHome=='':print "error projHome"
 	print "Comfirm to clean all the files in this project?[y/n]",	
 	sys.stdout.flush()
 	s=raw_input();
@@ -297,20 +298,20 @@ def comfirmStop(projHome,projName,single):
 		return;
 	
 	tarname="zy_%s_"%projName;
-	works=shell_exec("qstat|grep tarname").split('\n');
+	works=shell_exec("qstat|grep %s"%tarname).split('\n');
 	for work in works:
 		if work.strip()=="":continue;
 		pid=work.split()[0]
 		if(len(tarname)<10):
 			print "qdel:%s"%pid
 			sys.stdout.flush()
-			shell_exec("qdel %s 2 >log"%pid)
+			shell_exec("qdel %s &2>/dev/null"%pid)
 		else:
-			jobnameString=shell_exec("qstat -f pid |grep Job_Name");
+			jobnameString=shell_exec("qstat -f %s |grep Job_Name"%pid);
 			jobname=jobnameString.split()[2]
 			if(jobname.find(tarname)>=0):
 				print "qdel:%s"%pid
-				shell_exec("qdel %s 2 >log"%pid)
+				shell_exec("qdel %s "%pid)
 				
 	
 		

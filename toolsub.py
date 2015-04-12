@@ -106,7 +106,7 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 		len=int(ucores/(cores+0.0));
 		if(uqueue==''):uqueue="q3.4";
 		if(idx%len==0):
-			genPbss("projHome","zy_%s_"%projName,uqueue,unodes,uprocs,idx,cores);
+			genPbss(projHome,"zy_%s_"%projName,uqueue,unodes,uprocs,idx,cores);
 
 
 	shell_exec("mkdir -p "+dir+";cd "+dir+";mkdir -p minimize");
@@ -124,11 +124,11 @@ def write(cmd,fileName):
 def setSubProject(index,projHome,single):
 	if(single):pid=''#exec.background("sh %s/%s/run.sh"%(projHome,index));
 	else:
-		pid=shell_exec("cd %s/%s;qsub lammps.pbs;"%(projHome,index));
+		pid=shell_exec("cd %s/%s;qsub lammps.pbs;"%(projHome,index))[0:5];
 		print "submit: %s\t%s/%s"%(pid,projHome,index);
 	#sleep(1);
 	return pid;
-def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs):
+def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs):
 	makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs)
 	if(universe==''):pid=setSubProject(idx,projHome,single);
 	import time
@@ -152,4 +152,4 @@ def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,u
 if __name__=='__main__':
 
 	projHome ,projName ,cmd ,idx ,nodes ,procs ,species ,method ,units ,universe ,queue ,runTime,uqueue,single,unodes,uprocs,jj=sys.argv[1:]
-	toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs)
+	toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs)
