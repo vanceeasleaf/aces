@@ -1,0 +1,23 @@
+#!/bin/bash -x
+
+#PBS -l nodes=14:ppn=1
+#PBS -l walltime=240:00:00
+#PBS -j oe
+#PBS -q q1.2
+#PBS -N zhouy
+
+#define MPI PATH
+OMPI_HOME=/opt/intel/mpi/openmpi/1.6.3/icc.ifort
+PHP_HOME=/home/xggong/home1/zhouy/php/bin/
+LOGOUT=log.out
+# Setup the OpenMPI topology
+n_proc=$(cat $PBS_NODEFILE | wc -l)
+
+contexts=`~/bin/get_psm_sharedcontexts_max.sh`
+ if [ "$?" = "0" ] ; then
+  export PSM_SHAREDCONTEXTS_MAX=$contexts
+ fi
+                
+cd $PBS_O_WORKDIR
+$PHP_HOME/php input.php |$OMPI_HOME/bin/mpirun  -machinefile $PBS_NODEFILE -np $n_proc /home/xggong/home1/zhouy/lmp_ubuntu&>$LOGOUT
+exit 0
