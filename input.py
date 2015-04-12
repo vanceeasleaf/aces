@@ -2,7 +2,7 @@
 import sys
 def exit(info):
 	print info
-	os.exit();
+	sys.exit();
 def getboxrange():
 	file=open("minimize/range");
 	for i in range(5):

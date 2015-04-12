@@ -245,7 +245,7 @@ if __name__=='__main__':
 			kx=gk_result.split()[1]
 		
 		f.write("kappa_src=%f\n"%kx);
-		sys.exit()
+		os.exit()
 	flux_src=p.getFlux(begin,timestep,S,conti,lz,excRate,swapEnergyRate)[0]
 
 	aveC,aveN,aveTemp,avejx=p.getTempProfile(begin,upP,deta,S,tcfactor,zfactor)

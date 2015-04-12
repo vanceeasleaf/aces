@@ -37,10 +37,10 @@ minimize 1e-12 1e-12 1000000 1000000
 ";
 }
 ?> 
-write_restart <?echo $fileRestartMini?> 
-dump dump1 all xyz 1 <?echo $fileXRange?> 
+write_restart restart.minimize
+dump dump1 all xyz 1 minimize.xyz
 <?	echo $dump;?> 
-dump kaka all atom 1 <?echo $fileBoxRange?> 
+dump kaka all atom 1 range
 run 0
 #fix frelax all nve
 #fix controltemp all temp/rescale 100 10.0 10.0 10.0 1.0

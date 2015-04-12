@@ -1,6 +1,7 @@
 #encoding:utf8
 import json
 import os,sys
+import config
 def shell_exec(cmd):
 	c=os.popen(cmd).read()
 	return c.strip()
@@ -16,10 +17,12 @@ def getObjs():
 	return obj;
 	
 def getRatio(path):
+	if(not os.path.exists(path)):return 0.0;
 	fp=open(path,"r");
 	fp.next();
 	natom=int(fp.next().split()[0])
 	ntype=int(fp.next().split()[0])
+	if ntype==1:return 0.0;
 	n=0;
 	label=""
 	while(label!="Atoms" and n<20):
@@ -78,8 +81,8 @@ def getQueryInfo(workPath,pid,runTime,ob):
 	
 	return (percent,status,queue,nodes,procs);
 	
-def query(projHome,srcHome,universe,php):
-
+def query(projHome,srcHome,universe):
+	php=config.php
 
 	result=open("result.txt","w");
 
@@ -153,14 +156,15 @@ def query(projHome,srcHome,universe,php):
 			pwrite(result,"\t%s"%totalE);
 
 			# 原子数和平均能量*/
-			Natomline=shell_exec("cd %s/minimize;head -5 log.out|tail -1 ;"%curPath);
+			Natomline=shell_exec("cd %s/minimize;grep atoms log.out ;"%curPath);
 			Natom=Natomline.split()[0]
 			if(Natom.isdigit() and Natom>0):
 				pwrite(result,"\t%s"%Natom);
 				epn=float(totalE)/float(Natom);        	          
 				pwrite(result,"\t%f"%epn);
+			'''
 			APP_PATH="/home/xggong/home1/zhouy/lmp_ubuntu"
-
+			
 			# 无序度*/
 			os.chdir('%s/minimize'%curPath)
 			mkdir('disorder');os.chdir('disorder')
@@ -171,7 +175,13 @@ def query(projHome,srcHome,universe,php):
 			disorder,rd=k
 			os.chdir(curPath)
 			pwrite(result,"\t%s\t%s"%(disorder,rd));
-
+			'''
+			os.chdir('%s/minimize'%curPath)
+			from ase.io import read
+			atoms=read('range',format='lammps')
+			atoms.write('../structure.png')
+			
+			os.chdir(curPath)
 			#    disorderLine=shell_exec("cd projHome/id/minimize;mkdir disorderdist 2>err;cd disorderdist;cp srcHome/indist.disorder .;APP_PATH<indist.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
 			#   list(null,disorder,rd)=sscanf(disorderLine,"%d%f%f");
 			#pwrite(result,"\tdisorder\trd");
@@ -180,8 +190,8 @@ def query(projHome,srcHome,universe,php):
 			#pwrite(result,"\tdisorderC");
 
 			# 掺杂比例*/
-			ratio=getRatio("%s/minimize/structure"%curPath);
-			pwrite(result,"\t%f"%ratio);
+			#ratio=getRatio("%s/minimize/structure"%curPath);
+			#pwrite(result,"\t%f"%ratio);
 
 			#rdfs=getRdf("projHome/id/minimize/disorder/rdf.txt",ratio);
 			#pwrite(result,"\trdfs");
@@ -254,23 +264,24 @@ def clean(projHome,projName,single):
 	print "Comfirm to clean all the files in this project?[y/n]",	
 	sys.stdout.flush()
 	s=raw_input();
-
-	if(s!="y"):sys.exit();
+	if(s!="y"):return
 	comfirmStop(projHome,projName,single);
 	
 	#/*删除原始代码以外的文件*/	
 	files=shell_exec("cd %s;ls "%projHome);
 	files=files.split('\n')
 	for ls in files:
-		if(ls in ["sub.php","post.php","data",""] ):continue;
+		if(ls in ["sub.php","post.php","data","","sub.py"] ):continue;
 		print "deleting:%s"%ls;
 		sys.stdout.flush()
-		#shell_exec("cd projHome;rm -r ls");
+		shell_exec("cd %s;rm -r %s"%(projHome,ls));
 def stop(projHome,projName,single):
 	print "Comfirm to stop all the simulation in this project?[y/n]",	
 	sys.stdout.flush()
 	s=raw_input(); 
-	if(s!="y"):os.exit("exit with no change.");
+	if(s!="y"):
+		print "exit with no change."
+		return
 	comfirmStop(projHome,projName,single);
 			
 
@@ -278,14 +289,14 @@ def comfirmStop(projHome,projName,single):
 	
 	#/* 容易kill掉同名工程程序*/
 	if(single):
-		obj=getObjs("projHome/qloops.txt");
+		obj=getObjs(projHome+"/qloops.txt");
 		for pa in obj:
 			pid=pa["pid"];
-         		print "kill:pid\n";
+         		print "kill:%s"%pid;
          	 	#exec::kill(pid);
 		return;
 	
-	tarname="zy_projName"+"_";
+	tarname="zy_%s_"%projName;
 	works=shell_exec("qstat|grep tarname").split('\n');
 	for work in works:
 		if work.strip()=="":continue;
@@ -293,22 +304,22 @@ def comfirmStop(projHome,projName,single):
 		if(len(tarname)<10):
 			print "qdel:%s"%pid
 			sys.stdout.flush()
-			#shell_exec("qdel %s 2 >log"%pid)
+			shell_exec("qdel %s 2 >log"%pid)
 		else:
 			jobnameString=shell_exec("qstat -f pid |grep Job_Name");
 			jobname=jobnameString.split()[2]
 			if(jobname.find(tarname)>=0):
 				print "qdel:%s"%pid
-				#shell_exec("qdel %s 2 >log"%pid)
+				shell_exec("qdel %s 2 >log"%pid)
 				
 	
 		
 	
 		
 if __name__=='__main__':
-	cmd,projHome,srcHome,universe,php,projName,single=sys.argv[1:]
+	cmd,projHome,srcHome,universe,projName,single=sys.argv[1:]
 	if cmd=='q':
-		query(projHome,srcHome,universe,php)
+		query(projHome,srcHome,universe)
 	elif cmd=='clean':
 		clean(projHome,projName,single)
 	elif cmd=='stop':
