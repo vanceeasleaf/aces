@@ -1,4 +1,6 @@
-UnitCell
+Automatical Computational Experiment System(ACES)
 ========
 
-Class to create and manipulate crystal unit cell data.
+@Authour Yang Zhou 
+@Fudan Universerty Computational Condensed Matter Group(CCMG)
+

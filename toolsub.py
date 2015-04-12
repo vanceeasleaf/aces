@@ -7,7 +7,7 @@ import config
 def genPbs(path,disp,queue,nodes,procs):
 	#define MPI PATH
 	home=os.path.dirname(__file__);	
-	qloop= " \""+path+"/qloop.php\""+" \""+path+"/species.php\" >input"
+	qloop=' "%s/qloop.php" "%s/species.php" >input '%(path,path)
 	s=["#!/bin/bash -x"
 	,"#PBS -l nodes=%s:ppn=%s"%(nodes,procs)
 	,"#PBS -l walltime=240:00:00"
@@ -32,14 +32,14 @@ def genPbs(path,disp,queue,nodes,procs):
 	
 def genSh(path,disp,procs):
 	home=os.path.dirname(__file__);
-	qloop= " \""+path+"/qloop.php\""+" \""+path+"/species.php\" >input"
+	qloop=' "%s/qloop.php" "%s/species.php" >input '%(path,path)
 	s=["#!/bin/bash -x"
 	,"#%s"%disp
 	,"cd %s/minimize"%path
 	,config.php+home+"/minimize/input.php"+qloop
 	,"mpirun   -np %s %s <input > %s/minimize/log.out 2>/dev/null"%(procs,config.APP_PATH,path)
 	,"cd %s"%path
-	,"%s %s/input.php"%(php,home)+qloop
+	,"%s %s/input.php"%(config.php,home)+qloop
 	,"mpirun -np %s %s <input >%s/log.out 2>/dev/null"%(procs,config.APP_PATH,path)
 	,"exit 0"]
 	pbs=open("%s/run.sh"%path,"w");
@@ -114,8 +114,8 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 		genSh(dir,pro,procs);
 	
 	if(not universe or not single):genPbs(dir,pro,queue,nodes,procs);
-	write("<?php\n%s;\n$projHome=\"%s/%s\";\n?>"%(cmd,projHome,idx),dir+"/qloop.php");
-	write("<?php\n$species=\"%s\";\n$units=\"%s\";\n$method=\"%s\";\n?>"%(species,units,method),dir+"/species.php");
+	write('<?php\n%s;\n$projHome="%s/%s";\n?>'%(cmd,projHome,idx),dir+"/qloop.php");
+	write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
 def write(cmd,fileName):
 	file=open(fileName,"w");
 	file.write(cmd+"\n");
@@ -146,7 +146,7 @@ def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,
 	}
 	eobj=json.loads(jj)
 	if len(eobj)>1:
-		json_obj.extent(eobj[1:])
+		json_obj=dict(json_obj.items()+eobj[1].items())
 	loops=open('qloops.txt','a')
 	print >>loops,json.dumps(json_obj)
 if __name__=='__main__':

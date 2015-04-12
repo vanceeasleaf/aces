@@ -1,6 +1,6 @@
 #encoding:utf8
 
-import sys,os
+import sys,os,json
 from query import clean,stop,query
 from toolsub import toolsub
 class ACES:
@@ -28,14 +28,18 @@ class ACES:
 		else:
 			print("Unkown command!");
 			pass
-	def submit(self,opt,cmd):
+	def submit(self,opt,app):
 		projHome=self.projHome
 		projName=self.projName
 		single=self.single
 		species=opt['species']
 		units=opt['units']
 		method=opt['method'];queue=opt['queue'];nodes=opt['nodes'];procs=opt['procs'];runTime=opt['runTime']
-		jj='[]'
+		cmd=''
+		for key in app:
+			val=app[key]
+			cmd+='$%s=%s;'%(key,val)
+		jj=json.dumps([cmd,app])
 		toolsub(cmd,self.idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe='',uqueue='',single='',unodes='',uprocs='')
 		self.idx+=1
 		
