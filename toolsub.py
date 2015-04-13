@@ -13,7 +13,7 @@ def genPbs(path,disp,queue,nodes,procs):
 	#if not 'usepy' in vars():usepy=0
 	if usepy:
 		input='exe.py'
-		exe='python'		
+		exe=config.python
 	else:
 		input='input.php  "%s/qloop.php" "%s/species.php" '%(path,path)
 		exe=config.php

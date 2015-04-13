@@ -1,13 +1,14 @@
 #encoding:utf8
 from math import sin,cos,atan,pi,sqrt
-import os
+from os.path import *
+import os,imp
 root=abspath(dirname(realpath(__file__))+'/../../');
-default= imp.load_source('root', home+'/default.py') 
+default= imp.load_source('root', root+'/default.py') 
 class structure:
 	def __init__(self,home,opt):
 		self.home=home
-		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  C N'%home
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
+		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  C N'%home
 		self.timestep=4e-3
 		self.dumpRate=100000
 		self.masses=""
@@ -22,7 +23,7 @@ class structure:
 		if opt.has_key('laty'):self.laty=opt['laty']
 		if opt.has_key('latz'):self.latz=opt['latz']
 		if opt.has_key('bond'):self.bond=opt['bond']
-		"""0
+		"""
 	def structure(self):
 		home=self.home
 		latx,laty,latz,bond=[self.latx,self.laty,self.latz,self.bond]
