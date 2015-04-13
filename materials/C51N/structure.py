@@ -3,27 +3,19 @@ from math import sin,cos,atan,pi,sqrt
 from os.path import *
 import os,imp
 root=abspath(dirname(realpath(__file__))+'/../../');
-default= imp.load_source('root', root+'/default.py') 
+default= imp.load_source('default', root+'/default.py') 
+unitcell= imp.load_source('unitcell', root+'/UnitCell/unitcell.py') 
+from ase.io.vasp import write_vasp
+UnitCell=unitcell.UnitCell
 class structure:
 	def __init__(self,home,opt):
 		self.home=home
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
 		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  C N'%home
-		self.timestep=4e-3
-		self.dumpRate=100000
 		self.masses=""
-		self.metropolis=0
-		self.write_structure=0
-		self.useMini=1
 		self.dump="dump_modify dump1 element C N"
-		self.latx=11;self.laty=1;self.latz=1;self.bond=1.42
+		self.latx=11;self.laty=1;self.latz=1;
 		self.__dict__=dict(self.__dict__,**opt)
-		"""
-		if opt.has_key('latx'):self.latx=opt['latx']
-		if opt.has_key('laty'):self.laty=opt['laty']
-		if opt.has_key('latz'):self.latz=opt['latz']
-		if opt.has_key('bond'):self.bond=opt['bond']
-		"""
 	def structure(self):
 		home=self.home
 		latx,laty,latz,bond=[self.latx,self.laty,self.latz,self.bond]
@@ -137,3 +129,12 @@ map.in
 		x1=cos(phi)*x-sin(phi)*y
 		y1=sin(phi)*x+cos(phi)*y
 		return [x1,y1]
+	def write(self):
+		self.atoms.write("CN.xyz")
+		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
+		poscar = open("POSCAR")
+		unit_cell = UnitCell(poscar)
+		unit_cell.num_atom_types=2
+		lammps=open("structure","w")
+		lammps.write(unit_cell.output_lammps())
+		lammps.close()

@@ -1,4 +1,8 @@
 #encoding:utf8
+import sys,os
+sys.path.append(os.path.realpath(os.path.dirname(__file__)))
+from Units import Units
+units=Units('metal')
 default={
 	'units':"metal",
 	'method':"nvt",
@@ -12,17 +16,18 @@ default={
 
 	'usinglat':1,
 	'latx':4,'laty':4,'latz':4,
-	'ylen':20,
-	'thick':3.35,
-	'deta':3,
-	'T':300,#K for all units
+	'ylen':units.metal.L(20),
+	'thick':units.metal.L(3.35),
+	'deta':units.metal.L(3),
+	'T':units.metal.T(300),#K for all units
 
-
-	'timestep':.182e-3,
+	'metropolis':0,
+	'write_structure':0,
+	'timestep':units.metal.t(.5e-3),
 	'equTime':100000,
 	'langevin':0,
 	'nvt':1,'jprofile':0,'computeTc':1,'fourierTc':0,'gstart':20000,'jcf':0,
-	'dumpRate':10000,
+	'dumpRate':100000,
 	'aveRate':100000,
 	'excRate':500,
 	'corRate':2,
@@ -35,16 +40,16 @@ default={
 	'swapEnergy':5e-4,
 	'wfix':3,#fix width
 	'Nbins':500,
-
+	'bond':units.metal.L(1.42),
 	'begin':1,
 	'masses':'',
 	'potential':'',
 	'dumpxyz':1,
 	'dumpv':0,
-	'hdeta':3
+	'hdeta':units.metal.L(3)
 }
-default['Thi']=default['T']+10
-default['Tlo']=default['T']-10
+default['Thi']=default['T']+units.metal.T(10)
+default['Tlo']=default['T']-units.metal.T(10)
 
 	
 

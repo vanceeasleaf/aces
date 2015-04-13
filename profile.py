@@ -4,7 +4,7 @@ matplotlib.use('Agg')
 import numpy as np
 from scipy import stats
 import math,sys,os
-
+from tempAve import drawTempAve
 class profile:
 	def __init__(self):
 		self.method='muller'
@@ -209,10 +209,7 @@ class profile:
 			line=fpro.readline()
 			bin[i],coord[i],ncount[i],v_temp[i],jx[i]=line.strip().split()
 		return (coord,ncount,v_temp,jx)	
-			
-if __name__=='__main__':
-	import sys
-	method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick=sys.argv[1:]
+def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick):
 	#lx,ly,S,zfactor from postMini
 	p=profile()
 	p.method=method
@@ -288,6 +285,10 @@ if __name__=='__main__':
 		fileScan.write("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n"%(i+1,kappa_src,kappa_bulk,kappa_bulkc,flux_src,flux_bulk,flux_bulkc,slopes[i]));
 	
 	fileScan.close()
-	from tempAve import drawTempAve
+
 	
-	drawTempAve()
+	drawTempAve()		
+if __name__=='__main__':
+
+	method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick=sys.argv[1:]
+	run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick)
