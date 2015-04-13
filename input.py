@@ -41,10 +41,7 @@ def postMini(xp,yp,zp,enforceThick,thick):
 	else:zfactor=1;
 	S=ly*lz;
 	return lx,ly,lz,zfactor,S,xlo,xhi,ylo,yhi,zlo,zhi
-
-if __name__=='__main__':
-
-	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta=sys.argv[1:]
+def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta):
 	xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile ,dumpRate ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick=map(int,[xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile ,dumpRate ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick])
 	timestep,kb ,nktv,T,dtime,deta,tcfactor ,swapEnergyRate,thick,Thi,Tlo,hdeta=map(float,[timestep,kb ,nktv,T,dtime,deta,tcfactor,swapEnergyRate,thick,Thi,Tlo,hdeta])
 
@@ -261,3 +258,7 @@ if __name__=='__main__':
 
 	print "run	%d"%(runTime)
 
+
+if __name__=='__main__':
+	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta=sys.argv[1:]
+	input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta)

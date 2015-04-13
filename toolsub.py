@@ -7,7 +7,17 @@ import config
 def genPbs(path,disp,queue,nodes,procs):
 	#define MPI PATH
 	home=os.path.dirname(__file__);	
-	qloop=' "%s/qloop.php" "%s/species.php" >input '%(path,path)
+	global usepy
+	usepy=1
+
+	#if not 'usepy' in vars():usepy=0
+	if usepy:
+		input='exe.py'
+		exe='python'		
+	else:
+		input='input.php  "%s/qloop.php" "%s/species.php" '%(path,path)
+		exe=config.php
+	qloop=input+' >input'
 	s=["#!/bin/bash -x"
 	,"#PBS -l nodes=%s:ppn=%s"%(nodes,procs)
 	,"#PBS -l walltime=240:00:00"
@@ -21,10 +31,10 @@ def genPbs(path,disp,queue,nodes,procs):
 	,"  export PSM_SHAREDCONTEXTS_MAX=contexts"
 	," fi"
 	,"cd %s/minimize"%path
-	,config.php+"%s/minimize/input.php"%home+qloop
+	,exe+"%s/minimize/"%home+qloop
 	,config.OMPI_HOME+"/bin/mpirun  -machinefile $PBS_NODEFILE -np $n_proc "+config.APP_PATH+" <input &>"+path+"/minimize/log.out"
 	,"cd "+path
-	,config.php+'%s/input.php'%home+qloop
+	,exe+'%s/'%home+qloop
 	,config.OMPI_HOME+"/bin/mpirun -machinefile $PBS_NODEFILE -np $n_proc "+config.APP_PATH+" <input &>"+path+"/log.out"
 	,"exit 0"]
 	pbs=open(path+"/lammps.pbs","w");
@@ -94,7 +104,7 @@ def genPbss(path,disp,queue,nodes,procs,start,ucores):
 
 
 	
-def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs):
+def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj):
 	dir="%s/%s"%(projHome,idx)
 	pro="zy_%s_%s"%(projName,idx)
 	if(universe):
@@ -103,9 +113,9 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 		if(unodes==''):unodes=20;
 		if(uprocs==''):uprocs=1;
 		ucores=unodes*uprocs;
-		len=int(ucores/(cores+0.0));
+		lenn=int(ucores/(cores+0.0));
 		if(uqueue==''):uqueue="q3.4";
-		if(idx%len==0):
+		if(idx%lenn==0):
 			genPbss(projHome,"zy_%s_"%projName,uqueue,unodes,uprocs,idx,cores);
 
 
@@ -116,6 +126,14 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 	if(not universe or not single):genPbs(dir,pro,queue,nodes,procs);
 	write('<?php\n%s;\n$projHome="%s/%s";\n?>'%(cmd,projHome,idx),dir+"/qloop.php");
 	write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
+	eobj=json.loads(jj)
+	if len(eobj)>1:
+		opt=eobj[1].copy()
+		opt['projHome']='%s/%s'%(projHome,idx)
+		opt['species']=species
+		opt['units']=units
+		opt['method']=method
+		write(json.dumps(opt),dir+"/app.json");
 def write(cmd,fileName):
 	file=open(fileName,"w");
 	file.write(cmd+"\n");
@@ -129,7 +147,7 @@ def setSubProject(index,projHome,single):
 	#sleep(1);
 	return pid;
 def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs):
-	makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs)
+	makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj)
 	if(universe==''):pid=setSubProject(idx,projHome,single);
 	import time
 	json_obj={
