@@ -9,10 +9,11 @@ class Aces:
 		self.idx=0
 		self.projHome=os.path.dirname(os.path.realpath(sys.argv[0]))
 		self.projName=os.path.basename(self.projHome);
-		print "Welcome to Automatical Computational Experiment System(ACES)"
-		print "developed by Yang Zhou @Fudan University"
+		print "\nWelcome to Automatical Computational Experiment System(ACES)"
+		print "developed by Yang Zhou @Fudan University\n"
 		print "Project Home="+self.projHome
 		print "Project Name="+self.projName
+		print ""
 		self.single=''
 	def run(self):
 		projHome=self.projHome
