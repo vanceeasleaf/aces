@@ -12,7 +12,7 @@ default={
 	'useMini':1,
 	'dumpxyz':1,
 	'upP':3,
-
+	'fixud':0,
 	'usinglat':1,
 	'latx':4,'laty':4,'latz':4,
 	'ylen':units.metal.L(20),

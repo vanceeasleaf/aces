@@ -41,8 +41,8 @@ def postMini(xp,yp,zp,enforceThick,thick):
 	else:zfactor=1;
 	S=ly*lz;
 	return lx,ly,lz,zfactor,S,xlo,xhi,ylo,yhi,zlo,zhi
-def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta):
-	xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick=map(int,[xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile  ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick])
+def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud):
+	xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,fixud=map(int,[xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile  ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,fixud])
 	timestep,kb ,nktv,T,dtime,deta,tcfactor ,swapEnergyRate,thick,Thi,Tlo,hdeta=map(float,[timestep,kb ,nktv,T,dtime,deta,tcfactor,swapEnergyRate,thick,Thi,Tlo,hdeta])
 
 	lx,ly,lz,zfactor,S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(xp,yp,zp,enforceThick,thick)
@@ -52,6 +52,8 @@ def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potent
 		if(lx/deta/4<upP):exit("upP is too large!")
 	fixl1=xlo-deta;fixl2=fixl1+deta*wfix;
 	fixr2=xhi+deta;fixr1=fixr2-deta*wfix;
+	fixd1=ylo;fixd2=fixd1+deta;
+	fixu2=yhi;fixu1=fixu2-deta;
 	hotl1=[0.0]*nstat;hotr2=[0.0]*nstat;
 	hotl2=[0.0]*nstat;hotr1=[0.0]*nstat;
 	cold=['cold']*nstat;hot=['hot']*nstat
@@ -101,14 +103,22 @@ def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potent
 	#regions and groups
 	if method=='nvt':
 		print "region	stayl    block  %f %f INF INF INF  INF units box"%(fixl1,fixl2)
+		print "region	stayr    block  %f	%f INF INF INF  INF units box"%(fixr1,fixr2)
 		for i in range(nstat):
 			print "region	%s	block   %f  %f INF INF INF  INF units box"%(cold[i],hotl1[i],hotl2[i])
 			print "group	%s	region %s"%(cold[i],cold[i])
 			print "region	%s	block	%f	%f	INF INF INF  INF units box"%(hot[i],hotr1[i],hotr2[i])
 			print "group	%s	region	%s"%(hot[i],hot[i])
-		print "region	re_nve    block  %f	%f INF INF INF  INF units box"%(hotl2[-1],hotr1[-1])
-		print "region	stayr    block  %f	%f INF INF INF  INF units box"%(fixr1,fixr2)
-		print "region     stay    union  2 stayl stayr"
+
+
+		if fixud:
+			print "region	re_nve    block  %f	%f %f	%f INF  INF units box"%(hotl2[-1],hotr1[-1],fixd2,fixu1)
+			print "region	stayu	block INF INF %f	%f INF  INF units box"%(fixu1,fixu2)
+			print "region	stayd	block INF INF %f	%f INF  INF units box"%(fixd1,fixd2)
+			print "region     stay    union  4 stayl stayr stayu stayd"
+		else:
+			print "region	re_nve    block  %f	%f INF INF INF  INF units box"%(hotl2[-1],hotr1[-1])
+			print "region     stay    union  2 stayl stayr "
 		print "group            stay    region stay"
 		print "group            g_nve    region re_nve"
 		s="region	main union %d re_nve "%(nstat*2+1)
@@ -260,5 +270,5 @@ def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potent
 
 
 if __name__=='__main__':
-	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta=sys.argv[1:]
-	input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta)
+	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud=sys.argv[1:]
+	input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud)

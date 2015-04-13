@@ -2,10 +2,10 @@
 /* Armchair GNR heterostructure generator.*/ 
 
 /**
-* Éú³É¿í¶ÈÎª$nÀàĞÍÎª$typeµÄÕÛÏßµÄ×ø±ê,²¢°ÑËü·ÅÔÚµÚ$pÁĞ
+* ç”Ÿæˆå®½åº¦ä¸º$nç±»å‹ä¸º$typeçš„æŠ˜çº¿çš„åæ ‡,å¹¶æŠŠå®ƒæ”¾åœ¨ç¬¬$påˆ—
 * @author zhouy
 * @input $n,$type,$p
-* @output °üº¬2*$n+1¸öÔ­×ÓµÄÊı×é
+* @output åŒ…å«2*$n+1ä¸ªåŸå­çš„æ•°ç»„
 */
 function zhexian($n,$p,$type){
 	$x=array();
@@ -19,10 +19,10 @@ function zhexian($n,$p,$type){
 }
 
 /** 
- * Éú³É¿í¶ÈÎª$n£¬³¤¶ÈÎª$pµÄAGNRµÄ×ø±ê,µÚÒ»ÁĞÕÛÏßµÄÀàĞÍÓÉ$type¾ö¶¨
+ * ç”Ÿæˆå®½åº¦ä¸º$nï¼Œé•¿åº¦ä¸º$pçš„AGNRçš„åæ ‡,ç¬¬ä¸€åˆ—æŠ˜çº¿çš„ç±»å‹ç”±$typeå†³å®š
  * @author zhouy
  * @input $n,$p,$type
- * @output (2*$n+1)*$p¸öÔ­×ÓµÄÊı×é
+ * @output (2*$n+1)*$pä¸ªåŸå­çš„æ•°ç»„
  */
 function agnr($n,$p,$type){
 	$x=array();
@@ -37,9 +37,9 @@ function agnr($n,$p,$type){
 	return array($x,$y);
 }
 function preFile(){
-	global $latysmall; /* Õ­±ß°üÀ¨2*$latysmall+1ÅÅCÔ­×Ó£¬$latysmall=3Ê±£¬Îª7 AGNR*/
-	global $latExtend;/* Ïà¶ÔÓÚÕ­±ß£¬³¤±ßµÄy·½ÏòÁ½Í·¶¼ÑÓÉì$latExtend¸öÁù±ßĞÎ£¬$latExtend=2Ê±£¬³¤±ßÎª[($latysamll-1)+2*$latExtend]*2+1=13 AGNR*/
-	global $latxsmall,$latxbig;/* ×î¼òµ¥Ä£ĞÍ£¬ÖĞ¼äÊÇ³¤±ß£¬Á½Í·ÊÇµÈ³¤µÄ¶Ì±ß, $latxsmall±íÊ¾¶Ì±ßÓÉ¼¸Ìõ*ÕÛÏß*×é³É*/
+	global $latysmall; /* çª„è¾¹åŒ…æ‹¬2*$latysmall+1æ’CåŸå­ï¼Œ$latysmall=3æ—¶ï¼Œä¸º7 AGNR*/
+	global $latExtend;/* ç›¸å¯¹äºçª„è¾¹ï¼Œé•¿è¾¹çš„yæ–¹å‘ä¸¤å¤´éƒ½å»¶ä¼¸$latExtendä¸ªå…­è¾¹å½¢ï¼Œ$latExtend=2æ—¶ï¼Œé•¿è¾¹ä¸º[($latysamll-1)+2*$latExtend]*2+1=13 AGNR*/
+	global $latxsmall,$latxbig;/* æœ€ç®€å•æ¨¡å‹ï¼Œä¸­é—´æ˜¯é•¿è¾¹ï¼Œä¸¤å¤´æ˜¯ç­‰é•¿çš„çŸ­è¾¹, $latxsmallè¡¨ç¤ºçŸ­è¾¹ç”±å‡ æ¡*æŠ˜çº¿*ç»„æˆ*/
 	if($latxsmall%2==0)$latxsmall+=1;
 	if($latxbig%2==1)$latxbig+=1;
       global $bond;

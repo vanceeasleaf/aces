@@ -1,8 +1,7 @@
 #encoding:utf8
 from math import sin,cos,atan,pi,sqrt
 from os.path import *
-import os,imp
-root=abspath(dirname(realpath(__file__))+'/../../');
+import os
 from aces import default
 from aces.UnitCell.unitcell import UnitCell
 from ase.io.vasp import write_vasp
@@ -18,7 +17,6 @@ class structure:
 		self.latx=11;self.laty=1;self.latz=1;
 		self.__dict__=dict(self.__dict__,**opt)
 	def structure(self):
-		home=self.home
 		latx,laty,latz,bond=[self.latx,self.laty,self.latz,self.bond]
 		pos1=[
 		6.928400,13.000369,0.000000

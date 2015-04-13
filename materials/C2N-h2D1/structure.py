@@ -2,11 +2,24 @@
 # C2N hollow 2D structure
 from ase import Atoms,Atom
 from math import sqrt,pi
+from aces import default
 from ase.io.vasp import write_vasp
-from ase.UnitCell.unitcell import UnitCell
-#import sys
-#sys.path.append("/home1/xggong/zhouy/tcscripts/pizza/")
-#from data import data
+from aces.UnitCell.unitcell import UnitCell
+
+class structure:
+	def __init__(self,home,opt):
+		self.home=home
+		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
+		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  C N'%home
+		self.masses="mass 1 12.01\nmass 2 14.00"
+		self.dump="dump_modify dump1 element C N"
+		self.sideLen=3
+		self.__dict__=dict(self.__dict__,**opt)
+	
+	def structure(self):
+		latx,laty,bond,sideLen=[int(self.latx),int(self.laty),float(self.bond),int(self.sideLen)]
+		C2Nh2D(latx,laty,bond,sideLen).write()
+		print 'read_data structure'
 class C2Nh2D:
 	def __init__(self,latx,laty,bond,sideLen):
 		self.sideLen=sideLen
