@@ -1,15 +1,18 @@
-#encoding:utf8
-
+# encoding: utf-8
+# @the host class for a whole project in Automatical Computational Experimental System
+# @author Yang Zhou @Fudan University 2015.4.3
 import sys,os,json
 from aces.query import clean,stop,query
 from aces.toolsub import toolsub
-class ACES:
+class Aces:
 	def __init__(self):
 		self.idx=0
 		self.projHome=os.path.dirname(os.path.realpath(sys.argv[0]))
 		self.projName=os.path.basename(self.projHome);
-		print "projHome="+self.projHome
-		print "projName="+self.projName
+		print "Welcome to Automatical Computational Experiment System(ACES)"
+		print "developed by Yang Zhou @Fudan University"
+		print "Project Home="+self.projHome
+		print "Project Name="+self.projName
 		self.single=''
 	def run(self):
 		projHome=self.projHome
@@ -17,7 +20,7 @@ class ACES:
 		single=self.single
 		if(len(sys.argv)==1):
 			clean(projHome,projName,single)
-			self.subq()
+			self.submit()
 			sys.exit();
 		elif(sys.argv[1]=="q"):
 			query(projHome,srcHome,universe)
@@ -28,7 +31,7 @@ class ACES:
 		else:
 			print("Unkown command!");
 			pass
-	def submit(self,opt,app):
+	def commit(self,opt,app):
 		projHome=self.projHome
 		projName=self.projName
 		single=self.single
@@ -43,5 +46,10 @@ class ACES:
 		toolsub(cmd,self.idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe='',uqueue='',single='',unodes='',uprocs='')
 		self.idx+=1
 		
-	def subq(self):
+	# called before runQuery to setup the conditions, need to be override
+	def query(self):
+		pass
+	
+	# called before runSubmit to setup the conditions, need to be override	
+	def submit(self):
 		pass

@@ -263,19 +263,22 @@ def mkdir(path):
         return False
 def clean(projHome,projName,single):
 	if projHome=='':print "error projHome"
-	print "Comfirm to clean all the files in this project?[y/n]",	
-	sys.stdout.flush()
-	s=raw_input();
-	if(s!="y"):return
-	comfirmStop(projHome,projName,single);
-	
 	#/*删除原始代码以外的文件*/	
 	files=shell_exec("cd %s;ls "%projHome);
+	deleteFiles=[]
 	files=files.split('\n')
 	for ls in files:
 		if(ls in ["sub.php","post.php","data","","sub.py"] ):continue;
-		print "deleting:%s"%ls;
+		#print "deleting:%s"%ls;
+		deleteFiles.append(ls)
+	if len(deleteFiles)>0:
+		print "All the files in "+str(deleteFiles)+" will be deleted."
+		print "Comfirm ?[y/n]",	
 		sys.stdout.flush()
+		s=raw_input();
+		if(s!="y"):sys.exit()
+	comfirmStop(projHome,projName,single);
+	for ls in deleteFiles:
 		shell_exec("cd %s;rm -r %s"%(projHome,ls));
 def stop(projHome,projName,single):
 	print "Comfirm to stop all the simulation in this project?[y/n]",	
@@ -283,7 +286,7 @@ def stop(projHome,projName,single):
 	s=raw_input(); 
 	if(s!="y"):
 		print "exit with no change."
-		return
+		sys.exit()
 	comfirmStop(projHome,projName,single);
 			
 

@@ -6,12 +6,14 @@ root=abspath(dirname(realpath(__file__))+'/../../');
 from aces import default
 from aces.UnitCell.unitcell import UnitCell
 from ase.io.vasp import write_vasp
+from ase import Atoms,Atom
+from numpy import array
 class structure:
 	def __init__(self,home,opt):
 		self.home=home
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
 		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  C N'%home
-		self.masses=""
+		self.masses="mass 1 12.01\nmass 2 14.00"
 		self.dump="dump_modify dump1 element C N"
 		self.latx=11;self.laty=1;self.latz=1;
 		self.__dict__=dict(self.__dict__,**opt)
@@ -26,9 +28,9 @@ class structure:
 		]
 		phi=pi/2-atan((pos1[4]-pos1[1])/(pos1[3]-pos1[0]));
 		bond=sqrt((pos1[4]-pos1[1])*(pos1[4]-pos1[1])+(pos1[3]-pos1[0])*(pos1[3]-pos1[0]))*1.42;
-		dx=sqrt(3)*bond;
-		dy=3*bond;
-		pos2=[
+		dx=sqrt(3)*bond
+		dy=3*bond
+		pos2=array([
 		7.794450,13.500383,0.000000
 		,6.928400,12.000340,0.000000
 		,12.124700,13.000369,0.000000
@@ -81,53 +83,21 @@ class structure:
 		,7.794450,16.500469,0.000000
 		,9.526550,10.500299,0.000000
 		,11.258650,17.500498,0.000000
-		]
-		rpos=[0.0]*52
+		])
+		atoms=Atoms()
 		for i in range(52):
-			rpos[i]=self.rotate(phi,pos2[i*3],pos2[i*3+1]);
-		minx=100000;
-		miny=100000;
-		for i in range(52):
-			minx=min(rpos[i][0],minx);
-			miny=min(rpos[i][1],miny);
-		for i in range(52):
-			rpos[i][0]-=minx;
-			rpos[i][1]-=miny;
-		file=open("cell.in","w");
-		content="""1
-%d 0 0 
-0 %d 0
-0 0 100
-51 1
-"""%(dx,dy)
-		for i in range(52):
-			content+="%f\t%f\t%f\n"%(rpos[i][0]*1.42/dx,rpos[i][1]*1.42/dy,0.000000)
-		
-		file.write(content)
-		content="""7
-y
-cell.in
-y
-%d %d %d
-1
-3
-C N
-0
-CN.xyz
-structure
-map.in
-"""%(latx,laty,latz)
-		file.close()		
-		file=open("in.disp","w");
-		file.write(content)
-		file.close()
-		os.popen(home+"/latgen <in.disp").read();
+			if i<51:label='C'
+			else:label='N'
+			atoms.append(Atom(label,tuple(pos2[i*3:(i+1)*3]*1.42)))
+		atoms.rotate('z',phi)
+		atoms.set_pbc([1,1,1])
+		atoms.set_cell([dx,dy,100])
+		atoms=atoms.repeat((latx,laty,latz))
+		atoms.center()
+		self.atoms=atoms
+		self.write()
 		print 'read_data structure'
 		
-	def rotate(self,phi,x,y):
-		x1=cos(phi)*x-sin(phi)*y
-		y1=sin(phi)*x+cos(phi)*y
-		return [x1,y1]
 	def write(self):
 		self.atoms.write("CN.xyz")
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)

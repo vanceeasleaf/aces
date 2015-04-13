@@ -23,7 +23,7 @@ class testAces(unittest.TestCase):
 				}
 			app=ThermalConductivityApp(opt)
 			aces.commit(app)
-		aces.run() #产生所需的文件，记录所有参数到parameter.json
+		aces.run() #产生所需的文件，记录所有参数到app.json
 	
 	def testQuery(self):
 		aces=Aces(rebuild=True)

@@ -44,3 +44,4 @@ Temporary Items
 
 correlation/jcor.txt
 *.txt
+*.pyc

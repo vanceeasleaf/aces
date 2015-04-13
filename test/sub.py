@@ -1,8 +1,8 @@
 #encoding: utf-8
 from aces import Aces,Runner,NormalStrategy
-from app.thermalConductivityApp import ThermalConductivityApp
-from units import Units
-Runner.run(sub())
+from aces.app.thermalConductivityApp import ThermalConductivityApp
+from aces.Units import Units
+
 class sub(Aces):
 	def submit(self):
 		self.strategy=NormalStrategy(procs=(1,4,'q1.4'))
@@ -11,10 +11,10 @@ class sub(Aces):
 			opt={ method:'nvt'
 				, units:units
 				, species:'nvt-small'
-				, thick:units.L(1.44)
+				, thick:1.44
 				, langevin:0
 				, usinglat:1
-				, timestep:units.t.lj(.5e-3)
+				, timestep:units.lj.t(.5e-3)
 				, latx:11
 				, runTime:10000000
 				}
@@ -24,4 +24,5 @@ class sub(Aces):
 	def query(self):
 		self.queryOption={ upP:12}
 		self.want=['lax','kappa','ratio']
-
+if __name__=='__main__':
+	Runner.run(sub())

@@ -3,7 +3,7 @@
 from ase import Atoms,Atom
 from math import sqrt,pi
 from ase.io.vasp import write_vasp
-from unitcell import UnitCell
+from ase.UnitCell.unitcell import UnitCell
 #import sys
 #sys.path.append("/home1/xggong/zhouy/tcscripts/pizza/")
 #from data import data
