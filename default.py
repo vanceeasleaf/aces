@@ -1,7 +1,6 @@
 #encoding:utf8
 import sys,os
-sys.path.append(os.path.realpath(os.path.dirname(__file__)))
-from Units import Units
+from aces.Units import Units
 units=Units('metal')
 default={
 	'units':"metal",

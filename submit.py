@@ -1,8 +1,8 @@
 #encoding:utf8
 
 import sys,os,json
-from query import clean,stop,query
-from toolsub import toolsub
+from aces.query import clean,stop,query
+from aces.toolsub import toolsub
 class ACES:
 	def __init__(self):
 		self.idx=0

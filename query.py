@@ -1,7 +1,9 @@
 #encoding:utf8
 import json
 import os,sys
-import config
+import aces.config as config
+from aces.inequality import inequality
+from ase.io import read
 def shell_exec(cmd):
 	c=os.popen(cmd).read()
 	return c.strip()
@@ -177,7 +179,7 @@ def query(projHome,srcHome,universe):
 			pwrite(result,"\t%s\t%s"%(disorder,rd));
 			'''
 			os.chdir('%s/minimize'%curPath)
-			from ase.io import read
+
 			atoms=read('range',format='lammps')
 			atoms.write('../structure.png')
 			
@@ -207,7 +209,7 @@ def query(projHome,srcHome,universe):
 				os.chdir('%s/minimize'%curPath)
 				mkdir('nonequ')
 				os.chdir('nonequ')
-				from inequality import inequality
+
 				ie=inequality()
 				nonequ5= ie.run()
 				#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%srcHome);
@@ -237,7 +239,6 @@ def checkUniverse(projHome,universe,obj):
 
 def mkdir(path):
     # 引入模块
-    import os
  
     # 去除首位空格
     path=path.strip()

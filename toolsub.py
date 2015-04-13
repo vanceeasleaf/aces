@@ -1,9 +1,10 @@
 #encoding:utf8
 import json
-from query import shell_exec
+from aces.query import shell_exec
 import os,sys
-from input import exit
-import config
+from aces.input import exit
+import aces.config as config
+import time
 def genPbs(path,disp,queue,nodes,procs):
 	#define MPI PATH
 	home=os.path.dirname(__file__);	
@@ -149,7 +150,7 @@ def setSubProject(index,projHome,single):
 def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs):
 	makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj)
 	if(universe==''):pid=setSubProject(idx,projHome,single);
-	import time
+
 	json_obj={
 		"id":idx,
 		"pid":pid,

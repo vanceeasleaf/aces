@@ -4,7 +4,8 @@ matplotlib.use('Agg')
 import numpy as np
 from scipy import stats
 import math,sys,os
-from tempAve import drawTempAve
+from aces.tempAve import drawTempAve
+from aces.input import postMini;
 class profile:
 	def __init__(self):
 		self.method='muller'
@@ -215,7 +216,7 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	p.method=method
 	tcfactor,deta,timestep,excRate,swapEnergyRate,corRate,kb,T,thick=map(float,[tcfactor,deta,timestep,excRate,swapEnergyRate,corRate,kb,T,thick])
 	upP,begin,conti,fourierTc,computeTc,xp,yp,zp,enforceThick=map(int,[upP,begin,conti,fourierTc,computeTc,xp,yp,zp,enforceThick])
-	from input import postMini;
+
 	lx,ly,lz,zfactor,S=postMini(xp,yp,zp,enforceThick,thick)[:5]
 	if method=='greenkubo':
 		f=open('result.txt','w')

@@ -3,10 +3,9 @@ from math import sin,cos,atan,pi,sqrt
 from os.path import *
 import os,imp
 root=abspath(dirname(realpath(__file__))+'/../../');
-default= imp.load_source('default', root+'/default.py') 
-unitcell= imp.load_source('unitcell', root+'/UnitCell/unitcell.py') 
+from aces import default
+from aces.UnitCell.unitcell import UnitCell
 from ase.io.vasp import write_vasp
-UnitCell=unitcell.UnitCell
 class structure:
 	def __init__(self,home,opt):
 		self.home=home
