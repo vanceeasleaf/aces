@@ -14,7 +14,7 @@ def drawTempAve():
 		j.append(Jx);
 	f.close()
 	fig,ax1=pl.subplots()
-	x=x[3:-3];t=t[3:-3];j=j[3:-3]
+	#x=x[3:-3];t=t[3:-3];j=j[3:-3]
 	a=ax1.plot(x,t)
 	ax1.set_ylabel('temperature(K)')
 	ax1.set_xlabel('x(Augstrom)')

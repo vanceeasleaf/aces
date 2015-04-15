@@ -17,7 +17,7 @@ m=m.structure(home,opt)
 units=Units(m.units)
 m.dtime=m.timestep*100;
 m.excNum=m.aveRate/m.excRate;
-m.corNum=m.aveRate/m.corRate;
+
 m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
 if(m.method=="nvt"):m.xp=0;
 m.tcfactor=units.tcfactor;#the unit is J/s/m/K
