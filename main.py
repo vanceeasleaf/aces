@@ -19,6 +19,8 @@ class Aces:
 		projHome=self.projHome
 		projName=self.projName
 		single=self.single
+		srcHome=os.path.dirname(os.path.realpath(__file__))
+		universe=''
 		if(len(sys.argv)==1):
 			clean(projHome,projName,single)
 			self.submit()

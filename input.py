@@ -210,10 +210,10 @@ def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potent
 		print "fix j_hot all ave/time 1 %d  %d v_hot  v_cold file nvtWork.txt "%(aveRate,aveRate)
 
 	if method != "greenkubo":
-		print "fix	temp_profile    all    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(aveRate,aveRate,deta)
+		print "fix	temp_profile    main    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(aveRate,aveRate,deta)
 		# 输出热流空间分布,不计算热导率
 		if jprofile==1:
-			print "dump jprofile all custom %d jprofile.txt id v_jx v_jy v_jz v_temp v_jcx v_jcy v_jcz vx vy vz x y z"%(dumpRate)
+			print "dump jprofile main custom %d jprofile.txt id v_jx v_jy v_jz v_temp v_jcx v_jcy v_jcz vx vy vz x y z"%(dumpRate)
 			print "dump_modify  jprofile sort id"
 	else:
 		v=lx*ly*lz

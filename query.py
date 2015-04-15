@@ -57,7 +57,7 @@ def pwrite(fp,s):
 	
 def getQueryInfo(workPath,pid,runTime,ob):
 	lastline=shell_exec("tail -1 %s/log.out"%workPath);
-	qstat=shell_exec("qstat %d 2>&1|tail -1 "%pid);
+	qstat=shell_exec("qstat %s 2>&1|tail -1 "%pid);
 	step=lastline.split()[0]
 	if step.isdigit():
 		percent="%.1f%%"%(float(step)/runTime*100)
@@ -75,7 +75,7 @@ def getQueryInfo(workPath,pid,runTime,ob):
 		procs=""#ob["procs"];
 	else:#正在运行或等待R&Q&C*/
 		time,status,queue=qstat.split()[3:6]
-		info=shell_exec("qstat -f %d 2>&1|grep nodes"%pid)
+		info=shell_exec("qstat -f %s 2>&1|grep nodes"%pid)
 		info=info.split()[2]
 		nnn=info.split(":ppn=");
 		nodes=nnn[0];
@@ -140,9 +140,9 @@ def query(projHome,srcHome,universe):
 			sed=" sed 's@projHome=.\+@projHome=\""+dir+"\";@g' qloop.php > qloop.php1";
 			if(os.path.exists("post.php")):postfile= "../post.php";
 			else: postfile="";
-			cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";"%(srcHome,curPath,curPath)
+			cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";  "%(srcHome,curPath,curPath)
 			#print cmd
-			shell_exec(cmd);
+			print shell_exec(cmd),
 
 			# 取出后处理结果，热导率*/
 			#print curPath

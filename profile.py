@@ -13,9 +13,9 @@ class profile:
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		self.fpro=open('tempProfile.txt')
 		self.nbin=nbin=self.getNbin()
-		sumTemp=np.zeros([nbin,1])
-		sumjx=np.zeros([nbin,1])
-		sumN=np.zeros([nbin,1])
+		sumTemp=np.zeros(nbin)
+		sumjx=np.zeros(nbin)
+		sumN=np.zeros(nbin)
 		istep=-1
 		n=0
 		ft=open('convergenceT.txt','w')	
@@ -45,15 +45,17 @@ class profile:
 		sumjx/=n
 		sumN/=n
 		filter=sumN>0
+		aveC=coord[filter]
 		aveN=sumN[filter]
 		aveTemp=sumTemp[filter]
 		avejx=sumjx[filter]
+		nbin=len(avejx)
 		fave=open('tempAve.txt','w')	
 		s="id\tCoord\tCount\tTemp\tJx\n"
 		for i in range(nbin):
-			s+="%d\t%f\t%f\t%f\t%f\n"%(i+1,coord[i],aveN[i],aveTemp[i],avejx[i])
+			s+="%d\t%f\t%f\t%f\t%f\n"%(i+1,aveC[i],aveN[i],aveTemp[i],avejx[i])
 		fave.writelines(s)
-		return (coord,aveN,aveTemp,avejx)
+		return (aveC,aveN,aveTemp,avejx)
 	
 	def nvtSlope(self,aveC,aveTemp,aveN,avejx,upP):
 		m=len(aveC);
@@ -63,8 +65,8 @@ class profile:
 		pt1-=1
 		pt2-=1
 		n=pt2-pt1+1;
-		savejx=avejx[pt1:pt1+n+1]
-		saveN=aveN[pt1:pt1+n+1]
+		savejx=avejx[pt1:pt2+1]
+		saveN=aveN[pt1:pt2+1]
 		ave_jx=np.average(np.abs(savejx))
 		ave_N=np.average(saveN)
 		J_bulk=ave_jx*ave_N
@@ -180,13 +182,12 @@ class profile:
 
 	def slope(self,x,y,pt1,pt2):
 		n=pt2-pt1+1;
-		sxy=0;sx=0;sy=0;sx2=0;
+		sxy=0.0;sx=0.0;sy=0.0;sx2=0.0;
 		for i in range(pt1,pt2+1):
 			sxy+=x[i]*y[i];
 			sx+=x[i];
 			sy+=y[i];
 			sx2+=x[i]*x[i];
-		
 		return (n*sxy-sx*sy)/(n*sx2-sx*sx)
 	
 	def getNbin(self):
@@ -201,11 +202,11 @@ class profile:
 	def getBinInfo(self):
 		fpro=self.fpro
 		nbin=self.nbin
-		bin=np.zeros([nbin,1])
-		coord=np.zeros([nbin,1])
-		ncount=np.zeros([nbin,1])
-		v_temp=np.zeros([nbin,1])
-		jx=np.zeros([nbin,1])
+		bin=np.zeros(nbin)
+		coord=np.zeros(nbin)
+		ncount=np.zeros(nbin)
+		v_temp=np.zeros(nbin)
+		jx=np.zeros(nbin)
 		for i in range(nbin):
 			line=fpro.readline()
 			bin[i],coord[i],ncount[i],v_temp[i],jx[i]=line.strip().split()
@@ -259,11 +260,11 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	fileScan=open("scan.txt","w");
 	fileScan.write("method:%s\n"%method);
 	numS=0;
-	n=int(lx/2/deta)+1
+	n=int(lx/2.0/deta)-3
 	rg=range(1,n)
-	slopes=np.zeros([n,1])
-	J_bulks=np.zeros([n,1])
-	J_bulkcs=np.zeros([n,1])
+	slopes=np.zeros(n)
+	J_bulks=np.zeros(n)
+	J_bulkcs=np.zeros(n)
 	if(method=="muller" or method=="inject"):
 		for upP in range(1,n/2):
 			lslopes[numS],J_bulks[numS],J_bulkcs[numS]=p.mullerSlope(aveC,aveTemp,aveN,avejx,upP);
