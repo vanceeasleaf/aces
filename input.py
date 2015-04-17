@@ -1,8 +1,6 @@
 #encoding:utf8
 import sys
-from nvtDevice import nvtDevice
-from mpDevice import mpDevice,ijDevice
-from gkDevice import gkDevice
+from devices import nvtDevice,mpDevice,ijDevice,gkDevice
 def exit(info):
 	print info
 	sys.exit();
