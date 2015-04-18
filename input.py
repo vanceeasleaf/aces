@@ -1,6 +1,7 @@
 #encoding:utf8
 import sys
 from devices import nvtDevice,mpDevice,ijDevice,gkDevice
+from aces.Units import Units
 def exit(info):
 	print info
 	sys.exit();
@@ -45,79 +46,95 @@ def postMini(xp,yp,zp,enforceThick,thick):
 
 
 
+class Hook:
+	def __init__(self):
+		self.labels={}
+	def addAction(self,label,function):
+		if not self.labels.has_key(label):
+			self.labels[label]=[]
+		self.labels[label].append(function)
+	def doAction(self,label):
+		if not self.labels.has_key(label):return
+		for key in self.labels[label]:
+			key()
+def input(m):
+	units=Units(m.units)
+	m.kb=units.boltz
+	m.nktv=units.nktv2p
+	if(m.method=="nvt"):m.xp=0;
+	lx,ly,lz,m.zfactor,m.S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(m.xp,m.yp,m.zp,m.enforceThick,m.thick)
+	m.dtime=m.timestep*100;
+	m.tcfactor=units.tcfactor;
+	m.excNum=m.aveRate/m.excRate;
+	m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
 
-
-def input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud):
-	xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,fixud=map(int,[xp ,yp ,zp ,dumpRate,seed,equTime,langevin ,nvt ,aveRate ,jprofile  ,corRate ,computeTc,fourierTc,gstart ,jcf  ,nswap ,excRate,excNum,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,fixud])
-	timestep,kb ,nktv,T,dtime,deta,tcfactor ,swapEnergyRate,thick,Thi,Tlo,hdeta=map(float,[timestep,kb ,nktv,T,dtime,deta,tcfactor,swapEnergyRate,thick,Thi,Tlo,hdeta])
-
-	lx,ly,lz,zfactor,S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(xp,yp,zp,enforceThick,thick)
-	box=(xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz)
-	if method=='nvt':
-		device=nvtDevice(box,deta,wfix,nstat,upP,hdeta,fixud,langevin,nktv,kb,T,dtime,Thi,Tlo,aveRate,jprofile,dumpRate)
-	elif method=='muller':
-		device=mpDevice(box,upP,nktv,kb,aveRate,swapEnergyRate,S,zfactor,tcfactor,deta,excRate,excNum,jprofile,dumpRate,timestep,T,dtime,nswap)
-	elif method=='inject':
-		device=ijDevice(self,box,upP,nktv,kb,aveRate,swapEnergyRate,S,zfactor,tcfactor,deta,excRate,excNum,jprofile,dumpRate,timestep,T,dtime,nswap,swapEnergyRate)
-	elif method=='greenkubo':
-		corNum=aveRate/corRate;
-		device=gkDevice(box,corRate,timestep,kb,T,zfactor,tcfactor,fourierTc,computeTc,gstart,corNum,aveRate,jcf,dtime)
+	m.box=(xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz)
+	hook=Hook()
+	if m.method=='nvt':
+		device=nvtDevice(hook,m)
+	elif m.method=='muller':
+		device=mpDevice(hook,m)
+	elif m.method=='inject':
+		device=ijDevice(hook,m)
+	elif m.method=='greenkubo':
+		m.corNum=m.aveRate/m.corRate;
+		device=gkDevice(hook,m)
 
 	#settings
 	print "units %s"%units
 	print "dimension 3"
 	pbcx=pbcy=pbcz='s'
-	if xp==1:pbcx='p'
-	if yp==1:pbcy='p'
-	if zp==1:pbcz='p'
+	if m.xp==1:pbcx='p'
+	if m.yp==1:pbcy='p'
+	if m.zp==1:pbcz='p'
 	print "boundary %s %s %s"%(pbcx,pbcy,pbcz)
 	print "atom_style atomic"
 	print "read_restart   minimize/restart.minimize"
 	print "change_box	all	boundary %s %s %s"%(pbcx,pbcy,pbcz)
 	print "lattice fcc 5" #needed to define the regions
-	print "thermo %d"%dumpRate
+	print "thermo %d"%m.dumpRate
 	print "thermo_modify     lost warn"
-	print "timestep %f"%timestep
-	device.renderRegion()
+	print "timestep %f"%m.timestep
 	#regions and groups
+	hook.doAction('region')
 	#computes
 	print "compute           ke  all  ke/atom"
 	print "compute           pe  all  pe/atom"
 	print "compute         stress all stress/atom virial"
 	print "compute jflux all heat/flux ke pe stress"
-	device.renderCompute()
+	hook.doAction('compute')
 	#variables
-	device.renderVariable()
+	hook.doAction('variable')
 	#init atoms to T
-	print masses
-	print potential
+	print m.masses
+	print m.potential
 	print "reset_timestep 0"
-	print "velocity all create %f %d mom yes rot yes dist gaussian"%(T,seed)
-	device.renderEqu()
-	print "run %d"%equTime
+	print "velocity all create %f %d mom yes rot yes dist gaussian"%(m.T,m.seed)
+	hook.doAction('equ')
+	print "run %d"%m.equTime
 	print "unfix getEqu"
 	print "reset_timestep 0"
-	device.renderElim()
-	print "fix    flux_out  all  ave/time  1  %d  %d  c_jflux[1]  c_jflux[2] c_jflux[3] file  flux.txt "%(aveRate,aveRate)
-	device.renderTemp()
-	device.renderFlux()
-	device.renderSwap()
+	hook.doAction('elimation')
+	print "fix    flux_out  all  ave/time  1  %d  %d  c_jflux[1]  c_jflux[2] c_jflux[3] file  flux.txt "%(m.aveRate,m.aveRate)
+	hook.doAction('temp')
+	hook.doAction('flux')
+	hook.doAction('swap')
 
 
 	#/* 定时输出dump文件并按id排序*/
-	if(dumpxyz):
-		print "dump dump1 all atom %d dump.lammpstrj"%(dumpRate)
+	if(m.dumpxyz):
+		print "dump dump1 all atom %d dump.lammpstrj"%(m.dumpRate)
 		print "dump_modify  dump1 sort id"
 
 
 	#/* 定时输出速度文件用于计算速度关联函数*/
-	if(dumpv):
-		print "dump dump2 all custom %d dump.velocity type vx vy vz"%(dumpRate)
+	if(m.dumpv):
+		print "dump dump2 all custom %d dump.velocity type vx vy vz"%(m.dumpRate)
 		print "dump_modify  dump2 sort id"
 
-	print "run	%d"%(runTime)
+	print "run	%d"%(m.runTime)
 
 
 if __name__=='__main__':
 	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud=sys.argv[1:]
-	input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud)
+	#input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud)
