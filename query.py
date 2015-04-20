@@ -4,9 +4,7 @@ import os,sys
 import aces.config as config
 from aces.inequality import inequality
 from ase.io import read
-def shell_exec(cmd):
-	c=os.popen(cmd).read()
-	return c.strip()
+from aces.tools import shell_exec,mkdir,cd,passthru
 	
 def getObjs():
 	
@@ -142,7 +140,7 @@ def query(projHome,srcHome,universe):
 			else: postfile="";
 			cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";  "%(srcHome,curPath,curPath)
 			#print cmd
-			print shell_exec(cmd),
+			passthru(cmd),
 
 			# 取出后处理结果，热导率*/
 			#print curPath
@@ -168,22 +166,22 @@ def query(projHome,srcHome,universe):
 			APP_PATH="/home/xggong/home1/zhouy/lmp_ubuntu"
 			
 			# 无序度*/
-			os.chdir('%s/minimize'%curPath)
-			mkdir('disorder');os.chdir('disorder')
+			cd('%s/minimize'%curPath)
+			mkdir('disorder');cd('disorder')
 			disorderLine=shell_exec("cp %s"%srcHome+"/in.disorder .;"+APP_PATH+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
 			k=disorderLine.split()[1:3]				
 			if len(k)==1:
 				k.append("")
 			disorder,rd=k
-			os.chdir(curPath)
+			cd(curPath)
 			pwrite(result,"\t%s\t%s"%(disorder,rd));
 			'''
-			os.chdir('%s/minimize'%curPath)
+			cd('%s/minimize'%curPath)
 
 			atoms=read('range',format='lammps')
 			atoms.write('../structure.png')
 			
-			os.chdir(curPath)
+			cd(curPath)
 			#    disorderLine=shell_exec("cd projHome/id/minimize;mkdir disorderdist 2>err;cd disorderdist;cp srcHome/indist.disorder .;APP_PATH<indist.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
 			#   list(null,disorder,rd)=sscanf(disorderLine,"%d%f%f");
 			#pwrite(result,"\tdisorder\trd");
@@ -206,14 +204,14 @@ def query(projHome,srcHome,universe):
 			#pwrite(result,"\tnonequ4");*/
 			species=ob["species"];
 			if(species in ["CN-small"]):
-				os.chdir('%s/minimize'%curPath)
+				cd('%s/minimize'%curPath)
 				mkdir('nonequ')
-				os.chdir('nonequ')
+				cd('nonequ')
 
 				ie=inequality()
 				nonequ5= ie.run()
 				#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%srcHome);
-				os.chdir(curPath)
+				cd(curPath)
 				pwrite(result,"\t%s"%nonequ5);
 				pass
 			pwrite(result,"\n");
@@ -237,30 +235,7 @@ def checkUniverse(projHome,universe,obj):
 		shell_exec("cp %s/pbs/minimize/%s %s/%s/minimize/log.out"%(projHome,uscreen[i],projHome,id));
 		i+=1
 
-def mkdir(path):
-    # 引入模块
- 
-    # 去除首位空格
-    path=path.strip()
-    # 去除尾部 \ 符号
-    path=path.rstrip("\\")
- 
-    # 判断路径是否存在
-    # 存在     True
-    # 不存在   False
-    isExists=os.path.exists(path)
- 
-    # 判断结果
-    if not isExists:
-        # 如果不存在则创建目录
-        #print path+' 创建成功'
-        # 创建目录操作函数
-        os.makedirs(path)
-        return True
-    else:
-        # 如果目录存在则不创建，并提示目录已存在
-        #print path+' 目录已存在'
-        return False
+
 def clean(projHome,projName,single):
 	if projHome=='':print "error projHome"
 	#/*删除原始代码以外的文件*/	
@@ -276,7 +251,7 @@ def clean(projHome,projName,single):
 		print "Comfirm ?[y/n]",	
 		sys.stdout.flush()
 		s=raw_input();
-		if(s!="y"):sys.exit()
+		if(s!="y"):exit("exit with no change.")
 	comfirmStop(projHome,projName,single);
 	for ls in deleteFiles:
 		shell_exec("cd %s;rm -r %s"%(projHome,ls));
@@ -284,9 +259,7 @@ def stop(projHome,projName,single):
 	print "Comfirm to stop all the simulation in this project?[y/n]",	
 	sys.stdout.flush()
 	s=raw_input(); 
-	if(s!="y"):
-		print "exit with no change."
-		sys.exit()
+	if(s!="y"):exit("exit with no change.")
 	comfirmStop(projHome,projName,single);
 			
 

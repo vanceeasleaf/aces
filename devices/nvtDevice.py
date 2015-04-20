@@ -1,14 +1,22 @@
 #encoding:utf8
 import sys,json
 class nvtDevice:
-	def __init__(self,box,deta,wfix,nstat,upP,hdeta,fixud,langevin,nktv,kb,T,dtime,Thi,Tlo,aveRate,jprofile,dumpRate):
-		self.para=[box,deta,wfix,nstat,upP,hdeta,fixud,langevin]
-		xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=box
-		self.nktv,self.kb,self.T,self.dtime,self.langevin,self.Thi,self.Tlo,self.nstat,self.aveRate,self.deta,self.jprofile,self.dumpRate=[nktv,kb,T,dtime,langevin,Thi,Tlo,nstat,aveRate,deta,jprofile,dumpRate]
-		if(lx/deta/2<upP):
+	def __init__(self,hook,m):
+		self.para=[m.box,m.deta,m.wfix,m.nstat,m.upP,m.hdeta,m.fixud,m.langevin]
+		xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=m.box
+		if(lx/m.deta/2<m.upP):
 			print "upP is too large!"
 			sys.exit()
+		self.__dict__=dict(self.__dict__,**m.__dict__)
+
 		self.regions=[]
+		hook.addAction('region',self.renderRegion)
+		hook.addAction('variable',self.renderVariable)
+		hook.addAction('equ',self.renderEqu)
+		hook.addAction('elimination',self.renderElim)
+		hook.addAction('temp',self.renderTemp)
+		hook.addAction('flux',self.renderFlux)
+		 
 	def addBox(self,name,paras):
 		p1,p2=paras		
 		print "region	%s	block   %s  %s %s  %s %s  %s units box"%(name,p1[0],p2[0],p1[1],p2[1],p1[2],p2[2])
@@ -23,6 +31,7 @@ class nvtDevice:
 		hotl1=[0.0]*nstat;hotr2=[0.0]*nstat;
 		hotl2=[0.0]*nstat;hotr1=[0.0]*nstat;
 		cold=['cold']*nstat;hot=['hot']*nstat
+
 		hotl1[0]=fixl2;hotl2[0]=hotl1[0]+hdeta;
 		hotr2[0]=fixr1;hotr1[0]=hotr2[0]-hdeta;
 		cold[0]="cold0";
@@ -43,7 +52,8 @@ class nvtDevice:
 			self.addBox(hot[i],([hotr1[i],INF,INF],[hotr2[i],INF,INF]))
 			print "group	%s	region	%s"%(hot[i],hot[i])
 
-
+		self.hot=hot
+		self.cold=cold
 		if fixud:
 			self.addBox('re_nve',([hotl2[-1],fixd2,INF],[hotr1[-1],fixu1,INF]))
 			self.addBox('stayu',([INF,fixu1,INF],[INF,fixu2,INF]))
@@ -61,8 +71,6 @@ class nvtDevice:
 		print "group main region main"
 		f=open('regions.txt','w')
 		f.write(json.dumps(self.regions))
-	def renderCompute(self):
-		pass
 	def renderVariable(self):
 		print "variable   jx atom (c_pe+c_ke)*vx-(c_stress[1]*vx+c_stress[4]*vy+c_stress[5]*vz)/%f"%self.nktv
 		print "variable   jy atom (c_pe+c_ke)*vy-(c_stress[4]*vx+c_stress[2]*vy+c_stress[6]*vz)/%f"%self.nktv
@@ -83,13 +91,15 @@ class nvtDevice:
 		else:
 			print "fix     nve  main  nve"
 	def renderTemp(self):
+		hot=self.hot
+		cold=self.cold
 		if self.langevin==1:
 			tmstat='langevin';
 			r='%d tally yes'%self.seed;
 		else:
 			tmstat='nvt temp'
 			r=""
-		for i in range(nstat):
+		for i in range(self.nstat):
 			print "fix   %s %s %s  %f %f  %s %s"%(hot[i],hot[i],tmstat,self.Thi,self.Thi,self.dtime,r)
 			print "fix   %s %s %s  %f %f  %s %s"%(cold[i],cold[i],tmstat,self.Tlo,self.Tlo,self.dtime,r)
 			if self.langevin==0:
@@ -117,5 +127,4 @@ class nvtDevice:
 		if self.jprofile==1:
 			print "dump jprofile main custom %d jprofile.txt id v_jx v_jy v_jz v_temp v_jcx v_jcy v_jcz vx vy vz x y z"%(self.dumpRate)
 			print "dump_modify  jprofile sort id"
-	def renderSwap(self):
-		pass
+

@@ -1,14 +1,22 @@
 #encoding:utf8
 import sys
 class mpDevice:
-	def __init__(self,box,upP,nktv,kb,aveRate,swapEnergyRate,S,zfactor,tcfactor,deta,excRate,excNum,jprofile,dumpRate,timestep,T,dtime,nswap):
-		self.para=[box,upP,deta,nswap]
-		self.nktv,self.kb,self.aveRate,self.swapEnergyRate,self.S,self.zfactor,self.tcfactor,self.deta,self.excRate,self.excNum,self.jprofile,self.dumpRate,self.timestep,self.T,self.dtime,self.nswap=[nktv,kb,aveRate,swapEnergyRate,S,zfactor,tcfactor,deta,excRate,excNum,jprofile,dumpRate,timestep,T,dtime,nswap]
-		self.lx=box[6]
-		self.xlo=box[0]
-		if(self.lx/deta/2<upP):
+	def __init__(self,hook,m):
+		self.para=[m.box,m.upP,m.deta,m.nswap]
+		self.__dict__=dict(self.__dict__,**m.__dict__)
+		self.lx=m.box[6]
+		self.xlo=m.box[0]
+		if(self.lx/m.deta/2<m.upP):
 			print "upP is too large!"
 			sys.exit()
+		hook.addAction('region',self.renderRegion)
+		hook.addAction('compute',self.renderCompute)
+		hook.addAction('variable',self.renderVariable)
+		hook.addAction('equ',self.renderEqu)
+		hook.addAction('elimination',self.renderElim)
+		hook.addAction('flux',self.renderFlux)
+		hook.addAction('swap',self.renderSwap)
+		
 	def renderRegion(self):
 		box,upP,deta,nswap=self.para
 		xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=box
@@ -45,8 +53,6 @@ class mpDevice:
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 	def renderElim(self):
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
-	def renderTemp(self):
-		pass
 	def renderFlux(self):
 		print "fix	temp_profile    main    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(self.aveRate,self.aveRate,self.deta)
 		# 输出热流空间分布,不计算热导率

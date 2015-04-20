@@ -44,7 +44,8 @@ default=dict(
 	potential='',
 	dumpxyz=1,
 	dumpv=0,
-	hdeta=units.metal.L(3)
+	hdeta=units.metal.L(3),
+	bte=False
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)

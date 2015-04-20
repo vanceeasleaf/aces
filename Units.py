@@ -142,6 +142,8 @@ class Units:
 		units=targetUnit
 		si=self.si
 		self.tcfactor=1/si.E()*si.t()*si.L()*si.T()
+	def __str__(self):
+		return self.targetUnit
 	def __getattr__( self, name ):
 		return constants[self.targetUnit][name]
 class unitBase:

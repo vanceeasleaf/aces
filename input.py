@@ -2,9 +2,9 @@
 import sys
 from devices import nvtDevice,mpDevice,ijDevice,gkDevice
 from aces.Units import Units
-def exit(info):
-	print info
-	sys.exit();
+from aces.tools import *
+import aces.config as config
+from ase.io import read
 def getboxrange():
 	file=open("minimize/range");
 	for i in range(5):
@@ -57,7 +57,7 @@ class Hook:
 		if not self.labels.has_key(label):return
 		for key in self.labels[label]:
 			key()
-def input(m):
+def mdTc(m):
 	units=Units(m.units)
 	m.kb=units.boltz
 	m.nktv=units.nktv2p
@@ -114,7 +114,7 @@ def input(m):
 	print "run %d"%m.equTime
 	print "unfix getEqu"
 	print "reset_timestep 0"
-	hook.doAction('elimation')
+	hook.doAction('elimination')
 	print "fix    flux_out  all  ave/time  1  %d  %d  c_jflux[1]  c_jflux[2] c_jflux[3] file  flux.txt "%(m.aveRate,m.aveRate)
 	hook.doAction('temp')
 	hook.doAction('flux')
@@ -133,8 +133,75 @@ def input(m):
 		print "dump_modify  dump2 sort id"
 
 	print "run	%d"%(m.runTime)
+def bte(m):
+	coordination=phontsAtoms()
+	content0="species %d\n"%(len(m.elements))+m.phontsmasses+"""
+D3_cutoff 9.0
+delta 0.0005
+numerical_2der T
 
+iter_steps 10
 
+AbInitio  T F 
+FP_interface LAMMPS
+phonons_only T
+Lattice  1.0
+%s
+end
+"""%coordination
+	write(content0,'phonons_input.dat')
+	passthru(config.phonts) # generate many displacement files
+	mkdir('lammps');cd('lammps')
+	content="units %s\n"%m.units
+	content+="""atom_style      charge
+dimension       3
+boundary        p p p 
+read_data       GENERIC
+%s
+%s 
+neighbor        1.1 bin
+neigh_modify    every 1 delay 1 check yes
+dump 1 all custom 1 *.dump id  fx fy fz 
+dump_modify 1 format "%%d %%30.20f %%30.20f %%30.20f"
+run 0
+"""%(m.masses,m.potential)
+	shell_exec("mv ../*.str .")
+	strs=shell_exec("ls *.str").split("\n")
+	for str in strs:
+		dir=str.replace("str","dir")
+		mkdir(dir)
+		write(content.replace("GENERIC",str),dir+"/in")
+		mv(str,"%s/%s"%(dir,str))
+		cd(dir)
+		passthru(config.lammps+" <in >out.dat")
+		cd('..')
+	dirs=shell_exec("ls |grep dir").split("\n")
+	for dir in dirs:
+		print dir
+		cp(dir+"/0.dump","../"+dir.replace("dir","out"))
+	cp("1.0000.dir/out.dat","../1.0000.out")
+	cd('..')
+	content0=content0.replace('AbInitio  T F','AbInitio  F T')
+	write(content0,'phonons_input.dat')
+	passthru(config.phonts)
+def input(m):
+	if m.bte==True:bte(m)
+	elif m.bte=="phonopy":phopy(m)
+	else:mdTc(m)
+def phopy(m):
+	pass	
+def phontsAtoms():
+		atoms=read('minimize/range',format='lammps')
+		cell=atoms.get_cell()
+		content="cell %f %f %f\n"%(cell[0][0],cell[1][1],cell[2][2])
+		content+="natoms %d\n"%(len(atoms))
+		content+="fractional\n"
+		pos=atoms.get_scaled_positions()
+		for i,atom in enumerate(atoms):
+			if atom.symbol=='H':label='C'
+			if atom.symbol=='He':label='N'
+			content+="%s %s\n"%(label,' '.join(["%s"%x for x in pos[i]]))
+		return content		
 if __name__=='__main__':
 	units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,dumpRate ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud=sys.argv[1:]
 	#input(units ,xp ,yp ,zp ,dumpRate ,timestep ,method ,kb ,nktv ,masses,potential ,T ,seed ,dtime ,equTime ,langevin ,nvt ,aveRate ,deta ,jprofile ,corRate ,computeTc  ,fourierTc ,tcfactor ,gstart ,jcf  ,nswap ,excRate  ,excNum ,swapEnergyRate ,dumpxyz ,dumpv ,runTime,upP,wfix,nstat,enforceThick,thick,Thi,Tlo,hdeta,fixud)

@@ -1,11 +1,11 @@
 #encoding:utf8
 import json
-from aces.query import shell_exec
+from aces.tools import shell_exec,write
 import os,sys
 from aces.input import exit
 import aces.config as config
 import time
-def genPbs(path,disp,queue,nodes,procs):
+def genPbs(path,disp,queue,nodes,procs,bte):
 	#define MPI PATH
 	home=os.path.dirname(__file__);	
 	global usepy
@@ -19,27 +19,39 @@ def genPbs(path,disp,queue,nodes,procs):
 		input='input.php  "%s/qloop.php" "%s/species.php" '%(path,path)
 		exe=config.php
 	qloop=input+' >input'
-	s=["#!/bin/bash -x"
-	,"#PBS -l nodes=%s:ppn=%s"%(nodes,procs)
-	,"#PBS -l walltime=240:00:00"
-	,"#PBS -j oe"
-	,"#PBS -q %s"%queue
-	,"#PBS -N %s"%disp
-	,"# Setup the OpenMPI topology"
-	,"n_proc=$(cat $PBS_NODEFILE | wc -l)"
-	,"contexts=`~/bin/get_psm_sharedcontexts_max.sh`"
-	," if [ '?' = '0' ] ; then"
-	,"  export PSM_SHAREDCONTEXTS_MAX=contexts"
-	," fi"
-	,"cd %s/minimize"%path
-	,exe+"%s/minimize/"%home+qloop
-	,config.OMPI_HOME+"/bin/mpirun  -machinefile $PBS_NODEFILE -np $n_proc "+config.APP_PATH+" <input &>"+path+"/minimize/log.out"
-	,"cd "+path
-	,exe+'%s/'%home+qloop
-	,config.OMPI_HOME+"/bin/mpirun -machinefile $PBS_NODEFILE -np $n_proc "+config.APP_PATH+" <input &>"+path+"/log.out"
-	,"exit 0"]
+	if bte:		
+		content="cd %s/minimize\n"%path
+		content+="%s %s/minimize/%s\n"%(exe,home,qloop)
+		content+=config.mpirun+" $n_proc "+config.lammps+" <input &>"+path+"/minimize/log.out"
+		content+="\ncd "+path+"\n"
+		content+=exe+"%s/%s\n"%(home,qloop)
+		content+=config.mpirun+"$n_proc "+config.phonts+"  &>"+path+"/log.out"
+	else:
+		content="cd %s/minimize\n"%path
+		content+=exe+"%s/minimize/%s\n"%(home,qloop)
+		content+=config.mpirun+"$n_proc "+config.lammps+" <input &>"+path+"/minimize/log.out"
+		content+="\ncd "+path+"\n"
+		content+=exe+"%s/%s\n"%(home,qloop)
+		content+=config.mpirun+"$n_proc "+config.lammps+" <input &>"+path+"/log.out"
+		
+	s="""#!/bin/bash -x
+#PBS -l nodes=%s:ppn=%s
+#PBS -l walltime=240:00:00
+#PBS -j oe
+#PBS -q %s
+#PBS -N %s
+# Setup the OpenMPI topology
+n_proc=$(cat $PBS_NODEFILE | wc -l)
+contexts=`~/bin/get_psm_sharedcontexts_max.sh`
+if [ '?' = '0' ] ; then
+  export PSM_SHAREDCONTEXTS_MAX=contexts
+ fi
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/mkl/10.0.013/lib/em64t:/opt/intel/mpi/openmpi/1.6.3/icc.ifort/lib
+%s
+exit 0
+"""%(nodes,procs,queue,disp,content)
 	pbs=open(path+"/lammps.pbs","w");
-	pbs.write('\n'.join(s))
+	pbs.write(s)
 	
 def genSh(path,disp,procs):
 	home=os.path.dirname(__file__);
@@ -48,10 +60,10 @@ def genSh(path,disp,procs):
 	,"#%s"%disp
 	,"cd %s/minimize"%path
 	,config.php+home+"/minimize/input.php"+qloop
-	,"mpirun   -np %s %s <input > %s/minimize/log.out 2>/dev/null"%(procs,config.APP_PATH,path)
+	,"mpirun   -np %s %s <input > %s/minimize/log.out 2>/dev/null"%(procs,config.lammps,path)
 	,"cd %s"%path
 	,"%s %s/input.php"%(config.php,home)+qloop
-	,"mpirun -np %s %s <input >%s/log.out 2>/dev/null"%(procs,config.APP_PATH,path)
+	,"mpirun -np %s %s <input >%s/log.out 2>/dev/null"%(procs,config.lammps,path)
 	,"exit 0"]
 	pbs=open("%s/run.sh"%path,"w");
 	pbs.write('\n'.join(s))
@@ -96,16 +108,16 @@ def genPbss(path,disp,queue,nodes,procs,start,ucores):
 	for i in range(start,end+1):
 		print >>pbs,"cd  %s/%s/minimize"%(path,i)
 		print >>pbs,"%s %s/minimize/input.php \"%s/%s/qloop.php\" \"%s/%s/species.php\">input  "%(config.php,home,path,i,path,i)
-		print >>pbs,config.OMPI_HOME+"/bin/mpirun  -machinefile $PBS_NODEFILE -np "+real_cores+config.APP_PATH+" -plog "+path+"/pbs/minimize/log.%s-%s "%(start,end)+"-partition %sx%s "(len,ucores)+"-pscreen "+path+"/pbs/minimize/screen.%s-%s -i %s"%(start,end,mfile)
+		print >>pbs,config.mpirun+real_cores+config.lammps+" -plog "+path+"/pbs/minimize/log.%s-%s "%(start,end)+"-partition %sx%s "(len,ucores)+"-pscreen "+path+"/pbs/minimize/screen.%s-%s -i %s"%(start,end,mfile)
 	for i in range(start,end+1):
 		print >>pbs,"cd %s/%s"%(path,i)
 		print >>pbs,"%s %s/input.php \"%s/%s/qloop.php\" \"%s/%s/species.php\">input  "%(config.php,home,path,i,path,i)
-		print >>pbs,config.OMPI_HOME+"/bin/mpirun  -machinefile $PBS_NODEFILE -np "+real_cores+config.APP_PATH+" -plog "+path+"/pbs/log.%s-%s "%(start,end)+"-partition %sx%s "(len,ucores)+"-pscreen "+path+"/pbs/screen.%s-%s -i %s"%(start,end,mfile)
+		print >>pbs,config.mpirun+real_cores+config.lammps+" -plog "+path+"/pbs/log.%s-%s "%(start,end)+"-partition %sx%s "(len,ucores)+"-pscreen "+path+"/pbs/screen.%s-%s -i %s"%(start,end,mfile)
 	print >>pbs,"exit 0"
 
 
 	
-def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj):
+def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj,bte):
 	dir="%s/%s"%(projHome,idx)
 	pro="zy_%s_%s"%(projName,idx)
 	if(universe):
@@ -124,7 +136,7 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 	if(single):
 		genSh(dir,pro,procs);
 	
-	if(not universe or not single):genPbs(dir,pro,queue,nodes,procs);
+	if(not universe and not single):genPbs(dir,pro,queue,nodes,procs,bte);
 	write('<?php\n%s;\n$projHome="%s/%s";\n?>'%(cmd,projHome,idx),dir+"/qloop.php");
 	write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
 	eobj=json.loads(jj)
@@ -134,11 +146,9 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 		opt['species']=species
 		opt['units']=units
 		opt['method']=method
+		opt['bte']=bte
 		write(json.dumps(opt),dir+"/app.json");
-def write(cmd,fileName):
-	file=open(fileName,"w");
-	file.write(cmd+"\n");
-	file.close();
+
 
 def setSubProject(index,projHome,single):
 	if(single):pid=''#exec.background("sh %s/%s/run.sh"%(projHome,index));
@@ -147,8 +157,8 @@ def setSubProject(index,projHome,single):
 		print "submit: %s\t%s/%s"%(pid,projHome,index);
 	#sleep(1);
 	return pid;
-def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs):
-	makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj)
+def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs,bte):
+	makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj,bte)
 	if(universe==''):pid=setSubProject(idx,projHome,single);
 
 	json_obj={
@@ -171,4 +181,4 @@ def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,
 if __name__=='__main__':
 
 	projHome ,projName ,cmd ,idx ,nodes ,procs ,species ,method ,units ,universe ,queue ,runTime,uqueue,single,unodes,uprocs,jj=sys.argv[1:]
-	toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs)
+	toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs,bte)

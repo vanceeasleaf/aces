@@ -1,5 +1,5 @@
-PHP_HOME=" /home/xggong/home1/zhouy/php/bin";
-php=PHP_HOME+"/php ";
-APP_PATH=" /home/xggong/home1/zhouy/lmp_ubuntu ";
-OMPI_HOME=" /opt/intel/mpi/openmpi/1.6.3/icc.ifort";
-python='/home/xggong/home1/zhouy/soft/anaconda/bin/python '
+php=" /home/xggong/home1/zhouy/php/bin/php ";
+lammps=" /home/xggong/home1/zhouy/lmp_ubuntu ";
+mpirun=" /opt/intel/mpi/openmpi/1.6.3/icc.ifort/bin/mpirun -machinefile $PBS_NODEFILE -np ";
+python=' /home/xggong/home1/zhouy/soft/anaconda/bin/python '
+phonts=' /home/xggong/home1/zhouy/soft/PhonTS-1.1.4/src/PhonTS '
