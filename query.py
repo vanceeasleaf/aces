@@ -140,7 +140,7 @@ def query(projHome,srcHome,universe):
 			else: postfile="";
 			cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";  "%(srcHome,curPath,curPath)
 			#print cmd
-			passthru(cmd),
+			shell_exec(cmd),
 
 			# 取出后处理结果，热导率*/
 			#print curPath
@@ -162,7 +162,7 @@ def query(projHome,srcHome,universe):
 				pwrite(result,"\t%s"%Natom);
 				epn=float(totalE)/float(Natom);        	          
 				pwrite(result,"\t%f"%epn);
-			'''
+			"""
 			APP_PATH="/home/xggong/home1/zhouy/lmp_ubuntu"
 			
 			# 无序度*/
@@ -175,7 +175,7 @@ def query(projHome,srcHome,universe):
 			disorder,rd=k
 			cd(curPath)
 			pwrite(result,"\t%s\t%s"%(disorder,rd));
-			'''
+			"""
 			cd('%s/minimize'%curPath)
 
 			atoms=read('range',format='lammps')

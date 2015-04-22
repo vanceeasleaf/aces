@@ -46,6 +46,9 @@ default=dict(
 	dumpv=0,
 	hdeta=units.metal.L(3),
 	bte=False
+	
+	,Cinterval=5
+	,Ctime=200000
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)

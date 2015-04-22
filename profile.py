@@ -55,6 +55,8 @@ class profile:
 		for i in range(nbin):
 			s+="%d\t%f\t%f\t%f\t%f\n"%(i+1,aveC[i],aveN[i],aveTemp[i],avejx[i])
 		fave.writelines(s)
+		fave.close()
+		drawTempAve()
 		return (aveC,aveN,aveTemp,avejx)
 	
 	def nvtSlope(self,aveC,aveTemp,aveN,avejx,upP):
@@ -182,6 +184,7 @@ class profile:
 
 	def slope(self,x,y,pt1,pt2):
 		n=pt2-pt1+1;
+		if n<=0: return 0.0
 		sxy=0.0;sx=0.0;sy=0.0;sx2=0.0;
 		for i in range(pt1,pt2+1):
 			sxy+=x[i]*y[i];
@@ -267,15 +270,16 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	J_bulkcs=np.zeros(n)
 	if(method=="muller" or method=="inject"):
 		for upP in range(1,n/2):
-			lslopes[numS],J_bulks[numS],J_bulkcs[numS]=p.mullerSlope(aveC,aveTemp,aveN,avejx,upP);
+			slopes[numS],J_bulks[numS],J_bulkcs[numS]=p.mullerSlope(aveC,aveTemp,aveN,avejx,upP);
 			numS+=1
+			if slopes[numS]<=0:break
 		
 	
 	if(method=="nvt"):
 		for upP in range(1,n):
 			slopes[numS],J_bulks[numS],J_bulkcs[numS]=p.nvtSlope(aveC,aveTemp,aveN,avejx,upP);
 			numS+=1
-		
+			if slopes[numS]<=0:break
 	
 	fileScan.write("upP\tkappa_src\tkappa_bulk\tkappa_bulkc\tflux_src\tflux_bulk\tflux_bulkc\tslope\n");
 	for i in range(0,numS):
@@ -289,7 +293,7 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	fileScan.close()
 
 	
-	drawTempAve()		
+		
 if __name__=='__main__':
 
 	method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick=sys.argv[1:]
