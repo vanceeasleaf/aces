@@ -235,6 +235,7 @@ def correlation(m):
 	passthru(config.lammps+" <correlation.lmp >out.dat")
 	from aces.vdos import vdos
 	vdos(m.timestep)
+	rm("velocity.txt")
 def phontsAtoms():
 	atoms=read('minimize/range',format='lammps')
 	cell=atoms.get_cell()

@@ -61,12 +61,8 @@ class profile:
 	
 	def nvtSlope(self,aveC,aveTemp,aveN,avejx,upP):
 		m=len(aveC);
-		downP=upP;
-		pt1=downP;
-		pt2=m+1-upP;
-		pt1-=1
-		pt2-=1
-		n=pt2-pt1+1;
+		pt1=upP;
+		pt2=m-upP-1;
 		savejx=avejx[pt1:pt2+1]
 		saveN=aveN[pt1:pt2+1]
 		ave_jx=np.average(np.abs(savejx))
@@ -91,22 +87,25 @@ class profile:
 	def mullerSlope(self,aveC,aveTemp,aveN,avejx,upP):
 		m=len(aveC);
 		downP=upP;
-		cter=int((m+1)/2.0);
-		pt11=downP;pt12=cter-upP;
-		pt22=m+1-downP;pt21=cter+upP;
-		pt11-=1;pt12-=1;pt21-=1;pt22-=1;
+		if m%2==0:
+			cter2=m/2
+			cter1=cter2-1
+			pt11=upP;pt12=cter1-upP
+			pt21=cter2+upP;pt21=m-1-upP
+		else:
+			cter=int((m-1)/2)
+			pt11=upP;pt12=cter-upP
+			pt21=cter+upP;pt21=m-1-upP
 		slope1=self.slope(aveC,aveTemp,pt11,pt12);
-		n=pt12-pt11+1;
-		savejx=avejx[pt11:pt11+n]
-		saveN=aveN[pt11:pt11+n]
+		savejx=avejx[pt11:pt12+1]
+		saveN=aveN[pt11:pt12+1]
 		ave_jx=np.average(np.abs(savejx));
 		ave_N=np.average(saveN);
 		J_bulk1=ave_jx*ave_N;
 		J_bulkc1=np.average(np.abs(saveN*savejx));
 		slope2=-self.slope(aveC,aveTemp,pt21,pt22);
-		n=pt22-pt21+1;
-		savejx=avejx[pt21:pt21+n]
-		saveN=aveN[pt21:pt21+n]
+		savejx=avejx[pt21:pt22+1]
+		saveN=aveN[pt21:pt22+1]
 		ave_jx=np.average(np.abs(savejx));
 		ave_N=np.average(saveN);
 		J_bulk2=ave_jx*ave_N;
@@ -184,7 +183,6 @@ class profile:
 
 	def slope(self,x,y,pt1,pt2):
 		n=pt2-pt1+1;
-		if n<=0: return 0.0
 		sxy=0.0;sx=0.0;sy=0.0;sx2=0.0;
 		for i in range(pt1,pt2+1):
 			sxy+=x[i]*y[i];
@@ -263,23 +261,23 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	fileScan=open("scan.txt","w");
 	fileScan.write("method:%s\n"%method);
 	numS=0;
-	n=int(lx/2.0/deta)-3
-	rg=range(1,n)
+	n=len(aveC)-3
 	slopes=np.zeros(n)
 	J_bulks=np.zeros(n)
 	J_bulkcs=np.zeros(n)
 	if(method=="muller" or method=="inject"):
-		for upP in range(1,n/2):
-			slopes[numS],J_bulks[numS],J_bulkcs[numS]=p.mullerSlope(aveC,aveTemp,aveN,avejx,upP);
+		for upP in range(1,n/4):
+			s=p.mullerSlope(aveC,aveTemp,aveN,avejx,upP);
+			slopes[numS],J_bulks[numS],J_bulkcs[numS]=s
 			numS+=1
-			if slopes[numS]<=0:break
+
 		
 	
 	if(method=="nvt"):
-		for upP in range(1,n):
-			slopes[numS],J_bulks[numS],J_bulkcs[numS]=p.nvtSlope(aveC,aveTemp,aveN,avejx,upP);
+		for upP in range(1,n/2):
+			s=p.nvtSlope(aveC,aveTemp,aveN,avejx,upP);
+			slopes[numS],J_bulks[numS],J_bulkcs[numS]=s
 			numS+=1
-			if slopes[numS]<=0:break
 	
 	fileScan.write("upP\tkappa_src\tkappa_bulk\tkappa_bulkc\tflux_src\tflux_bulk\tflux_bulkc\tslope\n");
 	for i in range(0,numS):

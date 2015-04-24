@@ -5,14 +5,13 @@ from math import sqrt,pi
 from aces import default
 from ase.io.vasp import write_vasp
 from aces.UnitCell.unitcell import UnitCell
-
+from ase.data import atomic_masses,atomic_numbers
+from aces import tools
 class structure:
 	def __init__(self,home,opt):
 		self.home=home
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
-		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  C N'%home
-		self.masses="mass 1 12.01\nmass 2 14.00"
-		self.dump="dump_modify dump1 element C N"
+		self.elements=['C','N']
 		self.latysmall=3; # 窄边包括2*latysmall+1排C原子，latysmall=3时，为7 AGNR*/
 		self.latExtend=5;# 相对于窄边，长边的y方向两头都延伸latExtend个六边形，latExtend=2时，长边为[(latysamll-1)+latExtend]*2+1=13 AGNR*/
 		self.latxsmall=7;#奇数
@@ -20,6 +19,18 @@ class structure:
 		self.yp=0
 		self.fixud=1
 		self.__dict__=dict(self.__dict__,**opt)
+		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(home,' '.join(self.elements))
+		self.masses=""
+		self.phontsmasses=""
+		i=1
+		for a in self.elements:
+			num=atomic_numbers[a]
+			mass=atomic_masses[num]
+			self.masses+="mass %d %f\n"%(i,mass)
+			self.phontsmasses+="%s %f 0.0\n"%(a,mass)
+			i+=1
+		self.dump="dump_modify dump1 element %s"%(' '.join(self.elements))
+
 	def extent(self,atoms):
 		    xmin=100000;xmax=-100000;
 		    ymin=100000;ymax=-100000;
@@ -87,7 +98,7 @@ class structure:
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
 		poscar = open("POSCAR")
 		unit_cell = UnitCell(poscar)
-		unit_cell.num_atom_types=2
+		unit_cell.num_atom_types=len(self.elements)
 		lammps=open("structure","w")
 		lammps.write(unit_cell.output_lammps())
 		lammps.close()
