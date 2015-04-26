@@ -26,7 +26,7 @@ def genPbs(path,disp,queue,nodes,procs,bte):
 		content+="\ncd "+path+"\n"
 		content+=exe+"%s/%s\n"%(home,qloop)
 		content+=config.mpirun+"$n_proc "+config.phonts+"  &>"+path+"/log.out"
-	elif bte=="correlation":
+	elif bte=="correlation" or bte=="phonopy":
 		content="cd %s/minimize\n"%path
 		content+=exe+"%s/minimize/%s\n"%(home,qloop)
 		content+=config.mpirun+"$n_proc "+config.lammps+" <input &>"+path+"/minimize/log.out"

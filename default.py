@@ -49,6 +49,9 @@ default=dict(
 	
 	,Cinterval=5
 	,Ctime=200000
+	
+	,supercell=[1,1,1]
+	,kpoints=[20,20,1]
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)
