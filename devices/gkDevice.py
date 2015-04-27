@@ -6,6 +6,7 @@ class gkDevice:
 		hook.addAction('elimination',self.renderElim)
 		hook.addAction('flux',self.renderFlux)
 	def renderEqu(self):
+
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 	def renderElim(self):
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)

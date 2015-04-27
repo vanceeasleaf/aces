@@ -66,24 +66,24 @@ class vdos:
 			totalVcf[i]/=vcf0
 		fo1 = file('VACF.txt','w')
 		fo1.write('correlation_time_ps vcaf_x vcaf_y vcaf_z vcaf_av\n')
-
-
-		totalDos = np.abs(rfft(totalVcf,axis=0))
-		fo2 = file('VDOS.txt','w')
-		fo2.write('Freq_THz vdos_x vdos_y vdos_z vdos_av\n')
-		maxFreq=2.0/self.timestep
-		for i in range(self.totalStep/2):
-			fo2.write("%f"%(self.timestep*i))
-			for j,dos in enumerate(totalDos[i]):
-				fo2.write("\t%f"%dos)
-			fo2.write("\n")
-		fo2.close()
 		for i in range(self.totalStep/2):
 			fo1.write("%f"%(self.timestep*i))
 			for vcf in totalVcf[i]:
 				fo1.write("\t%f"%(vcf))
 			fo1.write("\n")
 		fo1.close()
+
+		totalDos = np.abs(rfft(totalVcf,axis=0))
+		fo2 = file('VDOS.txt','w')
+		fo2.write('Freq_THz vdos_x vdos_y vdos_z vdos_av\n')
+		maxFreq=2.0/self.timestep
+		for i in range(self.totalStep/2):
+			fo2.write("%f"%(maxFreq*i/float(self.totalStep/2)))
+			for j,dos in enumerate(totalDos[i]):
+				fo2.write("\t%f"%dos)
+			fo2.write("\n")
+		fo2.close()
+
 		print 'VACF and VDOS caculated OK'
 		self.plot(totalVcf[:self.totalStep/2],totalDos)
 
@@ -108,7 +108,7 @@ class vdos:
 		pl.legend()
 		pl.savefig('VACF.png',bbox_inches='tight',transparent=True) 
 		n,m=totalDos.shape
-		freq=np.array(range(0,n))*2.0/self.timestep
+		freq=np.linspace(0,1,n)*2.0/self.timestep
 		xx=self.select(freq)
 		pl.figure()
 		pl.xlabel('Frequency (THz)')

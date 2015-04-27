@@ -1,6 +1,7 @@
 #encoding : utf8
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as pl
 import numpy as np
 from scipy import stats
 import math,sys,os
@@ -12,7 +13,8 @@ class profile:
 		pass
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		self.fpro=open('tempProfile.txt')
-		self.nbin=nbin=self.getNbin()
+		snapStep,nbin=self.getNbin()
+		self.nbin=nbin
 		sumTemp=np.zeros(nbin)
 		sumjx=np.zeros(nbin)
 		sumN=np.zeros(nbin)
@@ -21,6 +23,11 @@ class profile:
 		ft=open('convergenceT.txt','w')	
 		ft.write("step\ttemperature\tjx\n")
 		fk=open('convergenceK.txt','w')
+		pl.figure()
+
+		pl.xlabel('x(Augstrom)')
+		pl.ylabel('temperature(K)')
+
 		while self.fpro.readline():
 			istep+=1
 			coord,ncount,v_temp,jx=self.getBinInfo()
@@ -34,21 +41,23 @@ class profile:
 			ft.write("%d\t%f\t%f\n"%(istep,att,atj))
 			
 			#kappa convergence
-			aveTemp1=sumTemp/n
-			avejx1=sumjx/n
-			aveN1=sumN/n
-			slope,flux_bulk=self.sslope(coord,aveTemp1,aveN1,avejx1,upP,deta,S)
+			filter=sumN>0
+			aveC=coord[filter]
+			aveN=sumN[filter]/float(n)
+			aveTemp=sumTemp[filter]/n
+			avejx=sumjx[filter]/n
+			if istep%10==0:
+				pl.plot(aveC,aveTemp,label="time=%s"%(snapStep*istep))
+			slope,flux_bulk=self.sslope(aveC,aveTemp,aveN,avejx,upP,deta,S)
 			kappa=self.getFx(istep)/slope*tcfactor*zfactor
 			fk.write("%d\t%f\n"%(istep,kappa))
-			
-		sumTemp/=n
-		sumjx/=n
-		sumN/=n
+		#pl.legend()
+		pl.savefig('convergenceT.png',bbox_inches='tight',transparent=True) 	
 		filter=sumN>0
 		aveC=coord[filter]
-		aveN=sumN[filter]
-		aveTemp=sumTemp[filter]
-		avejx=sumjx[filter]
+		aveN=sumN[filter]/float(n)
+		aveTemp=sumTemp[filter]/n
+		avejx=sumjx[filter]/n
 		nbin=len(avejx)
 		fave=open('tempAve.txt','w')	
 		s="id\tCoord\tCount\tTemp\tJx\n"
@@ -196,9 +205,9 @@ class profile:
 		for i in range(3):fpro.readline()
 		start=fpro.tell()
 		line=fpro.readline()
-		timestep,nbin=line.strip().split()
+		snapStep,nbin=line.strip().split()
 		fpro.seek(start)
-		return int(nbin)	
+		return (int(snapStep),int(nbin))	
 		
 	def getBinInfo(self):
 		fpro=self.fpro

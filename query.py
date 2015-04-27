@@ -287,13 +287,13 @@ def comfirmStop(projHome,projName,single):
 		works=shell_exec("qstat|grep xggong").split('\n');
 		for work in works:
 			if work.strip()=="":continue;
-		pid=work.split()[0]
-		jobnameString=shell_exec("qstat -f %s |grep Job_Name"%pid);
-		jobname=jobnameString.split()[2]
-		if(jobname.find(tarname)>=0):
-			print "qdel:%s"%pid
-			sys.stdout.flush()
-			shell_exec("qdel %s "%pid)
+			pid=work.split()[0]
+			jobnameString=shell_exec("qstat -f %s |grep Job_Name"%pid);
+			jobname=jobnameString.strip().split()[2]
+			if(jobname.find(tarname)>=0):
+				print "qdel:%s"%pid
+				sys.stdout.flush()
+				shell_exec("qdel %s "%pid)
 				
 	
 		

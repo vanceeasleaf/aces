@@ -54,6 +54,8 @@ class nvtDevice:
 
 		self.hot=hot
 		self.cold=cold
+		self.hotl2=hotl2
+		self.hotr1=hotr1
 		if fixud:
 			self.addBox('re_nve',([hotl2[-1],fixd2,INF],[hotr1[-1],fixu1,INF]))
 			self.addBox('stayu',([INF,fixu1,INF],[INF,fixu2,INF]))
@@ -82,8 +84,10 @@ class nvtDevice:
 		print "variable jcz atom v_te*vz"
 		print "variable          delta_temp   equal  c_up_temp-c_down_temp"
 	def renderEqu(self):
+		print "velocityRamp g_nve create %f %d  vx %f %f x %f %f mom yes rot yes dist gaussian"%(self.T,self.seed,self.Tlo,self.Thi,self.hotl2[-1],self.hotr1[-1])
 		print "velocity stay set 0 0 0"
 		print "fix getEqu main nvt temp %f %f %f"%(self.T,self.T,self.dtime)
+
 	def renderElim(self):
 		
 		if self.langevin==0:
