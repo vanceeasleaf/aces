@@ -105,7 +105,7 @@ class vdos:
 		pl.plot(time,totalVcf[:,2],label="vcf_z",linewidth=0.3)
 		pl.xlabel('Correlation Time (ps)')
 		pl.ylabel('Normalized Velocity Auto Correlation Function')
-		pl.legend()
+		pl.legend(loc='best').get_frame().set_alpha(0.0)
 		pl.savefig('VACF.png',bbox_inches='tight',transparent=True) 
 		n,m=totalDos.shape
 		freq=np.linspace(0,1,n)*2.0/self.timestep
@@ -116,5 +116,5 @@ class vdos:
 		pl.plot(freq,totalDos[:,0],label="dos_x",linewidth=0.3)
 		pl.plot(freq,totalDos[:,1],label="dos_y",linewidth=0.3)
 		pl.plot(freq,totalDos[:,2],label="dos_z",linewidth=0.3)
-		pl.legend()
+		pl.legend(loc='best').get_frame().set_alpha(0.0)
 		pl.savefig('VDOS.png',bbox_inches='tight',transparent=True) 

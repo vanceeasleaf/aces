@@ -22,7 +22,7 @@ def drawTempAve():
 	ax2.set_ylabel('heat flux')
 	b=ax2.plot(x,j,'r')
 	ax1.set_frame_on(False)
-	ax1.legend(a+b,["temperature","heat flux"],loc='best')
+	ax1.legend(a+b,["temperature","heat flux"],loc='best').get_frame().set_alpha(0.0)
 	pl.savefig('tempAve.png',bbox_inches='tight',transparent=True)
  
 if __name__=='__main__':

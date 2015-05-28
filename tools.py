@@ -30,6 +30,9 @@ def mkdir(path):
         return True
     else:
         return False
+def ls(path):
+	import glob
+	return glob.glob(path)
 class File(file):
     """ An helper class for file reading  """
 
