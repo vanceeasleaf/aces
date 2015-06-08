@@ -1,9 +1,7 @@
 from numpy.fft import rfft, irfft
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as pl
-from aces.tools import exit
+from aces.graph import series
+from aces.tools import exit,write
 class vdos:
 	def __init__(self,timestep=0.0005):
 		self.timestep=timestep
@@ -65,7 +63,7 @@ class vdos:
 		for i,vcf in enumerate(totalVcf):
 			totalVcf[i]/=vcf0
 		fo1 = file('VACF.txt','w')
-		fo1.write('correlation_time_ps vcaf_x vcaf_y vcaf_z vcaf_av\n')
+		fo1.write('correlation_time_ps\tvcaf_x\tvcaf_y\tvcaf_z\tvcaf_av\n')
 		for i in range(self.totalStep/2):
 			fo1.write("%f"%(self.timestep*i))
 			for vcf in totalVcf[i]:
@@ -75,7 +73,7 @@ class vdos:
 
 		totalDos = np.abs(rfft(totalVcf,axis=0))
 		fo2 = file('VDOS.txt','w')
-		fo2.write('Freq_THz vdos_x vdos_y vdos_z vdos_av\n')
+		fo2.write('Freq_THz\tvdos_x\tvdos_y\tvdos_z\tvdos_av\n')
 		maxFreq=2.0/self.timestep
 		for i in range(self.totalStep/2):
 			fo2.write("%f"%(maxFreq*i/float(self.totalStep/2)))
@@ -94,27 +92,21 @@ class vdos:
 		else:
 			return range(0,N,N/n)
 	def plot(self,totalVcf,totalDos):
+
 		n,m=totalVcf.shape
 		time=np.array(range(0,n))*self.timestep
-		pl.figure()
 		xx=self.select(time)
 		time=time[xx]
 		totalVcf=totalVcf[xx]
-		pl.plot(time,totalVcf[:,0],label="vcf_x",linewidth=0.3)
-		pl.plot(time,totalVcf[:,1],label="vcf_y",linewidth=0.3)
-		pl.plot(time,totalVcf[:,2],label="vcf_z",linewidth=0.3)
-		pl.xlabel('Correlation Time (ps)')
-		pl.ylabel('Normalized Velocity Auto Correlation Function')
-		pl.legend(loc='best').get_frame().set_alpha(0.0)
-		pl.savefig('VACF.png',bbox_inches='tight',transparent=True) 
+		series(xlabel='Correlation Time (ps)',
+			ylabel='Normalized Velocity Auto Correlation Function',
+			datas=[(time,totalVcf[:,0],"vcf_x"),(time,totalVcf[:,1],"vcf_y"),(time,totalVcf[:,2],"vcf_z")
+			,linewidth=0.3
+			,filename='VACF.png')
 		n,m=totalDos.shape
 		freq=np.linspace(0,1,n)*2.0/self.timestep
-		xx=self.select(freq)
-		pl.figure()
-		pl.xlabel('Frequency (THz)')
-		pl.ylabel('Phonon Density of States')
-		pl.plot(freq,totalDos[:,0],label="dos_x",linewidth=0.3)
-		pl.plot(freq,totalDos[:,1],label="dos_y",linewidth=0.3)
-		pl.plot(freq,totalDos[:,2],label="dos_z",linewidth=0.3)
-		pl.legend(loc='best').get_frame().set_alpha(0.0)
-		pl.savefig('VDOS.png',bbox_inches='tight',transparent=True) 
+		series(xlabel='Frequency (THz)',
+			ylabel='Phonon Density of States',
+			datas=[(freq,totalDos[:,0],"dos_x"),(freq,totalDos[:,1],"dos_y"),(freq,totalDos[:,2],"dos_z")
+			,linewidth=0.3
+			,filename='VDOS.png')
