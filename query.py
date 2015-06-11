@@ -5,7 +5,7 @@ import aces.config as config
 from aces.inequality import inequality
 from ase.io import read
 from aces.tools import shell_exec,mkdir,cd,passthru
-	
+from aces.profile import proc
 def getObjs():
 	
 	#执行程序之前会清理上次的，读取qloops.txt，如果没有上次的文件就不清理。*/
@@ -81,8 +81,109 @@ def getQueryInfo(workPath,pid,runTime,ob):
 	
 	return (percent,status,queue,nodes,procs);
 	
-def query(projHome,srcHome,universe):
+def postProc(curPath,srcHome):
+	""""php=config.php
+	# 准备参数列表并调用后处理*/
+	dir=curPath;
+	dir=dir.replace("//","\\\/");
+	sed=" sed 's@projHome=.\+@projHome=\""+dir+"\";@g' qloop.php > qloop.php1";
+	if(os.path.exists("post.php")):postfile= "../post.php";
+	else: postfile="";
+	cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";  "%(srcHome,curPath,curPath)
+	#print cmd
+	shell_exec(cmd)"""
+	cd(curPath)
+	proc()
+	
+def kappa(curPath,result):
+	# 取出后处理结果，热导率*/
+	#print curPath
+	kappaline=shell_exec("cd %s;tail -1 result.txt 2>err;"%curPath);
+	kappa=kappaline.split('=');
+	if len(kappa)>1:
+		kappa=kappa[1]
+		pwrite(result,"%s"%kappa);	
+		
+def tEnerty(curPath,result):
+	# 总能量*/
+	totalEline=shell_exec("cd %s/minimize;tail -22 log.out| head -1;"%curPath);
+	totalE=totalEline.split()[1]
+	pwrite(result,"\t%s"%totalE);	
+	
+def nAtom(curPath,result):
+	# 原子数和平均能量*/
+	Natomline=shell_exec("cd %s/minimize;grep atoms log.out ;"%curPath);
+	Natom=Natomline.split()[0]
+	if(Natom.isdigit() and Natom>0):
+		pwrite(result,"\t%s"%Natom);
+		#epn=float(totalE)/float(Natom);        	          
+		#pwrite(result,"\t%f"%epn);	
+def tDisorder(curPath,srcHome,result):
+	
+	# 无序度*/
+	cd('%s/minimize'%curPath)
+	mkdir('disorder');cd('disorder')
+	disorderLine=shell_exec("cp %s"%srcHome+"/in.disorder .;"+config.lammps+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
+	k=disorderLine.split()[1:3]				
+	if len(k)==1:
+		k.append("")
+	disorder,rd=k
+	cd(curPath)
+	pwrite(result,"\t%s\t%s"%(disorder,rd));
+	
+def drawStructure(curPath):
+	cd('%s/minimize'%curPath)
+	atoms=read('range',format='lammps')
+	atoms.write('../structure.png')		
+	cd(curPath)
+	
+def ineq(ob,curPath,result):
+
+	species=ob["species"];
+	if(not (species in ["CN-small"])):return
+	cd('%s/minimize'%curPath)
+	mkdir('nonequ')
+	cd('nonequ')
+
+	ie=inequality()
+	nonequ5= ie.run()
+	#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%srcHome);
+	cd(curPath)
+	pwrite(result,"\t%s"%nonequ5);	
+	
+def item(projHome,ob,result,paras,srcHome):
 	php=config.php
+	id=ob["id"];
+	curPath="%s/%s"%(projHome,id)
+	pid=ob["pid"];
+	runTime=ob["runTime"];
+	if(runTime==""):runTime=10000000;
+
+	# work的固有属性*/
+	percent,status,queue,nodes,procs=getQueryInfo(curPath,pid,runTime,ob)
+	print '\t'.join([str(id),percent,status,queue]),
+	result.write("%d\t"%id);
+
+	# work覆盖过的参数*/
+	for key in paras:
+		if ob[key]=="":ob[key]="def"
+		print ob[key],
+		if(float(percent.replace('%',''))>0.5):
+			result.write("%s\t"%ob[key])
+		 
+	# work的计算结果*/
+	if(float(percent.replace('%',''))>0):
+		postProc(curPath,srcHome)
+		kappa(curPath,result)
+		tEnerty(curPath,result)
+		nAtom(curPath,result)
+		#tDisorder(curPath,srcHome,result)
+		drawStructure(curPath)
+		ineq(ob,curPath,result)
+		pwrite(result,"\n");	
+		
+def query(projHome,srcHome,universe):
+
 
 	result=open("result.txt","w");
 
@@ -111,110 +212,7 @@ def query(projHome,srcHome,universe):
 
 	# 遍历projet中的所有work*/
 	for ob in obj:
-		id=ob["id"];
-		curPath="%s/%s"%(projHome,id)
-		pid=ob["pid"];
-		runTime=ob["runTime"];
-		if(runTime==""):runTime=10000000;
-
-		# work的固有属性*/
-		percent,status,queue,nodes,procs=getQueryInfo(curPath,pid,runTime,ob)
-		print '\t'.join([str(id),percent,status,queue]),
-		result.write("%d\t"%id);
-
-	    	# work覆盖过的参数*/
-	    	for key in paras:
-	    		if ob[key]=="":ob[key]="def"
-	    		print ob[key],
-	    		if(float(percent.replace('%',''))>0.5):
-	    			result.write("%s\t"%ob[key])
-	     	 
-		# work的计算结果*/
-		if(float(percent.replace('%',''))>0):
-
-			# 准备参数列表并调用后处理*/
-			dir=curPath;
-			dir=dir.replace("//","\\\/");
-			sed=" sed 's@projHome=.\+@projHome=\""+dir+"\";@g' qloop.php > qloop.php1";
-			if(os.path.exists("post.php")):postfile= "../post.php";
-			else: postfile="";
-			cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";  "%(srcHome,curPath,curPath)
-			#print cmd
-			shell_exec(cmd),
-
-			# 取出后处理结果，热导率*/
-			#print curPath
-			kappaline=shell_exec("cd %s;tail -1 result.txt 2>err;"%curPath);
-			kappa=kappaline.split('=');
-			if len(kappa)>1:
-				kappa=kappa[1]
-				pwrite(result,"%s"%kappa);
-
-			# 总能量*/
-			totalEline=shell_exec("cd %s/minimize;tail -22 log.out| head -1;"%curPath);
-			totalE=totalEline.split()[1]
-			pwrite(result,"\t%s"%totalE);
-
-			# 原子数和平均能量*/
-			Natomline=shell_exec("cd %s/minimize;grep atoms log.out ;"%curPath);
-			Natom=Natomline.split()[0]
-			if(Natom.isdigit() and Natom>0):
-				pwrite(result,"\t%s"%Natom);
-				epn=float(totalE)/float(Natom);        	          
-				pwrite(result,"\t%f"%epn);
-			"""
-			APP_PATH="/home/xggong/home1/zhouy/lmp_ubuntu"
-			
-			# 无序度*/
-			cd('%s/minimize'%curPath)
-			mkdir('disorder');cd('disorder')
-			disorderLine=shell_exec("cp %s"%srcHome+"/in.disorder .;"+APP_PATH+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
-			k=disorderLine.split()[1:3]				
-			if len(k)==1:
-				k.append("")
-			disorder,rd=k
-			cd(curPath)
-			pwrite(result,"\t%s\t%s"%(disorder,rd));
-			"""
-			cd('%s/minimize'%curPath)
-
-			atoms=read('range',format='lammps')
-			atoms.write('../structure.png')
-			
-			cd(curPath)
-			#    disorderLine=shell_exec("cd projHome/id/minimize;mkdir disorderdist 2>err;cd disorderdist;cp srcHome/indist.disorder .;APP_PATH<indist.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
-			#   list(null,disorder,rd)=sscanf(disorderLine,"%d%f%f");
-			#pwrite(result,"\tdisorder\trd");
-			# disorderLine=shell_exec("cd projHome/id/minimize;mkdir disorderC 2>err;cd disorderC;cp srcHome/in.disorderC .;APP_PATH<in.disorderC 2>err 1>log;tail -1 disorder.txt  2>err;");
-			#list(null,disorderC)=sscanf(disorderLine,"%d%f");
-			#pwrite(result,"\tdisorderC");
-
-			# 掺杂比例*/
-			#ratio=getRatio("%s/minimize/structure"%curPath);
-			#pwrite(result,"\t%f"%ratio);
-
-			#rdfs=getRdf("projHome/id/minimize/disorder/rdf.txt",ratio);
-			#pwrite(result,"\trdfs");
-			#
-			#nonequ=shell_exec("cd projHome/id/minimize;""mkdir nonequ 2>err;cd nonequ;php srcHome/nonequ.php;");
-			#pwrite(result,"\tnonequ");
-			#nonequ3=shell_exec("cd projHome/id/minimize/nonequ ;php srcHome/nonequ3.php;");
-			#pwrite(result,"\tnonequ3");
-			#nonequ4=shell_exec("cd projHome/id/minimize/nonequ ;php srcHome/nonequ4.php;");
-			#pwrite(result,"\tnonequ4");*/
-			species=ob["species"];
-			if(species in ["CN-small"]):
-				cd('%s/minimize'%curPath)
-				mkdir('nonequ')
-				cd('nonequ')
-
-				ie=inequality()
-				nonequ5= ie.run()
-				#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%srcHome);
-				cd(curPath)
-				pwrite(result,"\t%s"%nonequ5);
-				pass
-			pwrite(result,"\n");
+		item(projHome,ob,result,paras,srcHome)
 			
 def checkUniverse(projHome,universe,obj):
 	if(universe==''):return;

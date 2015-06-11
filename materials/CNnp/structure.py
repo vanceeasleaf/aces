@@ -12,15 +12,21 @@ class structure:
 	def __init__(self,home,opt):
 		self.home=home
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
+		self.set_parameters()
+		self.__dict__=dict(self.__dict__,**opt)
+		self.setup()
+		
+	def set_parameters(self):
 		self.elements=['C','N']
 		self.latysmall=3; # 窄边包括2*latysmall+1排C原子，latysmall=3时，为7 AGNR*/
 		self.latExtend=5;# 相对于窄边，长边的y方向两头都延伸latExtend个六边形，latExtend=2时，长边为[(latysamll-1)+2*latExtend]*2+1=13 AGNR*/
 		self.latxsmall=7;#奇数
 		self.latxbig=12;#最简单模型，中间是长边，两头是等长的短边, latxsmall表示短边由几条*折线*组成，偶数*/
 		self.yp=0
-		self.fixud=0
-		self.__dict__=dict(self.__dict__,**opt)
-		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(home,' '.join(self.elements))
+		self.fixud=0	
+
+	def setup(self):
+		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(self.home,' '.join(self.elements))
 		self.masses=""
 		self.phontsmasses=""
 		i=1
@@ -31,19 +37,16 @@ class structure:
 			self.phontsmasses+="%s %f 0.0\n"%(a,mass)
 			i+=1
 		self.dump="dump_modify dump1 element %s"%(' '.join(self.elements))
-
+		
 	def extent(self,atoms):
-		    xmin=100000;xmax=-100000;
-		    ymin=100000;ymax=-100000;
-		    zmin=100000;zmax=-100000;
-		    for pos in atoms.positions:
-		        x,y,z=pos
-		        xmin=min(x,xmin);xmax=max(x,xmax);
-		        ymin=min(y,ymin);ymax=max(y,ymax);
-		        zmin=min(z,zmin);zmax=max(z,zmax); 
-		        lx=xmax-xmin;
-		        ly=ymax-ymin;
-		    return (lx,ly);
+		xmax=atoms.positions[:,0].max()
+		xmin=atoms.positions[:,0].min()
+		ymax=atoms.positions[:,1].max()
+		ymin=atoms.positions[:,1].min()
+		lx=xmax-xmin;
+		ly=ymax-ymin;
+		return (lx,ly);
+			
 	def structure(self):
 		latysmall,latExtend,latxsmall,latxbig,bond=[int(self.latysmall),int(self.latExtend),int(self.latxsmall),int(self.latxbig),float(self.bond)]
 		if(latxsmall%2==0):latxsmall+=1;
@@ -103,8 +106,6 @@ class structure:
 		poscar = open("POSCAR")
 		unit_cell = UnitCell(poscar)
 		unit_cell.num_atom_types=len(self.elements)
-		lammps=open("structure","w")
-		lammps.write(unit_cell.output_lammps())
-		lammps.close()
+		tools.write("structure",unit_cell.output_lammps())
 		#data("structure").write("new")
 
