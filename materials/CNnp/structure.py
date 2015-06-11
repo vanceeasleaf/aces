@@ -7,6 +7,7 @@ from ase.io.vasp import write_vasp
 from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
 from aces import tools
+from aces.modify import get_unique_atoms
 class structure:
 	def __init__(self,home,opt):
 		self.home=home
@@ -47,13 +48,15 @@ class structure:
 		latysmall,latExtend,latxsmall,latxbig,bond=[int(self.latysmall),int(self.latExtend),int(self.latxsmall),int(self.latxbig),float(self.bond)]
 		if(latxsmall%2==0):latxsmall+=1;
 		if(latxbig%2==1):latxbig+=1;
-		atoms=self.agnr(latysmall,latxsmall,0);
+		atoms=self.agnr(latysmall,latxsmall+1,0);
 		unit=self.agnr(latysmall-1+2*latExtend,latxbig,0)
 		unit.translate([latxsmall*1.5,-(latExtend-0.5)*sqrt(3),0])
 		atoms.extend(unit)
-		unit=self.agnr(latysmall,latxsmall,1);
-		unit.translate([(latxsmall+latxbig)*1.5,0,0])
+		unit=self.agnr(latysmall,latxsmall+1,0);
+		unit.translate([(latxsmall+latxbig-1)*1.5,0,0])
 		atoms.extend(unit)
+
+		atoms=get_unique_atoms(atoms)
 		lx,ly=self.extent(atoms)
 		atoms.set_cell([lx,ly,100])
 		atoms.set_cell([lx*bond,ly*bond,100],scale_atoms=True)
@@ -63,7 +66,8 @@ class structure:
 		
 		self.write()
 		print 'read_data structure'
-		
+	
+
 	"""
 	* 生成宽度为n类型为type的折线的坐标,并把它放在第p列
 	* @author zhouy

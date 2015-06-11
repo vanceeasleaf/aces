@@ -40,7 +40,11 @@ class Aces:
 		single=self.single
 		species=opt['species']
 		units=opt['units']
-		method=opt['method'];queue=opt['queue'];nodes=opt['nodes'];procs=opt['procs'];runTime=opt['runTime']
+		method=opt['method'];
+		queue=opt['queue'];
+		nodes=opt['nodes'];
+		procs=opt['procs'];
+		runTime=opt['runTime']
 		bte=False
 		if opt.has_key('bte'):bte=opt['bte']
 		cmd=''
