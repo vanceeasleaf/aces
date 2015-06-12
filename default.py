@@ -52,6 +52,8 @@ default=dict(
 	
 	,supercell=[1,1,1]
 	,kpoints=[20,20,1]
+	
+	,conti=False
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)

@@ -3,7 +3,6 @@ from os.path import *
 import sys
 import os,json,imp
 home=dirname(realpath(__file__))
-from aces.Units import Units
 from aces.input import input
 #app home 
 projHome=dirname(realpath(sys.argv[0]))

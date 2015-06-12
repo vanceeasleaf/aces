@@ -7,38 +7,39 @@ from scipy import stats
 import math,sys,os
 from aces.tempAve import drawTempAve
 from aces.input import postMini;
+from aces.fixAveSpace import fixAveSpace
+import pandas as pd
 class profile:
 	def __init__(self):
 		self.method='muller'
 		pass
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
+		fas=fixAveSpace('tempProfile.txt')
+		quants=fas.getIbin[12].cumsum(axis=0)
+		for i in range(len(quants)):
+			quants[i]/=i+1
+		quants=pd.DataFrame(quants,names=['Temperature(K)','jx'])
+		quants.to_csv('convergenceT.txt',sep='\t',index=None)
 		self.fpro=open('tempProfile.txt')
-		snapStep,nbin=self.getNbin()
-		self.nbin=nbin
+		snapStep,nbin=fas.getNbin()
 		sumTemp=np.zeros(nbin)
 		sumjx=np.zeros(nbin)
 		sumN=np.zeros(nbin)
-		istep=-1
 		n=0
-		ft=open('convergenceT.txt','w')	
-		ft.write("step\ttemperature\tjx\n")
 		fk=open('convergenceK.txt','w')
 		pl.figure()
 
 		pl.xlabel('x(Augstrom)')
 		pl.ylabel('temperature(K)')
 
-		while self.fpro.readline():
-			istep+=1
-			coord,ncount,v_temp,jx=self.getBinInfo()
-			if istep<begin:continue
+		for istep in range(begin,fas.nstep):
+			coord,ncount,quants=fas.getIStep(istep)
+			v_temp,jx=quants
 			n+=1
 			sumTemp+=v_temp
 			sumjx+=jx
 			sumN+=ncount
-			att=sumTemp[12]/n
-			atj=sumjx[12]/n
-			ft.write("%d\t%f\t%f\n"%(istep,att,atj))
+
 			
 			#kappa convergence
 			filter=sumN>0
@@ -200,27 +201,9 @@ class profile:
 			sx2+=x[i]*x[i];
 		return (n*sxy-sx*sy)/(n*sx2-sx*sx)
 	
-	def getNbin(self):
-		fpro=self.fpro
-		for i in range(3):fpro.readline()
-		start=fpro.tell()
-		line=fpro.readline()
-		snapStep,nbin=line.strip().split()
-		fpro.seek(start)
-		return (int(snapStep),int(nbin))	
+	
 		
-	def getBinInfo(self):
-		fpro=self.fpro
-		nbin=self.nbin
-		bin=np.zeros(nbin)
-		coord=np.zeros(nbin)
-		ncount=np.zeros(nbin)
-		v_temp=np.zeros(nbin)
-		jx=np.zeros(nbin)
-		for i in range(nbin):
-			line=fpro.readline()
-			bin[i],coord[i],ncount[i],v_temp[i],jx[i]=line.strip().split()
-		return (coord,ncount,v_temp,jx)	
+	
 def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick):
 	#lx,ly,S,zfactor from postMini
 	p=profile()
@@ -298,10 +281,30 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 		fileScan.write("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n"%(i+1,kappa_src,kappa_bulk,kappa_bulkc,flux_src,flux_bulk,flux_bulkc,slopes[i]));
 	
 	fileScan.close()
+from os.path import *	
+def proc():
 
-	
-		
-if __name__=='__main__':
-
-	method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick=sys.argv[1:]
-	run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick)
+	import sys
+	import os,json,imp
+	from aces.Units import Units
+	home=dirname(realpath(__file__))
+	#app home 
+	projHome=dirname(realpath(sys.argv[0]))
+	f=open('app.json')
+	opt=f.read()
+	opt=json.loads(opt)
+	f.close()
+	species=opt['species']
+	m= imp.load_source('structure', home+'/materials/'+species+'/structure.py') 
+	m=m.structure(home,opt)
+	units=Units(m.units)
+	m.kb=units.boltz
+	m.nktv=units.nktv2p
+	if(m.method=="nvt"):m.xp=0;
+	lx,ly,lz,m.zfactor,m.S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(m.xp,m.yp,m.zp,m.enforceThick,m.thick)
+	m.dtime=m.timestep*100;
+	m.tcfactor=units.tcfactor;
+	m.excNum=m.aveRate/m.excRate;
+	m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
+	run(m.method,m.begin,m.timestep,m.conti,m.excRate,m.swapEnergyRate,m.upP,m.deta,m.tcfactor,m.fourierTc ,
+	m.computeTc ,m.corRate ,m.kb ,m.T,m.xp,m.yp,m.zp,m.enforceThick,m.thick)	
