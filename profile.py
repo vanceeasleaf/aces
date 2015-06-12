@@ -10,6 +10,7 @@ from aces.input import postMini;
 from aces.fixAveSpace import fixAveSpace
 import pandas as pd
 from aces import tools
+from aces.fixAveTime import fixAveTime
 class profile:
 	def __init__(self):
 		self.method='muller'
@@ -29,9 +30,9 @@ class profile:
 		
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		fas=fixAveSpace('tempProfile.txt')
-		quants=fas.getConvergence(12)
-		quants=pd.DataFrame(quants,columns =['Temperature(K)','Jx'])
-		quants.to_csv('convergenceT.txt',sep='\t',index=None)
+		quants=fas.getConvergence(12,begin)
+		tools.to_txt(['Temperature(K)','Jx'],quants,'convergenceT.txt')
+
 
 		snapStep=fas.snapStep
 
@@ -49,11 +50,8 @@ class profile:
 		aveTemp=aveQuants[filter,0]
 		avejx=aveQuants[filter,1]
 		nbin=len(avejx)
-		s="id\tCoord\tCount\tTemp\tJx\n"
-		for i in range(nbin):
-			s+="%d\t%f\t%f\t%f\t%f\n"%(i+1,aveC[i],aveN[i],aveTemp[i],avejx[i])
-
-		tools.write(s,'tempAve.txt')
+		data=np.hstack([np.arange(nbin)+1,aveC,aveN,aveTemp,avejx])
+		tools.to_txt(['id','Coord','Count','Temp','Jx'],data,'tempAve.txt')
 		drawTempAve()
 		return (aveC,aveN,aveTemp,avejx)
 	
@@ -61,13 +59,7 @@ class profile:
 		m=len(aveC);
 		pt1=upP;
 		pt2=m-upP-1;
-		savejx=avejx[pt1:pt2+1]
-		saveN=aveN[pt1:pt2+1]
-		ave_jx=np.average(np.abs(savejx))
-		ave_N=np.average(saveN)
-		J_bulk=ave_jx*ave_N
-		J_bulkc=np.average(np.abs(saveN*savejx))
-		slope=np.abs(self.slope(aveC,aveTemp,pt1,pt2))
+		slope,J_bulk,J_bulkc=self.getSideSlope(aveC,aveTemp,aveN,avejx,pt1,pt2)
 		return (slope,J_bulk,J_bulkc)
 		
 	def sslope(self,aveC,aveTemp,aveN,avejx,upP,deta,S):
@@ -81,96 +73,62 @@ class profile:
 			flux_bulk=J_bulk/(deta*S);
 		
 		return (slope,flux_bulk)
-
-	def mullerSlope(self,aveC,aveTemp,aveN,avejx,upP):
-		m=len(aveC);
-		downP=upP;
+	def getSideRange(self,size,upP):
+		m=size;
 		if m%2==0:
 			cter2=m/2
 			cter1=cter2-1
 			pt11=upP;pt12=cter1-upP
-			pt21=cter2+upP;pt21=m-1-upP
+			pt21=cter2+upP;pt22=m-1-upP
 		else:
 			cter=int((m-1)/2)
 			pt11=upP;pt12=cter-upP
-			pt21=cter+upP;pt21=m-1-upP
-		slope1=self.slope(aveC,aveTemp,pt11,pt12);
+			pt21=cter+upP;pt22=m-1-upP
+		return (pt11,pt12,pt21,pt22)
+	def getSideSlope(self,aveC,aveTemp,aveN,avejx,pt11,pt12):
+		slope1=self.slope(aveC,aveTemp,pt11,pt12)
+		slope1=np.abs(slope1)
 		savejx=avejx[pt11:pt12+1]
 		saveN=aveN[pt11:pt12+1]
 		ave_jx=np.average(np.abs(savejx));
 		ave_N=np.average(saveN);
 		J_bulk1=ave_jx*ave_N;
-		J_bulkc1=np.average(np.abs(saveN*savejx));
-		slope2=-self.slope(aveC,aveTemp,pt21,pt22);
-		savejx=avejx[pt21:pt22+1]
-		saveN=aveN[pt21:pt22+1]
-		ave_jx=np.average(np.abs(savejx));
-		ave_N=np.average(saveN);
-		J_bulk2=ave_jx*ave_N;
-		J_bulkc2=np.average(np.abs(saveN*savejx));
+		J_bulkc1=np.average(np.abs(saveN*savejx))
+		return (slope1,J_bulk1,J_bulkc1)
+	def mullerSlope(self,aveC,aveTemp,aveN,avejx,upP):
+		pt11,pt12,pt21,pt22=self.getSideRange(len(aveC),upP)
+		slope1,J_bulk1,J_bulkc1=self.getSideSlope(aveC,aveTemp,aveN,avejx,pt11,pt12)
+		slope2,J_bulk2,J_bulkc2=self.getSideSlope(aveC,aveTemp,aveN,avejx,pt21,pt22)
 		slope=(slope1+slope2)/2;
 		J_bulk=(J_bulk1+J_bulk2)/2;
 		J_bulkc=(J_bulkc1+J_bulkc2)/2;
 		return (slope,J_bulk,J_bulkc);
 		
 	def getFlux(self,begin,timestep,S,conti,lz,excRate,swapEnergyRate):
-		fx=[]
-		st=begin;
 		method=self.method
-		step=[]
-		hot=[]
 		if(method=="nvt"):
-			nvtWork=open("nvtWork.txt");
-			nvtWork.next()
-			line=nvtWork.next();
-			co=0;
-			for line in nvtWork:
-				f_step,f_hot=line.strip().split()[:2]
-				step.append(float(f_step))
-				hot.append(float(f_hot))
-				if co<=st:hotslope=0
-				else:
-					hotslope=np.abs(hot[co]-hot[st])/(step[co]-step[st])
-				J=hotslope/timestep;
-				flux_src=J/S;
-				fx.append(flux_src)
-				co+=1
-
-			nvtWork.close()
-		
+			fat=fixAveTime("nvtWork.txt")
+			fx=fat.getSlopes(begin)[:,0]
+			fx=np.abs(fx)/timestep/S
+			flux_src=fx[-1]
 		
 
 		if(method=="muller"):
-			file=open("swapEnergy.txt");
-			file.next()
-			file.next()
-			co=0;
-			sum=0;
-
-			for line in file:
-				f_step,heat_swap=line.strip().split()[:2]
-				step.append(float(f_step))
-				hot.append(float(heat_swap))
-				sum+=heat_swap;
-				if co<=st:hotslope=0
-				else:
-					ave_heat_swap=np.abs(hot[co]-hot[st])/(step[co]-step[st])
-				if(conti):ave_heat_swap=sum*lz/co/excRate;
-				J=ave_heat_swap/(timestep);
-				flux_src=J/(2*S);
-				fx.append(flux_src)
-				co+=1
+			fat=fixAveTime("swapEnergy.txt")
+			fx=fat.getSlopes(begin)[:,0]
+			fx=np.abs(fx)/timestep/S/2
 			
-			file.close();
-		
-		
+			if(conti):
+				fx=fat.getConvergence(begin)[:,0]
+				fx=np.abs(fx)*lz/excRate/timestep/S/2
+			flux_src=fx[-1]	
+			
 		if(method=="inject"):
 			J=swapEnergyRate;
 			flux_src=J/(2*S);
-			fx.append(flux_src)
+			fx=[flux_src]
 			
 		self.fx=fx
-		self.flux_src=flux_src
 		return (flux_src,fx);
 	
 	def getFx(self,istep):
@@ -204,15 +162,8 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 		f=open('result.txt','w')
 		if(computeTc):
 			os.popen("tail -2000 kappa.txt>tailKp.txt 2>err");
-			file=open("tailKp.txt","r");
-			s=0;n=0;
-			for line in file:
-				step,kp=line.split()
-				kp=float(kp)
-				s+=kp;
-				n+=1
-			
-			kx=s/n;
+			df=pd.read_csv("tailKp.txt",sep='\t',header=None)
+			kx=np.average(df[:,1],axis=0)
 	
 		elif(fourierTc):
 			v=lx*ly*lz;
@@ -238,8 +189,7 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	f.close()
 
 
-	fileScan=open("scan.txt","w");
-	fileScan.write("method:%s\n"%method);
+
 	numS=0;
 	n=len(aveC)-3
 	slopes=np.zeros(n)
@@ -259,16 +209,14 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 			slopes[numS],J_bulks[numS],J_bulkcs[numS]=s
 			numS+=1
 	
-	fileScan.write("upP\tkappa_src\tkappa_bulk\tkappa_bulkc\tflux_src\tflux_bulk\tflux_bulkc\tslope\n");
-	for i in range(0,numS):
-		kappa_src=flux_src/slopes[i]*tcfactor*zfactor;
-		flux_bulk=J_bulks[i]/(deta*S);
-		flux_bulkc=J_bulkcs[i]/(deta*S);
-		kappa_bulk=flux_bulk/slopes[i]*tcfactor*zfactor;
-		kappa_bulkc=flux_bulkc/slopes[i]*tcfactor*zfactor;
-		fileScan.write("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n"%(i+1,kappa_src,kappa_bulk,kappa_bulkc,flux_src,flux_bulk,flux_bulkc,slopes[i]));
-	
-	fileScan.close()
+
+	kappa_src=flux_src/slopes*tcfactor*zfactor;
+	flux_bulk=J_bulks/(deta*S);
+	flux_bulkc=J_bulkcs/(deta*S);
+	kappa_bulk=flux_bulk/slopes*tcfactor*zfactor;
+	kappa_bulkc=flux_bulkc/slopes*tcfactor*zfactor;
+	data=np.hstack([np.arange(numS)+1,kappa_src,kappa_bulk,kappa_bulkc,flux_src,flux_bulk,flux_bulkc,slopes])
+	tools.to_txt(['upP','kappa_src','kappa_bulk','kappa_bulkc','flux_src','flux_bulk','flux_bulkc','slope'],data,"scan.txt")
 from os.path import *	
 def proc():
 

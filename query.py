@@ -4,7 +4,7 @@ import os,sys
 import aces.config as config
 from aces.inequality import inequality
 from ase.io import read
-from aces.tools import shell_exec,mkdir,cd,passthru
+from aces.tools import shell_exec,mkdir,cd,passthru,pwrite
 from aces.profile import proc
 def getObjs():
 	
@@ -48,10 +48,7 @@ def getParas(obj):
 			if not(key in paras):paras.append(key)
 	return paras;
      
-def pwrite(fp,s):
-	print s,
-	fp.write(s)
-	sys.stdout.flush()
+
 	
 def getQueryInfo(workPath,pid,runTime,ob):
 	lastline=shell_exec("tail -1 %s/log.out"%workPath);

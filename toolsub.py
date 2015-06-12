@@ -8,16 +8,12 @@ import time
 def genPbs(path,disp,queue,nodes,procs,bte):
 	#define MPI PATH
 	home=os.path.dirname(__file__);	
-	global usepy
-	usepy=1
 
-	#if not 'usepy' in vars():usepy=0
-	if usepy:
-		input='exe.py'
-		exe=config.python
-	else:
-		input='input.php  "%s/qloop.php" "%s/species.php" '%(path,path)
-		exe=config.php
+
+
+	input='exe.py'
+	exe=config.python
+
 	qloop=input+' >input'
 	if bte==True:		
 		content="cd %s/minimize\n"%path
@@ -56,9 +52,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/mkl/10.0.013/lib/em64t:/opt/i
 %s
 exit 0
 """%(nodes,procs,queue,disp,content)
-	pbs=open(path+"/lammps.pbs","w");
-	pbs.write(s)
-	
+
+	write(s,path+"/lammps.pbs")
 def genSh(path,disp,procs):
 	home=os.path.dirname(__file__);
 	qloop=' "%s/qloop.php" "%s/species.php" >input '%(path,path)
@@ -143,8 +138,8 @@ def makeLoopFile(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,pr
 		genSh(dir,pro,procs);
 	
 	if(not universe and not single):genPbs(dir,pro,queue,nodes,procs,bte);
-	write('<?php\n%s;\n$projHome="%s/%s";\n?>'%(cmd,projHome,idx),dir+"/qloop.php");
-	write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
+	#write('<?php\n%s;\n$projHome="%s/%s";\n?>'%(cmd,projHome,idx),dir+"/qloop.php");
+	#write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
 	eobj=json.loads(jj)
 	if len(eobj)>1:
 		opt=eobj[1].copy()
@@ -182,8 +177,8 @@ def toolsub(cmd,idx,projHome,projName,species,units,method,queue ,nodes ,procs ,
 	eobj=json.loads(jj)
 	if len(eobj)>1:
 		json_obj=dict(json_obj.items()+eobj[1].items())
-	loops=open('qloops.txt','a')
-	print >>loops,json.dumps(json_obj)
+
+	write(json.dumps(json_obj),'qloops.txt')
 if __name__=='__main__':
 
 	projHome ,projName ,cmd ,idx ,nodes ,procs ,species ,method ,units ,universe ,queue ,runTime,uqueue,single,unodes,uprocs,jj=sys.argv[1:]

@@ -1,37 +1,30 @@
 from numpy.fft import rfft, irfft
 import numpy as np
 from aces.graph import series
-from aces.tools import exit,write
+from aces.tools import exit,write,to_txt
+from aces.lineManager import  lineManager
 class vdos:
 	def __init__(self,timestep=0.0005):
 		self.timestep=timestep
+		self.lm=lineManager('velocity.txt')
 		self.run()
-	def construct_index(self):
-		self.fi  = file('velocity.txt')
-		self.line_offset=[]
-		offset=0
-		for line in self.fi:
-			self.line_offset.append(offset)
-			offset+=len(line)
-		self.fi.seek(0)
+
 	def run(self):
-		self.construct_index()
+
 		self.readinfo()
 		self.calculateDos()
-	def getline(self,iline):
-		offset=self.line_offset[iline]
-		self.fi.seek(offset)
-		return self.fi.next()
+
 	def readinfo(self):
-		self.natom=int(self.getline(3).split()[0])
-		t1=int(self.getline(1).split()[0])
+		lm=self.lm
+		self.natom=int(lm.getLine(3).split()[0])
+		t1=int(lm.getLine(1).split()[0])
 		self.line_interval=9+self.natom
-		if len(self.line_offset)<self.line_interval:
+		if lm.nline<self.line_interval:
 			self.interval=1
 		else:
-			t2=int(self.getline(1+self.line_interval).split()[0])
+			t2=int(lm.getLine(1+self.line_interval).split()[0])
 			self.interval=t2-t1
-		self.totalStep=len(self.line_offset)/self.line_interval
+		self.totalStep=lm.nline/self.line_interval
 		if self.totalStep%2==1:self.totalStep-=1
 		print "Atom Number=",self.natom
 		print "Total step=",self.totalStep
@@ -44,9 +37,10 @@ class vdos:
 		c = irfft(a*b)/length
 		return c
 	def correlation_atom(self,id,coord):
+		lm=self.lm
 		v=np.zeros(self.totalStep)
 		for i in range(self.totalStep):
-			v[i]=float(self.getline(9+id+i*self.line_interval).split()[2+coord])
+			v[i]=float(lm.getline(9+id+i*self.line_interval).split()[2+coord])
 		vcf=self.correlate(v,v)
 		return np.transpose(vcf)
 	def calculateDos(self):
@@ -62,28 +56,19 @@ class vdos:
 		vcf0=totalVcf[0].copy()
 		for i,vcf in enumerate(totalVcf):
 			totalVcf[i]/=vcf0
-		fo1 = file('VACF.txt','w')
-		fo1.write('correlation_time_ps\tvcaf_x\tvcaf_y\tvcaf_z\tvcaf_av\n')
-		for i in range(self.totalStep/2):
-			fo1.write("%f"%(self.timestep*i))
-			for vcf in totalVcf[i]:
-				fo1.write("\t%f"%(vcf))
-			fo1.write("\n")
-		fo1.close()
 
+		totalStep=self.totalStep
+		data=np.hstack([np.arange(totalStep)*self.timestep,totalVcf])
+		to_txt(['correlation_time_ps','vcaf_x','vcaf_y','vcaf_z','vcaf_av'],data[:totalStep/2],'VACF.txt')
 		totalDos = np.abs(rfft(totalVcf,axis=0))
-		fo2 = file('VDOS.txt','w')
-		fo2.write('Freq_THz\tvdos_x\tvdos_y\tvdos_z\tvdos_av\n')
-		maxFreq=2.0/self.timestep
-		for i in range(self.totalStep/2):
-			fo2.write("%f"%(maxFreq*i/float(self.totalStep/2)))
-			for j,dos in enumerate(totalDos[i]):
-				fo2.write("\t%f"%dos)
-			fo2.write("\n")
-		fo2.close()
+		
 
+		maxFreq=2.0/self.timestep
+		data=np.hstack([np.arange(totalStep)*maxFreq/float(self.totalStep/2),totalDos])
+		to_txt(['Freq_THz','tvdos_x','tvdos_y','tvdos_z','tvdos_av'],data[:totalStep/2],'VDOS.txt')
+		
 		print 'VACF and VDOS caculated OK'
-		self.plot(totalVcf[:self.totalStep/2],totalDos)
+		self.plot(totalVcf[:totalStep/2],totalDos)
 
 	def select(self,x,n=1000):
 		N=len(x)
@@ -100,13 +85,17 @@ class vdos:
 		totalVcf=totalVcf[xx]
 		series(xlabel='Correlation Time (ps)',
 			ylabel='Normalized Velocity Auto Correlation Function',
-			datas=[(time,totalVcf[:,0],"vcf_x"),(time,totalVcf[:,1],"vcf_y"),(time,totalVcf[:,2],"vcf_z")
+			datas=[(time,totalVcf[:,0],"vcf_x"),
+			(time,totalVcf[:,1],"vcf_y"),
+			(time,totalVcf[:,2],"vcf_z")
 			,linewidth=0.3
 			,filename='VACF.png')
 		n,m=totalDos.shape
 		freq=np.linspace(0,1,n)*2.0/self.timestep
 		series(xlabel='Frequency (THz)',
 			ylabel='Phonon Density of States',
-			datas=[(freq,totalDos[:,0],"dos_x"),(freq,totalDos[:,1],"dos_y"),(freq,totalDos[:,2],"dos_z")
+			datas=[(freq,totalDos[:,0],"dos_x"),
+			(freq,totalDos[:,1],"dos_y"),
+			(freq,totalDos[:,2],"dos_z")
 			,linewidth=0.3
 			,filename='VDOS.png')

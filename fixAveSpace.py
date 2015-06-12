@@ -54,8 +54,8 @@ class fixAveSpace:
 			quants[istep]=line[3:]
 		return quants
 		
-	def getConvergence(self,ibin):
-		quants=self.getIbin(ibin).cumsum(axis=0)
+	def getConvergence(self,ibin,begin):
+		quants=self.getIbin(ibin)[begin:].cumsum(axis=0)
 		for i in range(len(quants)):
 			quants[i]/=i+1
 		return quants

@@ -1,6 +1,7 @@
 # encoding : utf8
 import os,sys
 import shutil
+import pandas as pd
 def shell_exec(cmd):
 	c=os.popen(cmd).read()
 	return c.strip()
@@ -11,6 +12,13 @@ def write(cmd,fileName):
 	file=open(fileName,"w");
 	file.write(cmd);
 	file.close();
+def to_txt(columns,data,filename):
+	quants=pd.DataFrame(data,columns =columns)
+	quants.to_csv(filename,sep='\t',index=None)
+def pwrite(fp,s):
+	print s,
+	fp.write(s)
+	sys.stdout.flush()	
 def exit(info):
 	print info
 	sys.stdout.flush()
