@@ -9,63 +9,51 @@ from aces.tempAve import drawTempAve
 from aces.input import postMini;
 from aces.fixAveSpace import fixAveSpace
 import pandas as pd
+from aces import tools
 class profile:
 	def __init__(self):
 		self.method='muller'
-		pass
+		
+	def kappaConverge(self,istep,coord,aveN,aveQuants,*para):
+		#kappa convergence
+		snapStep,upP,deta,S,tcfactor,zfactor=para
+		filter=aveN>0
+		aveC=coord[filter]
+		aveTemp=aveQuants[filter,0]
+		avejx=aveQuants[filter,1]
+		if istep%10==0:
+			pl.plot(aveC,aveTemp,label="time=%s"%(snapStep*istep))
+		slope,flux_bulk=self.sslope(aveC,aveTemp,aveN,avejx,upP,deta,S)
+		kappa=self.getFx(istep)/slope*tcfactor*zfactor
+		return "%d\t%f\n"%(istep,kappa)
+		
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		fas=fixAveSpace('tempProfile.txt')
-		quants=fas.getIbin[12].cumsum(axis=0)
-		for i in range(len(quants)):
-			quants[i]/=i+1
-		quants=pd.DataFrame(quants,names=['Temperature(K)','jx'])
+		quants=fas.getConvergence(12)
+		quants=pd.DataFrame(quants,columns =['Temperature(K)','Jx'])
 		quants.to_csv('convergenceT.txt',sep='\t',index=None)
-		self.fpro=open('tempProfile.txt')
-		snapStep,nbin=fas.getNbin()
-		sumTemp=np.zeros(nbin)
-		sumjx=np.zeros(nbin)
-		sumN=np.zeros(nbin)
-		n=0
-		fk=open('convergenceK.txt','w')
+
+		snapStep=fas.snapStep
+
 		pl.figure()
 
 		pl.xlabel('x(Augstrom)')
 		pl.ylabel('temperature(K)')
-
-		for istep in range(begin,fas.nstep):
-			coord,ncount,quants=fas.getIStep(istep)
-			v_temp,jx=quants
-			n+=1
-			sumTemp+=v_temp
-			sumjx+=jx
-			sumN+=ncount
-
-			
-			#kappa convergence
-			filter=sumN>0
-			aveC=coord[filter]
-			aveN=sumN[filter]/float(n)
-			aveTemp=sumTemp[filter]/n
-			avejx=sumjx[filter]/n
-			if istep%10==0:
-				pl.plot(aveC,aveTemp,label="time=%s"%(snapStep*istep))
-			slope,flux_bulk=self.sslope(aveC,aveTemp,aveN,avejx,upP,deta,S)
-			kappa=self.getFx(istep)/slope*tcfactor*zfactor
-			fk.write("%d\t%f\n"%(istep,kappa))
+		coord,aveN,aveQuants,log=fas.iterate(begin,self.kappaConverge,snapStep,upP,deta,S,tcfactor,zfactor)
+		tools.write("step\tkappa\n"+log,'convergenceK.txt')
 		#pl.legend()
-		pl.savefig('convergenceT.png',bbox_inches='tight',transparent=True) 	
-		filter=sumN>0
+		pl.savefig('convergenceT.png',bbox_inches='tight',transparent=True) 
+		pl.close()
+		filter=aveN>0
 		aveC=coord[filter]
-		aveN=sumN[filter]/float(n)
-		aveTemp=sumTemp[filter]/n
-		avejx=sumjx[filter]/n
+		aveTemp=aveQuants[filter,0]
+		avejx=aveQuants[filter,1]
 		nbin=len(avejx)
-		fave=open('tempAve.txt','w')	
 		s="id\tCoord\tCount\tTemp\tJx\n"
 		for i in range(nbin):
 			s+="%d\t%f\t%f\t%f\t%f\n"%(i+1,aveC[i],aveN[i],aveTemp[i],avejx[i])
-		fave.writelines(s)
-		fave.close()
+
+		tools.write(s,'tempAve.txt')
 		drawTempAve()
 		return (aveC,aveN,aveTemp,avejx)
 	

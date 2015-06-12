@@ -54,6 +54,25 @@ class fixAveSpace:
 			quants[istep]=line[3:]
 		return quants
 		
-		
-		
-		
+	def getConvergence(self,ibin):
+		quants=self.getIbin(ibin).cumsum(axis=0)
+		for i in range(len(quants)):
+			quants[i]/=i+1
+		return quants
+	
+	def iterate(self,begin,callback,*para):
+		nbin=self.nbin
+		nquants=self.nquants	
+		nstep=self.nstep
+		sumQuants=np.zeros([nbin,nquants])
+		sumN=np.zeros(nbin)
+		n=0
+		log=""
+		for istep in range(begin,nstep):
+			coord,ncount,quants=self.getIStep(istep)
+			n+=1
+			sumQuants+=quants
+			sumN+=ncount
+
+			log+=callback(istep,coord,sumN/n,sumQuants/n,*para)
+		return (coord,sumN/n,sumQuants/n,log)

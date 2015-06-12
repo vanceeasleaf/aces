@@ -9,7 +9,7 @@ def passthru(cmd):
 	sys.stdout.flush()	
 def write(cmd,fileName):
 	file=open(fileName,"w");
-	file.write(cmd+"\n");
+	file.write(cmd);
 	file.close();
 def exit(info):
 	print info
