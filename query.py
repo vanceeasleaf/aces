@@ -4,8 +4,9 @@ import os,sys
 import aces.config as config
 from aces.inequality import inequality
 from ase.io import read
-from aces.tools import shell_exec,mkdir,cd,passthru,pwrite
+from aces.tools import *
 from aces.profile import proc
+from aces.env import *
 def getObjs():
 	
 	#执行程序之前会清理上次的，读取qloops.txt，如果没有上次的文件就不清理。*/
@@ -78,20 +79,7 @@ def getQueryInfo(workPath,pid,runTime,ob):
 	
 	return (percent,status,queue,nodes,procs);
 	
-def postProc(curPath,srcHome):
-	""""php=config.php
-	# 准备参数列表并调用后处理*/
-	dir=curPath;
-	dir=dir.replace("//","\\\/");
-	sed=" sed 's@projHome=.\+@projHome=\""+dir+"\";@g' qloop.php > qloop.php1";
-	if(os.path.exists("post.php")):postfile= "../post.php";
-	else: postfile="";
-	cmd="cd %s;"%curPath+sed+";cat qloop.php1 "+postfile+" > qloop.php2;"+php+" %s/profile.php \"%s/qloop.php2\" \"%s/species.php\";  "%(srcHome,curPath,curPath)
-	#print cmd
-	shell_exec(cmd)"""
-	cd(curPath)
-	proc()
-	
+
 def kappa(curPath,result):
 	# 取出后处理结果，热导率*/
 	#print curPath
@@ -115,12 +103,12 @@ def nAtom(curPath,result):
 		pwrite(result,"\t%s"%Natom);
 		#epn=float(totalE)/float(Natom);        	          
 		#pwrite(result,"\t%f"%epn);	
-def tDisorder(curPath,srcHome,result):
+def tDisorder(curPath,result):
 	
 	# 无序度*/
 	cd('%s/minimize'%curPath)
 	mkdir('disorder');cd('disorder')
-	disorderLine=shell_exec("cp %s"%srcHome+"/in.disorder .;"+config.lammps+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
+	disorderLine=shell_exec("cp %s"%SRCHOME+"/in.disorder .;"+config.lammps+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
 	k=disorderLine.split()[1:3]				
 	if len(k)==1:
 		k.append("")
@@ -144,14 +132,13 @@ def ineq(ob,curPath,result):
 
 	ie=inequality()
 	nonequ5= ie.run()
-	#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%srcHome);
+	#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%SRCHOME);
 	cd(curPath)
 	pwrite(result,"\t%s"%nonequ5);	
 	
-def item(projHome,ob,result,paras,srcHome):
-	php=config.php
+def item(ob,result,paras):
 	id=ob["id"];
-	curPath="%s/%s"%(projHome,id)
+	curPath="%s/%s"%(PROJHOME,id)
 	pid=ob["pid"];
 	runTime=ob["runTime"];
 	if(runTime==""):runTime=10000000;
@@ -170,16 +157,17 @@ def item(projHome,ob,result,paras,srcHome):
 		 
 	# work的计算结果*/
 	if(float(percent.replace('%',''))>0):
-		postProc(curPath,srcHome)
+		cd(curPath)
+		proc()
 		kappa(curPath,result)
 		tEnerty(curPath,result)
 		nAtom(curPath,result)
-		#tDisorder(curPath,srcHome,result)
+		#tDisorder(curPath,result)
 		drawStructure(curPath)
 		ineq(ob,curPath,result)
 		pwrite(result,"\n");	
 		
-def query(projHome,srcHome,universe):
+def query(universe):
 
 
 	result=open("result.txt","w");
@@ -199,21 +187,19 @@ def query(projHome,srcHome,universe):
 
 	# work覆盖过的参数*/
 	paras=getParas(obj);
-	for para in paras:
-		pwrite(result,"\t%s"%para);
-
+	pwrite(result,"\t%s"%('\t'.join(paras)));
 	# work的计算结果*/
 	pwrite(result,"\tkappa\ttotalE\tNatom\tE/N\tdisorder\trd\tdisorderC\tratio\trdfs\n");
 
-	checkUniverse(projHome,universe,obj)
+	checkUniverse(universe,obj)
 
 	# 遍历projet中的所有work*/
 	for ob in obj:
-		item(projHome,ob,result,paras,srcHome)
+		item(ob,result,paras)
 			
-def checkUniverse(projHome,universe,obj):
+def checkUniverse(universe,obj):
 	if(universe==''):return;
-	ff=open("%s/pbs/info"%projHome);
+	ff=open("%s/pbs/info"%PROJHOME);
 	uid=[];upid=[];ulog=[];uscreen=[];
 	for line in ff:
 		a=line.split()
@@ -222,19 +208,19 @@ def checkUniverse(projHome,universe,obj):
 	i=0;
 	for ob in obj:
 		id=ob[id];ob[pid]=int(upid[i])
-		if(not os.path.exists("%s/pbs/%s"%(projHome,ulog[i]))):continue;
-		if(not os.path.exists("%s/pbs/%s"%(projHome,uscreen[i]))):continue;
-		shell_exec("cp %s/pbs/%s %s/%s/log.lammps"%(projHome,ulog[i],projHome,id));
-		shell_exec("cp %s/pbs/%s %s/%s/log.out"%(projHome,uscreen[i],projHome,id));
-		shell_exec("cp %s/pbs/minimize/%s %s/%s/minimize/log.lammps"%(projHome,ulog[i],projHome,id));
-		shell_exec("cp %s/pbs/minimize/%s %s/%s/minimize/log.out"%(projHome,uscreen[i],projHome,id));
+		if(not os.path.exists("%s/pbs/%s"%(PROJHOME,ulog[i]))):continue;
+		if(not os.path.exists("%s/pbs/%s"%(PROJHOME,uscreen[i]))):continue;
+		shell_exec("cp %s/pbs/%s %s/%s/log.lammps"%(PROJHOME,ulog[i],PROJHOME,id));
+		shell_exec("cp %s/pbs/%s %s/%s/log.out"%(PROJHOME,uscreen[i],PROJHOME,id));
+		shell_exec("cp %s/pbs/minimize/%s %s/%s/minimize/log.lammps"%(PROJHOME,ulog[i],PROJHOME,id));
+		shell_exec("cp %s/pbs/minimize/%s %s/%s/minimize/log.out"%(PROJHOME,uscreen[i],PROJHOME,id));
 		i+=1
 
 
-def clean(projHome,projName,single):
-	if projHome=='':print "error projHome"
+def clean(single):
+	if PROJHOME=='':print "error PROJHOME"
 	#/*删除原始代码以外的文件*/	
-	files=shell_exec("cd %s;ls "%projHome);
+	files=shell_exec("cd %s;ls "%PROJHOME);
 	deleteFiles=[]
 	files=files.split('\n')
 	for ls in files:
@@ -247,29 +233,29 @@ def clean(projHome,projName,single):
 		sys.stdout.flush()
 		s=raw_input();
 		if(s!="y"):exit("exit with no change.")
-	comfirmStop(projHome,projName,single);
+	comfirmStop(single);
 	for ls in deleteFiles:
-		shell_exec("cd %s;rm -r %s"%(projHome,ls));
-def stop(projHome,projName,single):
+		shell_exec("cd %s;rm -r %s"%(PROJHOME,ls));
+def stop(single):
 	print "Comfirm to stop all the simulation in this project?[y/n]",	
 	sys.stdout.flush()
 	s=raw_input(); 
 	if(s!="y"):exit("exit with no change.")
-	comfirmStop(projHome,projName,single);
+	comfirmStop(single);
 			
 
-def comfirmStop(projHome,projName,single):
+def comfirmStop(single):
 	
 	#/* 容易kill掉同名工程程序*/
 	if(single):
-		obj=getObjs(projHome+"/qloops.txt");
+		obj=getObjs(PROJHOME+"/qloops.txt");
 		for pa in obj:
 			pid=pa["pid"];
          		print "kill:%s"%pid;
          	 	#exec::kill(pid);
 		return;
 	
-	tarname="zy_%s_"%projName;
+	tarname="zy_%s_"%PROJNAME;
 	if(len(tarname)<10):
 		works=shell_exec("qstat|grep %s"%tarname).split('\n');
 		for work in works:
@@ -293,12 +279,3 @@ def comfirmStop(projHome,projName,single):
 	
 		
 	
-		
-if __name__=='__main__':
-	cmd,projHome,srcHome,universe,projName,single=sys.argv[1:]
-	if cmd=='q':
-		query(projHome,srcHome,universe)
-	elif cmd=='clean':
-		clean(projHome,projName,single)
-	elif cmd=='stop':
-		stop(projHome,projName,single)

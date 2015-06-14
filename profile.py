@@ -11,6 +11,7 @@ from aces.fixAveSpace import fixAveSpace
 import pandas as pd
 from aces import tools
 from aces.fixAveTime import fixAveTime
+from aces.env import *
 class profile:
 	def __init__(self):
 		self.method='muller'
@@ -18,7 +19,7 @@ class profile:
 	def kappaConverge(self,istep,coord,aveN,aveQuants,*para):
 		#kappa convergence
 		snapStep,upP,deta,S,tcfactor,zfactor=para
-		filter=aveN>0
+		filter=aveN[:]>0
 		aveC=coord[filter]
 		aveTemp=aveQuants[filter,0]
 		avejx=aveQuants[filter,1]
@@ -45,12 +46,14 @@ class profile:
 		#pl.legend()
 		pl.savefig('convergenceT.png',bbox_inches='tight',transparent=True) 
 		pl.close()
-		filter=aveN>0
+		filter=aveN[:]>0
 		aveC=coord[filter]
+		aveN=aveN[filter]
 		aveTemp=aveQuants[filter,0]
 		avejx=aveQuants[filter,1]
 		nbin=len(avejx)
-		data=np.hstack([np.arange(nbin)+1,aveC,aveN,aveTemp,avejx])
+		data=np.c_[np.arange(nbin)+1,aveC,aveN,aveTemp,avejx]
+
 		tools.to_txt(['id','Coord','Count','Temp','Jx'],data,'tempAve.txt')
 		drawTempAve()
 		return (aveC,aveN,aveTemp,avejx)
@@ -154,9 +157,6 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	#lx,ly,S,zfactor from postMini
 	p=profile()
 	p.method=method
-	tcfactor,deta,timestep,excRate,swapEnergyRate,corRate,kb,T,thick=map(float,[tcfactor,deta,timestep,excRate,swapEnergyRate,corRate,kb,T,thick])
-	upP,begin,conti,fourierTc,computeTc,xp,yp,zp,enforceThick=map(int,[upP,begin,conti,fourierTc,computeTc,xp,yp,zp,enforceThick])
-
 	lx,ly,lz,zfactor,S=postMini(xp,yp,zp,enforceThick,thick)[:5]
 	if method=='greenkubo':
 		f=open('result.txt','w')
@@ -168,8 +168,7 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 		elif(fourierTc):
 			v=lx*ly*lz;
 			factor=corRate*timestep/(v*kb*T*T)*zfactor*tcfactor;
-			path=os.path.dirname(os.path.realpath(__file__))
-			kx=os.popen("%s/correlation/corr factor"%path).read();#generate a correlation file named jcor.txt
+			kx=os.popen("%s/correlation/corr factor"%SRCHOME).read();#generate a correlation file named jcor.txt
 		else:
 		
 			gk_result=os.popen("tail -1 fileKappa 2>err").read()
@@ -215,24 +214,20 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	flux_bulkc=J_bulkcs/(deta*S);
 	kappa_bulk=flux_bulk/slopes*tcfactor*zfactor;
 	kappa_bulkc=flux_bulkc/slopes*tcfactor*zfactor;
-	data=np.hstack([np.arange(numS)+1,kappa_src,kappa_bulk,kappa_bulkc,flux_src,flux_bulk,flux_bulkc,slopes])
-	tools.to_txt(['upP','kappa_src','kappa_bulk','kappa_bulkc','flux_src','flux_bulk','flux_bulkc','slope'],data,"scan.txt")
-from os.path import *	
+	data=np.c_[np.arange(n)+1,kappa_src,kappa_bulk,kappa_bulkc,np.ones(n)*flux_src,flux_bulk,flux_bulkc,slopes]
+	tools.to_txt(['upP','kappa_src','kappa_bulk','kappa_bulkc','flux_src','flux_bulk','flux_bulkc','slope'],data[:numS],"scan.txt")
+	
 def proc():
 
-	import sys
-	import os,json,imp
+	import json,imp
 	from aces.Units import Units
-	home=dirname(realpath(__file__))
-	#app home 
-	projHome=dirname(realpath(sys.argv[0]))
 	f=open('app.json')
 	opt=f.read()
 	opt=json.loads(opt)
 	f.close()
 	species=opt['species']
-	m= imp.load_source('structure', home+'/materials/'+species+'/structure.py') 
-	m=m.structure(home,opt)
+	m= imp.load_source('structure', SRCHOME+'/materials/'+species+'/structure.py') 
+	m=m.structure(SRCHOME,opt)
 	units=Units(m.units)
 	m.kb=units.boltz
 	m.nktv=units.nktv2p
@@ -242,5 +237,4 @@ def proc():
 	m.tcfactor=units.tcfactor;
 	m.excNum=m.aveRate/m.excRate;
 	m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
-	run(m.method,m.begin,m.timestep,m.conti,m.excRate,m.swapEnergyRate,m.upP,m.deta,m.tcfactor,m.fourierTc ,
-	m.computeTc ,m.corRate ,m.kb ,m.T,m.xp,m.yp,m.zp,m.enforceThick,m.thick)	
+	run(**m.__dict__)	
