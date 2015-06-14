@@ -1,5 +1,6 @@
 #encoding:utf8
-def input(units,structure,potential,timestep,masses,dumpRate,write_structure,metropolis,useMini,dump):
+def input(units,m):
+	structure,potential,timestep,masses,dumpRate,write_structure,metropolis,useMini,dump=m.structure,m.potential,m.timestep,m.masses,m.dumpRate,m.write_structure,m.metropolis,m.useMini,m.dump
 	print "units %s"%units
 	print "atom_style atomic"
 	print "boundary p p p"

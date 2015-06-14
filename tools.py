@@ -38,7 +38,7 @@ def mkdir(path):
         return True
     else:
         return False
-def ls(path):
+def ls(path='*'):
 	import glob
 	return glob.glob(path)
 class File(file):

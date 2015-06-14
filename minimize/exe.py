@@ -10,4 +10,4 @@ species=opt['species']
 m= imp.load_source('structure', SRCHOME+'/materials/'+species+'/structure.py') 
 m=m.structure(SRCHOME,opt)
 units=opt['units']
-input(units,m.structure,m.potential,m.timestep,m.masses,m.dumpRate,m.write_structure,m.metropolis,m.useMini,m.dump)
+input(units,m)
