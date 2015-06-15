@@ -5,16 +5,10 @@ import aces.config as config
 from aces.inequality import inequality
 from ase.io import read
 from aces.tools import *
-from aces.profile import proc
 from aces.env import *
+from aces.App import App
 def getObjs():
-	
-	#执行程序之前会清理上次的，读取qloops.txt，如果没有上次的文件就不清理。*/
-	fileName="qloops.txt"
-	qloop=open(fileName,"r");
-	obj=[]
-	for  json_string in qloop:
-        	obj.append(json.loads(json_string));
+	obj=[json.loads(json_string) for  json_string in open("qloops.txt")]
 	return obj;
 	
 def getRatio(path):
@@ -38,16 +32,13 @@ def getRatio(path):
 	return float(a[1])/natom;
 	
 ###
-# 获取有效参数，排除那些已经考虑过的
+# effective parameters 
 # @author zhouy
 ##
 def getParas(obj):
-	paras=[]
-	for pa in obj:
-		for key in pa:
-			if key in ["id","pid","time","cmd","project","nodes","procs","species","units","method"]:continue;
-			if not(key in paras):paras.append(key)
-	return paras;
+	x=reduce(lambda x,y:set(x)|set(y),obj)
+	a=["id","pid","time","cmd","project","nodes","procs","species","units","method"]
+	return list(x-set(a)) 
      
 
 	
@@ -80,60 +71,56 @@ def getQueryInfo(workPath,pid,runTime,ob):
 	return (percent,status,queue,nodes,procs);
 	
 
-def kappa(curPath,result):
-	# 取出后处理结果，热导率*/
-	#print curPath
-	kappaline=shell_exec("cd %s;tail -1 result.txt 2>err;"%curPath);
+def kappa(result):
+	kappaline=shell_exec("tail -1 result.txt 2>err;");
 	kappa=kappaline.split('=');
 	if len(kappa)>1:
 		kappa=kappa[1]
 		pwrite(result,"%s"%kappa);	
 		
-def tEnerty(curPath,result):
+def tEnerty(result):
 	# 总能量*/
-	totalEline=shell_exec("cd %s/minimize;tail -22 log.out| head -1;"%curPath);
+	totalEline=shell_exec("cd minimize;tail -22 log.out| head -1;");
 	totalE=totalEline.split()[1]
 	pwrite(result,"\t%s"%totalE);	
 	
-def nAtom(curPath,result):
+def nAtom(result):
 	# 原子数和平均能量*/
-	Natomline=shell_exec("cd %s/minimize;grep atoms log.out ;"%curPath);
+	Natomline=shell_exec("cd minimize;grep atoms log.out ;");
 	Natom=Natomline.split()[0]
 	if(Natom.isdigit() and Natom>0):
 		pwrite(result,"\t%s"%Natom);
 		#epn=float(totalE)/float(Natom);        	          
 		#pwrite(result,"\t%f"%epn);	
-def tDisorder(curPath,result):
+def tDisorder(result):
 	
 	# 无序度*/
-	cd('%s/minimize'%curPath)
+	now=pwd()
+	cd('minimize')
 	mkdir('disorder');cd('disorder')
 	disorderLine=shell_exec("cp %s"%SRCHOME+"/in.disorder .;"+config.lammps+" <in.disorder 2>err 1>log;tail -1 disorder.txt  2>err;");
 	k=disorderLine.split()[1:3]				
 	if len(k)==1:
 		k.append("")
 	disorder,rd=k
-	cd(curPath)
+	cd(now)
 	pwrite(result,"\t%s\t%s"%(disorder,rd));
 	
-def drawStructure(curPath):
-	cd('%s/minimize'%curPath)
-	atoms=read('range',format='lammps')
-	atoms.write('../structure.png')		
-	cd(curPath)
+def drawStructure():
+	atoms=read('minimize/range',format='lammps')
+	atoms.write('structure.png')		
 	
-def ineq(ob,curPath,result):
-
+def ineq(ob,result):
+	now=pwd()
 	species=ob["species"];
 	if(not (species in ["CN-small"])):return
-	cd('%s/minimize'%curPath)
+	cd('minimize')
 	mkdir('nonequ')
 	cd('nonequ')
 
 	ie=inequality()
 	nonequ5= ie.run()
-	#nonequ5=shell_exec("cd nonequ;python %s/inequality.py;"%SRCHOME);
-	cd(curPath)
+	cd(now)
 	pwrite(result,"\t%s"%nonequ5);	
 	
 def item(ob,result,paras):
@@ -158,13 +145,13 @@ def item(ob,result,paras):
 	# work的计算结果*/
 	if(float(percent.replace('%',''))>0):
 		cd(curPath)
-		proc()
-		kappa(curPath,result)
-		tEnerty(curPath,result)
-		nAtom(curPath,result)
-		#tDisorder(curPath,result)
-		drawStructure(curPath)
-		ineq(ob,curPath,result)
+		App().result()
+		kappa(result)
+		tEnerty(result)
+		nAtom(result)
+		#tDisorder(result)
+		drawStructure()
+		ineq(ob,result)
 		pwrite(result,"\n");	
 		
 def query(universe):

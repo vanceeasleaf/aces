@@ -13,10 +13,10 @@ def twinx(x,y1,y2,filename):
 	ax1.set_frame_on(False)
 	ax1.legend(a+b,[y1[1],y2[1]],loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True)
-
+	pl.close()
 def plot(x,y,filename):
 	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False)
-
+	
 def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True):
 	pl.figure()
 	pl.xlabel(xlabel)
@@ -26,3 +26,4 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True):
 	if legend:
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
+	pl.close()

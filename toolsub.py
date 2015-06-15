@@ -7,13 +7,8 @@ import aces.config as config
 import time
 from aces.env import *
 def genPbs(path,disp,queue,nodes,procs,bte):
-	#define MPI PATH
-
-
-	input='exe.py'
 	exe=config.python
-
-	qloop=input+' >input'
+	qloop='exe.py >input'
 	if bte==True:		
 		content="cd %s/minimize\n"%path
 		content+="%s %s/minimize/%s\n"%(exe,SRCHOME,qloop)

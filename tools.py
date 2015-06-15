@@ -41,6 +41,8 @@ def mkdir(path):
 def ls(path='*'):
 	import glob
 	return glob.glob(path)
+def pwd():
+	return os.getcwd()
 class File(file):
     """ An helper class for file reading  """
 

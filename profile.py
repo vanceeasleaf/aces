@@ -153,7 +153,7 @@ class profile:
 	
 		
 	
-def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick):
+def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick,**rest):
 	#lx,ly,S,zfactor from postMini
 	p=profile()
 	p.method=method
@@ -217,24 +217,4 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	data=np.c_[np.arange(n)+1,kappa_src,kappa_bulk,kappa_bulkc,np.ones(n)*flux_src,flux_bulk,flux_bulkc,slopes]
 	tools.to_txt(['upP','kappa_src','kappa_bulk','kappa_bulkc','flux_src','flux_bulk','flux_bulkc','slope'],data[:numS],"scan.txt")
 	
-def proc():
 
-	import json,imp
-	from aces.Units import Units
-	f=open('app.json')
-	opt=f.read()
-	opt=json.loads(opt)
-	f.close()
-	species=opt['species']
-	m= imp.load_source('structure', SRCHOME+'/materials/'+species+'/structure.py') 
-	m=m.structure(SRCHOME,opt)
-	units=Units(m.units)
-	m.kb=units.boltz
-	m.nktv=units.nktv2p
-	if(m.method=="nvt"):m.xp=0;
-	lx,ly,lz,m.zfactor,m.S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(m.xp,m.yp,m.zp,m.enforceThick,m.thick)
-	m.dtime=m.timestep*100;
-	m.tcfactor=units.tcfactor;
-	m.excNum=m.aveRate/m.excRate;
-	m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
-	run(**m.__dict__)	

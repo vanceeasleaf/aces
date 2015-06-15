@@ -8,9 +8,9 @@ from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
 from aces import tools
 from aces.modify import get_unique_atoms
+from aces.env import SRCHOME
 class structure:
-	def __init__(self,home,opt):
-		self.home=home
+	def __init__(self,opt):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
 		self.set_parameters()
 		self.__dict__=dict(self.__dict__,**opt)
@@ -26,7 +26,7 @@ class structure:
 		self.fixud=0	
 
 	def setup(self):
-		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(self.home,' '.join(self.elements))
+		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(SRCHOME,' '.join(self.elements))
 		self.masses=""
 		self.phontsmasses=""
 		i=1
@@ -106,6 +106,6 @@ class structure:
 		poscar = open("POSCAR")
 		unit_cell = UnitCell(poscar)
 		unit_cell.num_atom_types=len(self.elements)
-		tools.write("structure",unit_cell.output_lammps())
+		tools.write(unit_cell.output_lammps(),"structure")
 		#data("structure").write("new")
 
