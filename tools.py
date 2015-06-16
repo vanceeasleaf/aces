@@ -8,9 +8,9 @@ def shell_exec(cmd):
 def passthru(cmd):
 	print os.popen(cmd).read()
 	sys.stdout.flush()	
-def write(cmd,fileName):
-	file=open(fileName,"w");
-	file.write(cmd);
+def write(cmd,fileName,mode="w",sep=""):
+	file=open(fileName,mode);
+	file.write(cmd+sep);
 	file.close();
 def to_txt(columns,data,filename):
 	quants=pd.DataFrame(data,columns =columns)

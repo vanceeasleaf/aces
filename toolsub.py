@@ -155,7 +155,7 @@ def setSubProject(index,single):
 def toolsub(cmd,idx,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs,bte):
 	makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj,bte)
 	if(universe==''):pid=setSubProject(idx,single);
-
+	
 	json_obj={
 		"id":idx,
 		"pid":pid,
@@ -172,4 +172,4 @@ def toolsub(cmd,idx,species,units,method,queue ,nodes ,procs ,runTime,jj,univers
 	if len(eobj)>1:
 		json_obj=dict(json_obj.items()+eobj[1].items())
 
-	write(json.dumps(json_obj),'qloops.txt')
+	write(json.dumps(json_obj),'qloops.txt','a+','\n')

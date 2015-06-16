@@ -38,7 +38,7 @@ def getRatio(path):
 def getParas(obj):
 	x=reduce(lambda x,y:set(x)|set(y),obj)
 	a=["id","pid","time","cmd","project","nodes","procs","species","units","method"]
-	return list(x-set(a)) 
+	return list(set(x).difference(set(a))) 
      
 
 	
