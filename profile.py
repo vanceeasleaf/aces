@@ -1,7 +1,4 @@
 #encoding : utf8
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as pl
 import numpy as np
 from scipy import stats
 import math,sys,os
@@ -12,40 +9,34 @@ import pandas as pd
 from aces import tools
 from aces.fixAveTime import fixAveTime
 from aces.env import *
+from aces.graph import series
 class profile:
 	def __init__(self):
 		self.method='muller'
 		
 	def kappaConverge(self,istep,coord,aveN,aveQuants,*para):
 		#kappa convergence
-		snapStep,upP,deta,S,tcfactor,zfactor=para
+		snapStep,upP,deta,S,tcfactor,zfactor,dto=para
 		filter=aveN[:]>0
 		aveC=coord[filter]
 		aveTemp=aveQuants[filter,0]
 		avejx=aveQuants[filter,1]
 		if istep%10==0:
-			pl.plot(aveC,aveTemp,label="time=%s"%(snapStep*istep))
+			dto.plots.append([aveC,aveTemp,"time=%s"%(snapStep*istep)])
 		slope,flux_bulk=self.sslope(aveC,aveTemp,aveN,avejx,upP,deta,S)
 		kappa=self.getFx(istep)/slope*tcfactor*zfactor
-		return "%d\t%f\n"%(istep,kappa)
+		dto.log+="%d\t%f\n"%(istep,kappa)
 		
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		fas=fixAveSpace('tempProfile.txt')
 		quants=fas.getConvergence(12,begin)
 		tools.to_txt(['Temperature(K)','Jx'],quants,'convergenceT.txt')
-
-
 		snapStep=fas.snapStep
 
-		pl.figure()
-
-		pl.xlabel('x(Augstrom)')
-		pl.ylabel('temperature(K)')
-		coord,aveN,aveQuants,log=fas.iterate(begin,self.kappaConverge,snapStep,upP,deta,S,tcfactor,zfactor)
-		tools.write("step\tkappa\n"+log,'convergenceK.txt')
-		#pl.legend()
-		pl.savefig('convergenceT.png',bbox_inches='tight',transparent=True) 
-		pl.close()
+		dto=dict(log="step\tkappa\n",plots=[])
+		coord,aveN,aveQuants=fas.iterate(begin,self.kappaConverge,snapStep,upP,deta,S,tcfactor,zfactor,dto)
+		tools.write(dot['log'],'convergenceK.txt')
+		series('x(Augstrom)','temperature(K)',dto['plots'],'convergenceT.png',linewidth=1,legend=False)
 		filter=aveN[:]>0
 		aveC=coord[filter]
 		aveN=aveN[filter]

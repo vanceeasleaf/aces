@@ -11,10 +11,12 @@ class lineManager:
 		self.nline=len(self._line)
 		
 	def getLine(self,i):
-		f=self.f
-		assert i < self.nline and i >=0
-		f.seek(self._line[i])
+		self.moveto(i)
 		return self.nextLine()
 		
 	def nextLine(self):
 		return self.f.readline().strip()
+	def moveto(self,i):
+		f=self.f
+		assert i < self.nline and i >=0
+		f.seek(self._line[i])

@@ -17,14 +17,7 @@ class material:
 		self.setup()
 		
 	def set_parameters(self):
-		self.elements=['C','N']
-		self.latysmall=3; # 窄边包括2*latysmall+1排C原子，latysmall=3时，为7 AGNR*/
-		self.latExtend=5;# 相对于窄边，长边的y方向两头都延伸latExtend个六边形，latExtend=2时，长边为[(latysamll-1)+2*latExtend]*2+1=13 AGNR*/
-		self.latxsmall=7;#奇数
-		self.latxbig=12;#最简单模型，中间是长边，两头是等长的短边, latxsmall表示短边由几条*折线*组成，偶数*/
-		self.yp=0
-		self.fixud=0	
-
+		pass
 	def setup(self):
 		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(SRCHOME,' '.join(self.elements))
 		self.masses=""

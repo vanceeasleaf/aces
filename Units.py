@@ -131,6 +131,7 @@ constants['lj']['femtosecond']=constants["si"]['femtosecond']*sqrt(constants["si
 constants['lj']['kelvin']=constants["si"]['kelvin']*(constants["si"]['boltz']/constants["si"]['ar_epsilon'])
 class Units:
 	def __init__(self,targetUnit):
+		targetUnit=str(targetUnit)
 		self.metal=unitBase(targetUnit,'metal')
 		self.lj=unitBase(targetUnit,'lj')
 		self.real=unitBase(targetUnit,'real')

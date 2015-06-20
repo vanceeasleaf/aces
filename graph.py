@@ -14,16 +14,22 @@ def twinx(x,y1,y2,filename):
 	ax1.legend(a+b,[y1[1],y2[1]],loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True)
 	pl.close()
-def plot(x,y,filename):
-	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False)
+def plot(x,y,filename,grid=False):
+	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False,grid=grid)
 	
-def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True):
+def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False):
 	pl.figure()
 	pl.xlabel(xlabel)
 	pl.ylabel(ylabel)
-	for serie in datas:
-		pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth)
+	if len(datas)==1:
+		serie=datas[0]
+		pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r')
+	else:
+		for serie in datas:
+			pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth)
 	if legend:
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
+	if grid:
+		pl.grid(True)
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()

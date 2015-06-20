@@ -9,12 +9,9 @@ from ase.data import atomic_masses,atomic_numbers
 from aces import tools
 from aces.modify import get_unique_atoms
 from aces.env import SRCHOME
-class structure:
-	def __init__(self,opt):
-		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
-		self.set_parameters()
-		self.__dict__=dict(self.__dict__,**opt)
-		self.setup()
+from aces.materials.material import material
+class structure(material):
+
 		
 	def set_parameters(self):
 		self.elements=['C','N']
@@ -24,7 +21,7 @@ class structure:
 		self.latxbig=12;#最简单模型，中间是长边，两头是等长的短边, latxsmall表示短边由几条*折线*组成，偶数*/
 		self.yp=0
 		self.fixud=0	
-		self.seg=0
+
 	def setup(self):
 		self.potential='pair_style        tersoff\npair_coeff      * * %s/potentials/BNC.tersoff  %s'%(SRCHOME,' '.join(self.elements))
 		self.masses=""
@@ -38,14 +35,6 @@ class structure:
 			i+=1
 		self.dump="dump_modify dump1 element %s"%(' '.join(self.elements))
 		
-	def extent(self,atoms):
-		xmax=atoms.positions[:,0].max()
-		xmin=atoms.positions[:,0].min()
-		ymax=atoms.positions[:,1].max()
-		ymin=atoms.positions[:,1].min()
-		lx=xmax-xmin;
-		ly=ymax-ymin;
-		return (lx,ly);
 			
 	def structure(self):
 		latysmall,latExtend,latxsmall,latxbig,bond=[int(self.latysmall),int(self.latExtend),int(self.latxsmall),int(self.latxbig),float(self.bond)]
@@ -58,12 +47,7 @@ class structure:
 		unit=self.agnr(latysmall,latxsmall+1,0);
 		unit.translate([(latxsmall+latxbig-1)*1.5,0,0])
 		atoms.extend(unit)
-		temp=Atoms()	
-		for i in range(self.seg):
-			unit=atoms.copy()
-			unit.translate([(latxsmall+latxbig-1)*1.5*i,0,0])
-			temp.extend(unit)
-		atoms.extend(temp)
+
 		atoms=get_unique_atoms(atoms)
 		lx,ly=self.extent(atoms)
 		atoms.set_cell([lx,ly,100])

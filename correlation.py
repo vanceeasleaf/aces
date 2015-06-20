@@ -6,18 +6,10 @@ from aces.tools import *
 import aces.config as config
 from ase.io import read
 from ase.io.vasp import write_vasp
+from aces.input import postMini
 def correlation(m):
-	units=Units(m.units)
-	m.kb=units.boltz
-	m.nktv=units.nktv2p
-	if(m.method=="nvt"):m.xp=0;
-	lx,ly,lz,m.zfactor,m.S,xlo,xhi,ylo,yhi,zlo,zhi=postMini(m.xp,m.yp,m.zp,m.enforceThick,m.thick)
-	m.dtime=m.timestep*100;
-	m.tcfactor=units.tcfactor;
-	m.excNum=m.aveRate/m.excRate;
-	m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
 	f=open("correlation.lmp","w")
-	print >>f,"units %s"%units
+	print >>f,"units %s"%m.units
 	print >>f,"dimension 3"
 	pbcx=pbcy=pbcz='s'
 	if m.xp==1:pbcx='p'
@@ -46,5 +38,5 @@ def correlation(m):
 	f.close()
 	passthru(config.lammps+" <correlation.lmp >out.dat")
 	from aces.vdos import vdos
-	vdos(m.timestep)
-	rm("velocity.txt")
+	vdos(m.timestep).run()
+	#rm("velocity.txt")

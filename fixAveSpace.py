@@ -67,12 +67,11 @@ class fixAveSpace:
 		sumQuants=np.zeros([nbin,nquants])
 		sumN=np.zeros(nbin)
 		n=0
-		log=""
 		for istep in range(begin,nstep):
 			coord,ncount,quants=self.getIStep(istep)
 			n+=1
 			sumQuants+=quants
 			sumN+=ncount
 
-			log+=callback(istep,coord,sumN/n,sumQuants/n,*para)
-		return (coord,sumN/n,sumQuants/n,log)
+			callback(istep,coord,sumN/n,sumQuants/n,*para)
+		return (coord,sumN/n,sumQuants/n)
