@@ -45,7 +45,7 @@ default=dict(
 	dumpxyz=1,
 	dumpv=0,
 	hdeta=units.metal.L(3),
-	bte=False
+	runner='mdTc'
 	
 	,Cinterval=5
 	,Ctime=200000

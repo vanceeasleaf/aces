@@ -7,44 +7,16 @@ import aces.config as config
 import time
 from aces.env import *
 def genPbs(path,disp,queue,nodes,procs,bte):
-	exe=config.python
-	qloop='exe.py >input'
-	if bte==True:		
-		content="cd %s/minimize\n"%path
-		content+="%s %s/minimize/%s\n"%(exe,SRCHOME,qloop)
-		content+=config.mpirun+" $n_proc "+config.lammps+" <input &>"+path+"/minimize/log.out"
-		content+="\ncd "+path+"\n"
-		content+=exe+"%s/%s\n"%(SRCHOME,qloop)
-		content+=config.mpirun+"$n_proc "+config.phonts+"  &>"+path+"/log.out"
-	elif bte=="correlation" or bte=="phonopy":
-		content="cd %s/minimize\n"%path
-		content+=exe+"%s/minimize/%s\n"%(SRCHOME,qloop)
-		content+=config.mpirun+"$n_proc "+config.lammps+" <input &>"+path+"/minimize/log.out"
-		content+="\ncd "+path+"\n"
-		content+=exe+"%s/%s\n"%(SRCHOME,qloop)
-	else:
-		content="cd %s/minimize\n"%path
-		content+=exe+"%s/minimize/%s\n"%(SRCHOME,qloop)
-		content+=config.mpirun+"$n_proc "+config.lammps+" <input &>"+path+"/minimize/log.out"
-		content+="\ncd "+path+"\n"
-		content+=exe+"%s/%s\n"%(SRCHOME,qloop)
-		content+=config.mpirun+"$n_proc "+config.lammps+" <input &>"+path+"/log.out"
-		
+	content="cd "+path+"\n"
+	content+=config.python+" %s/App.py\n"%SRCHOME	
 	s="""#!/bin/bash -x
 #PBS -l nodes=%s:ppn=%s
 #PBS -l walltime=240:00:00
 #PBS -j oe
 #PBS -q %s
 #PBS -N %s
-# Setup the OpenMPI topology
-n_proc=$(cat $PBS_NODEFILE | wc -l)
-contexts=`~/bin/get_psm_sharedcontexts_max.sh`
-if [ '?' = '0' ] ; then
-  export PSM_SHAREDCONTEXTS_MAX=contexts
- fi
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/mkl/10.0.013/lib/em64t:/opt/intel/mpi/openmpi/1.6.3/icc.ifort/lib
 %s
-exit 0
 """%(nodes,procs,queue,disp,content)
 
 	write(s,path+"/lammps.pbs")
@@ -127,7 +99,7 @@ def makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueu
 			genPbss(PROJHOME,"zy_%s_"%PROJNAME,uqueue,unodes,uprocs,idx,cores);
 
 
-	shell_exec("mkdir -p "+dir+";cd "+dir+";mkdir -p minimize");
+	shell_exec("mkdir -p "+dir);
 	if(single):
 		genSh(dir,pro,procs);
 	
@@ -135,6 +107,7 @@ def makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueu
 	#write('<?php\n%s;\n$PROJHOME="%s/%s";\n?>'%(cmd,PROJHOME,idx),dir+"/qloop.php");
 	#write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
 	eobj=json.loads(jj)
+	cores=procs*nodes
 	if len(eobj)>1:
 		opt=eobj[1].copy()
 		opt['PROJHOME']='%s/%s'%(PROJHOME,idx)
@@ -142,6 +115,7 @@ def makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueu
 		opt['units']=units
 		opt['method']=method
 		opt['bte']=bte
+		opt['cores']=cores
 		write(json.dumps(opt),dir+"/app.json");
 
 
