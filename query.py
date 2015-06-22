@@ -128,7 +128,6 @@ def item(ob,result,paras):
 	curPath="%s/%s"%(PROJHOME,id)
 	pid=ob["pid"];
 	runTime=ob["runTime"];
-	if(runTime==""):runTime=10000000;
 
 	# work的固有属性*/
 	percent,status,queue,nodes,procs=getQueryInfo(curPath,pid,runTime,ob)

@@ -19,10 +19,14 @@ def get_clusters(n,dis):
 	
 def get_unique_atoms(atoms):
 	n=len(atoms)
-	dis=atoms.get_all_distances()
+	dis=atoms.get_all_distances(mic=True)
 	clusters=get_clusters(n,dis)
 	newatoms=Atoms()
 	for i in range(n):
 		if clusters[i]:
 			newatoms.append(atoms[i])
+	pbc=atoms.get_pbc()
+	cell=atoms.get_cell()
+	newatoms.set_pbc(pbc)
+	newatoms.set_cell(cell)
 	return newatoms

@@ -12,6 +12,11 @@ def write(cmd,fileName,mode="w",sep=""):
 	file=open(fileName,mode);
 	file.write(cmd+sep);
 	file.close();
+def read(fileName):
+	file=open(fileName);
+	s=file.read()
+	file.close();
+	return s
 def to_txt(columns,data,filename):
 	quants=pd.DataFrame(data,columns =columns)
 	quants.to_csv(filename,sep='\t',index=None)
@@ -26,9 +31,9 @@ def exit(info):
 def cd(path):
 	os.chdir(path)
 def mv(src,dest):
-	shutil.move(src,dest)
+	shell_exec("mv %s %s"%(src,dest))
 def cp(src,dest):
-	shutil.copyfile(src,dest)
+	shell_exec("cp %s %s"%(src,dest))
 def mkdir(path):
     path=path.strip()
     path=path.rstrip("\\")

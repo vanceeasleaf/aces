@@ -5,19 +5,26 @@ from ase.io import read
 from ase.io.vasp import write_vasp
 from aces.binary import pr
 from aces.runners import Runner
+from aces.UnitCell.unitcell import UnitCell
+from aces.graph import plot,series
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as pl
+import numpy as np
 class runner(Runner):
-	def generate(self):
+	def minimizePOSCAR(self):
 		m=self.m
-		# from minimized structure generate POSCAR
-		atoms=read('minimize/range',format='lammps')
-		s=atoms.numbers
-		symbols=[m.elements[i-1] for i in s ]
-		atoms.set_chemical_symbols(symbols)
-		write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
-		#generate supercells
-		dim=' '.join(str(i) for i in m.supercell)
-		passthru(config.phonopy+"-d --dim='%s'"%(dim))
-		files=shell_exec("ls *-*").split('\n')
+		if m.engine=="lammps":
+			# from minimized structure generate POSCAR
+			atoms=read('minimize/range',format='lammps')
+			s=atoms.numbers
+			symbols=[m.elements[i-1] for i in s ]
+			atoms.set_chemical_symbols(symbols)
+			write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
+		elif m.engine=="vasp":
+			cp('minimize/CONTCAR','POSCAR')
+	
+	def get_lammps_script(self,m):
 		content="units %s\n"%m.units
 		content+="""atom_style      atomic
 dimension       3
@@ -32,73 +39,123 @@ dump_modify 1 format "%%d %%30.20f %%30.20f %%30.20f %%30.20f %%30.20f %%30.20f"
 dump_modify  1 sort id
 run 0
 """%(m.masses,m.potential)
-		from aces.UnitCell.unitcell import UnitCell
+		return content
+		
+	def force_constant(self,files):
 		cmd=config.phonopy+"-f "
-		maindir=shell_exec('pwd')
 		for file in files:
-			print file
 			dir="dirs/dir_"+file
-			mkdir(dir)
-			#POSCAR
-			mv(file,dir)
-			cd(dir)
-			#generate structure
-			poscar = open(file)
-			unit_cell = UnitCell(poscar)
-			unit_cell.num_atom_types=len(m.elements)
-			write(unit_cell.output_lammps(),"structure")
-			#generate in
-			write(content,"in")
-			#generate dump.force
-			shell_exec(config.lammps+" < in >log.out")
-			#generate vasprun.xml
-			f=open('dump.force')
-			for i in range(9):f.next()
-			forces=""
-			poses=""
-			for line in f:
-				line=line.split()
-				forces+="<v>  %s %s %s </v>\n"%tuple(line[1:4])
-				poses+="<v>  %s %s %s  </v>\n"%tuple(line[4:8])
-			vasprun='<root><calculation><varray name="forces" >\n'
-			vasprun+=forces
-			vasprun+='</varray>\n<structure><varray name="positions">\n'+poses
-			vasprun+='</varray></structure></calculation></root>\n'
-			write(vasprun,'vasprun.xml')
 			cmd+=dir+'/vasprun.xml '
-			cd(maindir)
 		#generate FORCE_SETS
 		passthru(cmd)
+	def generate_meshconf(self):
 		#generate mesh.conf
+		m=self.m
+		dim=' '.join(map(str,m.supercell))
 		mesh="""DIM = %s
 ATOM_NAME = %s
 MP = %s
 EIGENVECTORS=.TRUE.
 FORCE_CONSTANTS = WRITE
-"""%(dim,' '.join(m.elements),' '.join(str(i) for i in m.kpoints))
+"""%(dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
 		write(mesh,'mesh.conf')
-		import matplotlib
-		matplotlib.use('Agg')
-		from matplotlib import pyplot as pl
+	
+	def generate_supercells(self):
+		m=self.m
+		#generate supercells
+		dim=' '.join(map(str,m.supercell))
+		passthru(config.phonopy+"-d --dim='%s'"%(dim))
+	
+	def getVaspRun_lammps(self):
+		m=self.m
+		
+		#generate structure
+		m.POSCAR2data()
+		#generate in
+		content=self.get_lammps_script(m)
+		write(content,"in")
+		#generate dump.force
+		shell_exec(config.lammps+" < in >log.out")
+		#generate vasprun.xml
+		f=open('dump.force')
+		for i in range(9):f.next()
+		forces=""
+		poses=""
+		for line in f:
+			line=line.split()
+			forces+="<v>  %s %s %s </v>\n"%tuple(line[1:4])
+			poses+="<v>  %s %s %s  </v>\n"%tuple(line[4:8])
+		vasprun='<root><calculation><varray name="forces" >\n'
+		vasprun+=forces
+		vasprun+='</varray>\n<structure><varray name="positions">\n'+poses
+		vasprun+='</varray></structure></calculation></root>\n'
+		write(vasprun,'vasprun.xml')
+		
+	def getVaspRun_vasp(self):
+		s="""SYSTEM=calculate energy
+PREC = Accurate
+IBRION = -1
+ENCUT = 300
+EDIFF = 1.0e-6
+ISMEAR = 0; SIGMA = 0.01
+IALGO = 38
+LREAL = .FALSE.
+ADDGRID = .TRUE.
+LWAVE = .FALSE.
+LCHARG = .FALSE.
+"""
+		write(s,'INCAR')
+		m=self.m
+		m.writePOTCAR()
+		s="""A
+0
+Monkhorst-Pack
+%s
+0  0  0
+	"""%' '.join(map(str,m.kpoints))
+		write(s,'KPOINTS')
+		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+	def generate(self):
+		m=self.m
+		self.minimizePOSCAR()
+		self.generate_supercells()
+		files=shell_exec("ls *-*").split('\n')
+		
+		
+		maindir=shell_exec('pwd')
+		for file in files:
+			print file
+			dir="dirs/dir_"+file
+			mkdir(dir)
+			mv(file,dir+'/POSCAR')
+			cd(dir)
+			if m.engine=="lammps":			
+				self.getVaspRun_lammps()
+			elif m.engine=="vasp":
+				self.getVaspRun_vasp()
+			cd(maindir)
+		self.force_constant(files)
+		self.generate_meshconf()
+		
+		
 		passthru(config.phonopy+" --dos  mesh.conf")
-
-		import numpy as np
+		self.drawDos()
+		
+	def drawDos(self):
 		xx=np.loadtxt('partial_dos.dat',skiprows=1)
-		ndos=len(line)-1
+		ndos=len(xx[0,:])-1
 		freq=xx[:,0]
 		pdos=xx[:,1:]
 		ndos=len(pdos[0,:])
-		pl.figure()
+		
+		datas=[]
 		for i in range(ndos):
-			pl.plot(freq,pdos[:,i])
-		pl.xlabel('Frequency (THz)')
-		pl.ylabel('Partial Density of States')
-		pl.savefig('partial_dos.png',bbox_inches='tight',transparent=True) 
-		pl.figure()
-		pl.plot(freq,np.sum(pdos,axis=1),color='red')
-		pl.xlabel('Frequency (THz)')
-		pl.ylabel('Density of States')
-		pl.savefig('total_dos.png',bbox_inches='tight',transparent=True) 
+			datas.append((freq,pdos[:,i],''))
+		series('Frequency (THz)','Partial Density of States',
+		datas=datas,
+		filename='partial_dos.png',legend=False,grid=True)
+		
+		plot((freq,'Frequency (THz)'),(np.sum(pdos,axis=1),'Density of States'),filename='total_dos.png')
 		#calculate paticipation ratio
 		
 		pr()

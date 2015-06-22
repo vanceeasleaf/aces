@@ -1,5 +1,38 @@
 #encoding:utf8
-def input(m):
+from aces.tools import *
+from aces import config
+def minimize(m):
+	if m.engine=="lammps":minimize_lammps(m)
+	elif m.engine=="vasp":minimize_vasp(m)
+	else: raise Exception('Unknow minimize type!')
+def minimize_vasp(m):
+	s="""SYSTEM = - local optimisation
+PREC = accurate
+ENCUT=400
+EDIFF = 1e-6
+IBRION = -1
+ISIF = 2
+ISMEAR = 0 ; SIGMA = 0.1
+ISTART = 0
+LWAVE = FALSE
+LCHARG = FALSE
+EDIFFG = 0.01
+ALGO=fast
+LREAL=AUTO
+LPLANE=.TRUE.
+"""
+	write(s,'INCAR')
+	m.structure()
+	m.writePOTCAR()
+	s="""A
+0
+Monkhorst-Pack
+%s
+0  0  0
+	"""%' '.join(map(str,m.kpoints))
+	write(s,'KPOINTS')
+	shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+def minimize_lammps(m):
 	f=open('input', 'w')
 	units,structure,potential,timestep,masses,dumpRate,write_structure,metropolis,useMini,dump=m.units,m.structure,m.potential,m.timestep,m.masses,m.dumpRate,m.write_structure,m.metropolis,m.useMini,m.dump
 	print >>f,"units %s"%units
@@ -29,3 +62,6 @@ def input(m):
 	print >>f,dump
 	print >>f,"dump kaka all atom 1 range"
 	print >>f,"run 0"
+	f.close()
+	shell_exec(config.mpirun+" %s "%m.cores+config.lammps+" <input >log.out")	
+	m.postMini()

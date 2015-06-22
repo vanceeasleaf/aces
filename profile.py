@@ -3,7 +3,6 @@ import numpy as np
 from scipy import stats
 import math,sys,os
 from aces.tempAve import drawTempAve
-from aces.input import postMini;
 from aces.fixAveSpace import fixAveSpace
 import pandas as pd
 from aces import tools
@@ -144,11 +143,11 @@ class profile:
 	
 		
 	
-def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick,**rest):
-	#lx,ly,S,zfactor from postMini
+def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fourierTc ,computeTc ,corRate ,kb ,T,xp,yp,zp,enforceThick,thick,zfactor,S,box,**rest):
+
 	p=profile()
 	p.method=method
-	lx,ly,lz,zfactor,S=postMini(xp,yp,zp,enforceThick,thick)[:5]
+	lx,ly,lz=box[-3:]
 	if method=='greenkubo':
 		f=open('result.txt','w')
 		if(computeTc):
@@ -206,6 +205,6 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 	kappa_bulk=flux_bulk/slopes*tcfactor*zfactor;
 	kappa_bulkc=flux_bulkc/slopes*tcfactor*zfactor;
 	data=np.c_[np.arange(n)+1,kappa_src,kappa_bulk,kappa_bulkc,np.ones(n)*flux_src,flux_bulk,flux_bulkc,slopes]
-	tools.to_txt(['upP','kappa_src','kappa_bulk','kappa_bulkc','flux_src','flux_bulk','flux_bulkc','slope'],data[:numS],"scan.txt")
+	tools.to_txt('upP kappa_src kappa_bulk kappa_bulkc flux_src flux_bulk flux_bulkc slope'.split(' '),data[:numS],"scan.txt")
 	
 

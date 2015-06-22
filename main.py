@@ -39,23 +39,23 @@ class Aces:
 		else:
 			exit("Unkown command!");
 	def commit(self,opt,app):
-
-		single=self.single
-		species=opt['species']
-		units=opt['units']
-		method=opt['method'];
-		queue=opt['queue'];
-		nodes=opt['nodes'];
-		procs=opt['procs'];
-		runTime=opt['runTime']
-		bte=False
-		if opt.has_key('bte'):bte=opt['bte']
-		cmd=''
-		for key in app:
-			val=app[key]
-			cmd+='$%s=%s;'%(key,val)
-		jj=json.dumps([cmd,app])
-		toolsub(cmd,self.idx,species,units,method,queue ,nodes ,procs ,runTime,jj,universe='',uqueue='',single='',unodes='',uprocs='',bte=bte)
+		origin=dict(single=False
+		,species='graphene'
+		,units='metal'
+		,method='nvt'
+		,queue='q1.1'
+		,nodes=1
+		,procs=4
+		,runTime=10000000
+		,universe=False
+		,uqueue='q1.2'
+		,unodes=12
+		,uprocs=2
+		,runner='mdTc'
+		)
+		opt=dict(origin,**opt)
+		app=dict(opt,**app)
+		toolsub(self.idx,app)
 		self.idx+=1
 		
 	# called before runQuery to setup the conditions, need to be override

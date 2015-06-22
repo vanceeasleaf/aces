@@ -4,12 +4,14 @@ from ase import Atoms,Atom
 from math import sqrt,pi
 from aces import default
 from ase.io.vasp import write_vasp
+
 from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
 from aces import tools
 from aces.modify import get_unique_atoms
 from aces.env import SRCHOME
 from aces.Units import Units
+from aces import config
 class material:
 	def __init__(self,opt):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
@@ -32,7 +34,7 @@ class material:
 		self.potential='pair_style	tersoff\npair_coeff	* * %s/potentials/BNC.tersoff  %s'%(SRCHOME,' '.join(self.elements))
 		self.dump="dump_modify dump1 element %s"%(' '.join(self.elements))
 		masses=self.getMassFromLabel(self.elements)
-		self.masses='\n'.join(["mass %d %f"%(i+1,mass) for i,a in enumerate(masses)])
+		self.masses='\n'.join(["mass %d %f"%(i+1,mass) for i,mass in enumerate(masses)])
 		m=self
 		units=Units(m.units)
 		m.kb=units.boltz
@@ -48,8 +50,8 @@ class material:
 		self.phontsmasses='\n'.join(["%s %f 0.0"%(label,mass) for label,mass in zip(self.elements,masses)])
 		
 	def getMassFromLabel(self,labels):
-		nums=atomic_numbers[labels]
-		masses=atomic_masses[nums]
+		nums=[atomic_numbers[label] for label in labels]
+		masses=[atomic_masses[num] for num in nums]
 		return masses
 		
 	def extent(self,atoms):
@@ -62,42 +64,41 @@ class material:
 		return (lx,ly);
 		
 	def structure(self):
-		pass
-		
-	def lmp_structure(self):
-		latysmall,latExtend,latxsmall,latxbig,bond=[int(self.latysmall),int(self.latExtend),int(self.latxsmall),int(self.latxbig),float(self.bond)]
-		if(latxsmall%2==0):latxsmall+=1;
-		if(latxbig%2==1):latxbig+=1;
-		atoms=self.agnr(latysmall,latxsmall+1,0);
-		unit=self.agnr(latysmall-1+2*latExtend,latxbig,0)
-		unit.translate([latxsmall*1.5,-(latExtend-0.5)*sqrt(3),0])
-		atoms.extend(unit)
-		unit=self.agnr(latysmall,latxsmall+1,0);
-		unit.translate([(latxsmall+latxbig-1)*1.5,0,0])
-		atoms.extend(unit)
-
-		atoms=get_unique_atoms(atoms)
-		lx,ly=self.extent(atoms)
-		atoms.set_cell([lx,ly,100])
-		atoms.set_cell([lx*bond,ly*bond,100],scale_atoms=True)
-		atoms.set_pbc([1,1,1])
-		atoms.center(vacuum=10*bond)
-		self.atoms=atoms
-		
+		self.atoms=self.lmp_structure()
 		self.write()
 		
-
+	# to be overrided
+	def lmp_structure(self):
+		atoms=Atoms()
+		return atoms
+		
+		
+		
+	def writePOTCAR(self):
+		s=''.join([tools.read(config.vasppot+"/%s/POTCAR"%ele) for ele in self.elements])
+		tools.write(s,'POTCAR')
+			
 
 	def write(self):
 		self.atoms.write("CN.xyz")
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
+		self.POSCAR2data()
+	
+	def POSCAR2data(self):
+		"""
 		poscar = open("POSCAR")
 		unit_cell = UnitCell(poscar)
 		unit_cell.num_atom_types=len(self.elements)
 		tools.write(unit_cell.output_lammps(),"structure")
+		"""
+		from aces.lammpsdata import lammpsdata
+		from  ase.io import read
+		atoms=read('POSCAR')
+		a=lammpsdata(atoms,self.elements)
+		a.writedata()
 		
 	def getboxrange(self):
-		file=open("minimize/range");
+		file=open("range");
 		for i in range(5):
 			file.next()
 		xlo,xhi=map(float,file.next().split()[:2])
@@ -106,7 +107,7 @@ class material:
 		return (xlo,xhi,ylo,yhi,zlo,zhi);
 
 	def getxrange(self):
-		file=open('minimize/minimize.xyz');
+		file=open('minimize.xyz');
 		n=file.next().split()[0];n=int(n)
 		file.next()
 		xmin=100000;xmax=-100000;
@@ -130,7 +131,7 @@ class material:
 		if(self.zp==0):
 			zlo=zlo0;zhi=zhi0;
 		lx=xhi-xlo;ly=yhi-ylo;lz=zhi-zlo;
-		if(self.enforceThick):self.zfactor=lz/thick;
+		if(self.enforceThick):self.zfactor=lz/self.thick;
 		else:self.zfactor=1;
 		self.S=ly*lz;
 		self.box=(xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz)

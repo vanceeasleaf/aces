@@ -2,12 +2,12 @@
 import json
 from aces.tools import shell_exec,write
 import os,sys
-from aces.input import exit
+from aces.tools import exit
 import aces.config as config
 import time
 from aces.env import *
-def genPbs(path,disp,queue,nodes,procs,bte):
-	content="cd "+path+"\n"
+def genPbs(path,disp,queue,nodes,procs):
+	content="cd $PBS_O_WORKDIR\n"
 	content+=config.python+" %s/App.py\n"%SRCHOME	
 	s="""#!/bin/bash -x
 #PBS -l nodes=%s:ppn=%s
@@ -84,17 +84,15 @@ def genPbss(path,disp,queue,nodes,procs,start,ucores):
 
 
 	
-def makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj,bte):
+def makeLoopFile(idx,app):
 	dir="%s/%s"%(PROJHOME,idx)
 	pro="zy_%s_%s"%(PROJNAME,idx)
+	universe,single,procs,nodes,unodes,uprocs,uqueue,queue=app['universe'],app['single'],app['procs'],app['nodes'],app['unodes'],app['uprocs'],app['uqueue'],app['queue']
 	if(universe):
 		print("prepared:"+dir );
 		cores=procs*nodes;
-		if(unodes==''):unodes=20;
-		if(uprocs==''):uprocs=1;
 		ucores=unodes*uprocs;
 		lenn=int(ucores/(cores+0.0));
-		if(uqueue==''):uqueue="q3.4";
 		if(idx%lenn==0):
 			genPbss(PROJHOME,"zy_%s_"%PROJNAME,uqueue,unodes,uprocs,idx,cores);
 
@@ -103,20 +101,10 @@ def makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueu
 	if(single):
 		genSh(dir,pro,procs);
 	
-	if(not universe and not single):genPbs(dir,pro,queue,nodes,procs,bte);
-	#write('<?php\n%s;\n$PROJHOME="%s/%s";\n?>'%(cmd,PROJHOME,idx),dir+"/qloop.php");
-	#write('<?php\n$species="%s";\n$units="%s";\n$method="%s";\n?>'%(species,units,method),dir+"/species.php");
-	eobj=json.loads(jj)
+	if(not universe and not single):genPbs(dir,pro,queue,nodes,procs);
 	cores=procs*nodes
-	if len(eobj)>1:
-		opt=eobj[1].copy()
-		opt['PROJHOME']='%s/%s'%(PROJHOME,idx)
-		opt['species']=species
-		opt['units']=units
-		opt['method']=method
-		opt['bte']=bte
-		opt['cores']=cores
-		write(json.dumps(opt),dir+"/app.json");
+	app['cores']=cores
+	write(json.dumps(app),dir+"/app.json");
 
 
 def setSubProject(index,single):
@@ -126,24 +114,16 @@ def setSubProject(index,single):
 		print "submit: %s\t%s/%s"%(pid,PROJHOME,index);
 	#sleep(1);
 	return pid;
-def toolsub(cmd,idx,species,units,method,queue ,nodes ,procs ,runTime,jj,universe,uqueue,single,unodes,uprocs,bte):
-	makeLoopFile(cmd,idx,species,units,method,queue ,nodes ,procs,universe,uqueue,single,unodes,uprocs,jj,bte)
-	if(universe==''):pid=setSubProject(idx,single);
+def toolsub(idx,app):
+	makeLoopFile(idx,app)
+	if(not app['universe']):pid=setSubProject(idx,app['single']);
 	
 	json_obj={
 		"id":idx,
 		"pid":pid,
 		"time":time.strftime('%Y-%m-%d %H:%M:%S'),
-		"cmd":cmd,
-		"nodes":nodes,
-		"procs":procs,
-		"species":species,
-		"method":method,
-		"units":units,
-		"runTime":runTime
 	}
-	eobj=json.loads(jj)
-	if len(eobj)>1:
-		json_obj=dict(json_obj.items()+eobj[1].items())
+	json_obj=dict(json_obj,**app)
+
 
 	write(json.dumps(json_obj),'qloops.txt','a+','\n')

@@ -1,6 +1,6 @@
 from aces.env import SRCHOME,PROJHOME,PROJNAME
 import json
-from aces.apps.minimize import input as minimize_input
+from aces.runners.minimize import minimize as minimize_input
 from importlib import import_module as im
 from aces import profile,config
 from aces.tools import *
@@ -11,32 +11,30 @@ class App:
 		opt=json.loads(opt)
 		f.close()
 		species=opt['species']
-		s=im('aces.materials.%s.structure'%species)
+		s=im('aces.materials.%s'%species)
 		m=s.structure(opt)
 		self.m=m
+		Runner=im('aces.runners.%s'%m.runner)
+		self.runner=Runner.runner(m)
 		
 	def minimize(self):	
 		mkdir('minimize')
 		cd('minimize')
-		minimize_input(self.m)
-		shell_exec(config.mpirun+" %s "self.m.cores+config.lammps+" <input >log.out")
+		minimize_input(self.m)	
 		cd('..')
 		
-	def execute(self):
+	def execute(self):		
+		
 		self.minimize()
-		self.post()
-		m=self.m
-		Runner=im('aces.runners.%s'%m.runner)
-		runner=Runner.runner(m)
-		runner.run()
+		self.runner.run()
 
 		
-	def post(self):
-		self.m.postMini()
 	
 	def result(self):
 		m=self.m
-		self.post()
+		cd('minimize')
+		m.postMini()
+		cd('..')
 		profile.run(**m.__dict__)
 
 class Apps:
