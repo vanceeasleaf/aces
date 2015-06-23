@@ -55,6 +55,7 @@ class testlammpsdata(unittest.TestCase):
 		b.map(1,'id',2,'type',3,'x',4,'y',5,'z')
 		atoms=b.viz(0)[2]
 		self.assertTrue(cc(atoms,[[1,1,sqrt(2),0,0],[2,1,sqrt(2)/2,sqrt(2)*sqrt(3)/2,0]]))
+		shell_exec('rm structure')
 def test():
 	unittest.main()
 if __name__ =='__main__':

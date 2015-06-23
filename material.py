@@ -12,6 +12,7 @@ from aces.modify import get_unique_atoms
 from aces.env import SRCHOME
 from aces.Units import Units
 from aces import config
+from ase.dft.kpoints import ibz_points
 class material:
 	def __init__(self,opt):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
@@ -26,6 +27,8 @@ class material:
 	def super_setup(self):
 		self.prepare_lammps()
 		self.prepare_phonts()
+		self.bandpoints=ibz_points['fcc']
+		self.bandpath=['Gamma','X','Gamma']
 		self.setup()
 	#to be overided
 	def setup(self):

@@ -48,6 +48,7 @@ run 0
 			cmd+=dir+'/vasprun.xml '
 		#generate FORCE_SETS
 		passthru(cmd)
+		
 	def generate_meshconf(self):
 		#generate mesh.conf
 		m=self.m
@@ -115,6 +116,7 @@ Monkhorst-Pack
 	"""%' '.join(map(str,m.kpoints))
 		write(s,'KPOINTS')
 		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+		
 	def generate(self):
 		m=self.m
 		self.minimizePOSCAR()
@@ -135,11 +137,28 @@ Monkhorst-Pack
 				self.getVaspRun_vasp()
 			cd(maindir)
 		self.force_constant(files)
-		self.generate_meshconf()
 		
-		
+		self.generate_meshconf()	
 		passthru(config.phonopy+" --dos  mesh.conf")
 		self.drawDos()
+		
+		self.generate_bandconf()
+		passthru(config.phonopy+" -s  band.conf")
+		from aces.bandplot import plotband
+		plotband(labels=' '.join(m.bandpath))
+	def generate_bandconf(self):
+		#generate mesh.conf
+		m=self.m
+		dim=' '.join(map(str,m.supercell))
+		bp=m.bandpoints
+		bpath=' '.join([' '.join(map(str,bp[x])) for x in m.bandpath])
+		
+		band="""DIM = %s
+ATOM_NAME = %s
+BAND = %s 
+BAND_POINTS = 101
+"""%(dim,' '.join(m.elements),bpath)
+		write(band,'band.conf')
 		
 	def drawDos(self):
 		xx=np.loadtxt('partial_dos.dat',skiprows=1)
@@ -171,3 +190,4 @@ Monkhorst-Pack
 		pl.xlabel('Frequency (THz)')
 		pl.ylabel('Paticipation Ratio')
 		pl.savefig('Paticipation_atio.png',bbox_inches='tight',transparent=True) 
+		pl.close()
