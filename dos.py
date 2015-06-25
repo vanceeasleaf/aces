@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 from aces.graph import plot
 def getDos(frequencies,weights):
-	frequency_points,sigma=get_draw_area(frequencies,freq_max=300)
+	filter=weights>weights.max()/10000
+	freq_max=frequencies[filter].max()
+	frequency_points,sigma=get_draw_area(frequencies,freq_max=freq_max)
 	dos = np.array([get_density_of_states_at_freq(f,frequencies,weights,sigma)
 						for f in frequency_points])
 	return frequency_points,dos
@@ -23,7 +25,7 @@ def get_draw_area(frequencies,
 	f_max = frequencies.max()
 
 
-	sigma = (f_max - f_min) / 100
+	sigma = (f_max - f_min) /100
 		
 	if freq_min is None:
 		f_min -= sigma * 10

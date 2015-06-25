@@ -82,7 +82,7 @@ def plotband(factor=1.0,
                         output_filename='band.png',
                         labels=r'Gamma X Gamma',
                         show_legend=False,
-                        title=None
+                        title=None,filename0='band.yaml'
                         ):
     options=object(factor=factor,
                         f_max=f_max, 
@@ -113,7 +113,7 @@ def plotband(factor=1.0,
 
 
     if len(args) == 0:
-        filenames = ['band.yaml']
+        filenames = [filename0]
     else:
         filenames = args
 
@@ -193,4 +193,16 @@ def plotband(factor=1.0,
         else:
             plt.show()
         plt.close()
+
+def band3d(imgname='band3d.png',filename='life.txt'):
+    from aces.graph import surf,scatter3d
+    import pandas as pd
+    import numpy as np
+    data=pd.read_csv(filename,sep='\t')
+    scatter3d(data['kx'],data['ky'],data['w0'],filename=imgname)
+    """
+    surf(np.array([data['kx']]).reshape(-1,8),
+        np.array([data['ky']]).reshape(-1,8),
+        np.array([data['freq']]).reshape(-1,8),filename=imgname)
+"""
 

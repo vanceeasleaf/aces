@@ -5,22 +5,22 @@ units=Units('metal')
 default=dict(
 	units="metal",
 	method="nvt",
-	enforceThick=1,
+	enforceThick=True,
 	xp=1,
 	yp=1,
 	zp=1,
-	useMini=1,
+	useMini=True,
 	upP=3,
 	fixud=0,
-	usinglat=1,
+	usinglat=True,
 	latx=4,laty=4,latz=4,
 	ylen=units.metal.L(20),
 	thick=units.metal.L(3.35),
 	deta=units.metal.L(3),
 	T=units.metal.T(300),
 
-	metropolis=0,
-	write_structure=0,
+	metropolis=False,
+	write_structure=False,
 	timestep=units.metal.t(.5e-3),
 	equTime=100000,
 	langevin=0,
@@ -55,6 +55,8 @@ default=dict(
 	
 	,conti=False
 	,engine="lammps"
+	
+	,correlation_supercell=[20,20,1]
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)

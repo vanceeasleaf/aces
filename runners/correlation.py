@@ -1,16 +1,21 @@
 #encoding:utf8
-import sys
-from aces.Units import Units
+
 from aces.tools import *
 import aces.config as config
-from ase.io import read
-from ase.io.vasp import write_vasp
-from aces.input import postMini
+
 from aces.runners.vdos import vdos
 from aces.runners import Runner
+from ase.io import read
+from aces.lammpsdata import lammpsdata
 class runner(Runner):
+	def get_structure(self):
+		atoms=self.m.atoms_from_dump('minimize/range')
+		atoms=atoms.repeat(self.m.correlation_supercell)
+		a=lammpsdata(atoms,self.m.elements)
+		a.writedata('correlation_structure')
 	def generate(self):
 		m=self.m
+		self.get_structure()
 		f=open("correlation.lmp","w")
 		print >>f,"units %s"%m.units
 		print >>f,"dimension 3"
@@ -20,7 +25,7 @@ class runner(Runner):
 		if m.zp==1:pbcz='p'
 		print >>f,"boundary %s %s %s"%(pbcx,pbcy,pbcz)
 		print >>f,"atom_style atomic"
-		print >>f,"read_restart   minimize/restart.minimize"
+		print >>f,"read_data   correlation_structure"
 		print >>f,"change_box	all	boundary %s %s %s"%(pbcx,pbcy,pbcz)
 		print >>f,"lattice fcc 5" #needed to define the regions
 		print >>f,"thermo %d"%m.dumpRate
@@ -38,8 +43,9 @@ class runner(Runner):
 		print >>f,"dump lala all custom %s velocity.txt id type vx vy vz"%m.Cinterval
 		print >>f,"dump_modify  lala sort id"
 		print >>f,"run %s"%m.Ctime
+
 		f.close()
-		passthru(config.lammps+" <correlation.lmp >out.dat")
-		
-		vdos(m.timestep).run()
+		passthru(config.mpirun+"  %s "%self.m.cores+config.lammps+" <correlation.lmp  >out.dat")
+		self.vd=vdos(m.timestep)
+		self.vd.run()
 		#rm("velocity.txt")

@@ -33,3 +33,28 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False):
 		pl.grid(True)
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
+
+def surf(X, Y, Z,filename):
+	from mpl_toolkits.mplot3d import Axes3D
+	fig = pl.figure()
+	ax = fig.add_subplot(111, projection='3d')
+	ax.plot_surface(X, Y, Z)
+	pl.savefig(filename,bbox_inches='tight',transparent=True) 
+	pl.close()
+def scatter3d(x,y,z,filename):
+	from mpl_toolkits.mplot3d import Axes3D,proj3d
+	fig = pl.figure()
+	ax = fig.add_subplot(111, projection='3d')
+	#ax.view_init(0, 0)
+	import numpy
+	def orthogonal_proj(zfront, zback):
+	    a = (zfront+zback)/(zfront-zback)
+	    b = -2*(zfront*zback)/(zfront-zback)
+	    return numpy.array([[1,0,0,0],
+	                        [0,1,0,0],
+	                        [0,0,a,b],
+	                        [0,0,0,zback]])
+	proj3d.persp_transformation = orthogonal_proj
+	ax.scatter(x,y,z)
+	pl.savefig(filename,bbox_inches='tight',transparent=True) 
+	pl.close()

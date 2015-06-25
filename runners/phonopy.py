@@ -15,12 +15,9 @@ class runner(Runner):
 	def minimizePOSCAR(self):
 		m=self.m
 		if m.engine=="lammps":
-			# from minimized structure generate POSCAR
-			atoms=read('minimize/range',format='lammps')
-			s=atoms.numbers
-			symbols=[m.elements[i-1] for i in s ]
-			atoms.set_chemical_symbols(symbols)
-			write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
+
+			m.dump2POSCAR('minimize/range')
+			
 		elif m.engine=="vasp":
 			cp('minimize/CONTCAR','POSCAR')
 	

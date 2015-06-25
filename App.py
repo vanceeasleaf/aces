@@ -1,11 +1,16 @@
 from aces.env import SRCHOME,PROJHOME,PROJNAME
-import json
+import json,os.path,time
 from aces.runners.minimize import minimize as minimize_input
 from importlib import import_module as im
 from aces import profile,config
 from aces.tools import *
 class App:
 	def __init__(self):
+		"""
+		while not os.path.exists('app.json'):
+			time.sleep(1)
+			print pwd()+'/app.json'
+		"""
 		f=open('app.json')
 		opt=f.read()
 		opt=json.loads(opt)

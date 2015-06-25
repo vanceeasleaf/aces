@@ -7,8 +7,8 @@ import aces.config as config
 import time
 from aces.env import *
 def genPbs(path,disp,queue,nodes,procs):
-	content="cd $PBS_O_WORKDIR\n"
-	content+=config.python+" %s/App.py\n"%SRCHOME	
+	content="cd %s\n"%path
+	content+=config.python+" %s/App.py >aces.out\n"%SRCHOME	
 	s="""#!/bin/bash -x
 #PBS -l nodes=%s:ppn=%s
 #PBS -l walltime=240:00:00

@@ -5,11 +5,15 @@ from aces.tools import exit,write,to_txt
 from aces.lineManager import  lineManager
 from scipy.optimize import leastsq
 from aces.dos import plot_smooth
+from math import pi
+import h5py
 class vdos:
 	def __init__(self,timestep=0.0005):
 		self.timestep=timestep
+		self.phase=None
 		self.lm=lineManager('velocity.txt')
 		#self.run()
+		self.db=h5py.File('velocity.hdf5')
 		self.readinfo()
 	def run(self):
 
@@ -67,44 +71,89 @@ class vdos:
 		print 'VACF and VDOS caculated OK'
 		self.plot(totalVcf[:totalStep/2],totalDos[:totalStep/2])
 	def velocity_atom(self,id):
-		lm=self.lm
-		v=np.zeros([self.totalStep,3])
-		for i in range(self.totalStep):
-			v[i,:]=map(float,lm.getLine(9+id+i*self.line_interval).split()[2:5])	
-		return v
+		node='/velocity_atom/%d'%id
+		if not node in self.db:
+			print 'prepare velocity_atom:%d'%id
+			lm=self.lm
+			v=np.zeros([self.totalStep,3])
+			for i in range(self.totalStep):
+				v[i,:]=map(float,lm.getLine(9+id+i*self.line_interval).split()[2:5])	
+			self.db[node]=v
+		return self.db[node]
 	def fourier_atom(self,id):
-		v=self.velocity_atom(id)
-		return rfft(v,axis=0)
+		node='/fourier_atom/%d'%id
+		if not node in self.db:
+			print 'prepare fourier_atom:%d'%id
+			v=self.velocity_atom(id)
+			r=rfft(v,axis=0)
+			self.db[node]=r
+		return self.db[node]
+	def getPhase(self,k,natom_unitcell):
+		p=np.exp(self.pfactor.dot(k))
+		v=p[range(0,self.natom,natom_unitcell)]
+		self.phase=np.repeat(v,natom_unitcell)
+		return self.phase
+
 	def calculateLife(self,eigen):
 		totalStep=self.totalStep
 		k,freq,vec=eigen
+		vec=vec.conjugate()
 		q=np.zeros(totalStep/2+1,dtype=np.complex)
+		nu=len(vec)
+		phase=self.getPhase(k,nu)
 		for i in range(self.natom):
+			
 			fv=self.fourier_atom(i)
-			q+=fv[:,0]*vec[i][0]+fv[:,1]*vec[i][1]+fv[:,2]*vec[i][2]
+			iu=i%nu
+			q+=np.array(fv).dot(vec[iu])*phase[i]
 		q=(q*q.conjugate()).real
+		
 		x=np.linspace(0,1,totalStep/2+1)*1/2.0/self.timestep
-		to_txt(['Freq','dos'],np.c_[x,q],'single%s%s.txt'%(str(k),freq))
-		w0,tao=self.fitLife(x,q)
-		v=map(str,list(k)+[freq,w0,tao])
+		low=max(q.argmax()-20,0)
+		hi=min(q.argmax()+20,len(q))
+		filter=range(low,hi)
+		x=x[filter]
+		q=q[filter]
+		p0 = np.array([x[q.argmax()], 0.1, q[q.argmax()]]) #Initial guess
+		p=self.fitLife(x,q,p0)
+		#to_txt(['Freq','dos'],np.c_[x,q],'single%s%s.txt'%(str(k),freq))
+		"""
+		series(xlabel='Frequency (THz)',
+			ylabel='Single Phonon Power Spectrum',
+			datas=[(x,q,"origin"),
+			(x,self.lorentz(p,x),"fitting")]
+			,linewidth=1
+			,filename='single%s%s.png'%(str(k),freq))
+		"""
+		v=map(str,list(k)+[freq]+list(p))
 		return '\t'.join(v)
-	def life_yaml(self,filename="mesh.yaml"):
+	def life_yaml(self,filename="mesh.yaml",correlation_supercell=[10,10,1]):
+		from aces.lammpsdata import lammpsdata
+		atoms=lammpsdata().set_src('correlation_structure')
+		self.pfactor=1j*atoms.positions.dot(atoms.get_reciprocal_cell()*np.c_[correlation_supercell])*2*pi
+		
 		from aces.phononyaml import phononyaml
+		
 		pya=phononyaml(filename)
 		f=open('life.txt','w')
-		f.write('kx\tky\tkz\tfreq\tw0\ttao\n')
+		f.write('kx\tky\tkz\tfreq\tw0\ttao\ta0\n')
 		for iqp in range(pya.nqpoint):
 			for ibr in range(pya.nbranch):
+				print 'branch:%s %s'%(iqp,ibr)
+				
 				k=pya.qposition(iqp)
 				freq=pya.frequency(iqp,ibr)
 				vec=pya.atoms(iqp,ibr)
 				v=self.calculateLife((k,freq,vec))
 				f.write('%s\n'%v)
-	def fitLife(self,x,q):
-		p0 = np.array([-2.0, -4.0, 6.8,0], dtype=np.double) #Initial guess
+
+
+	def fitLife(self,x,z,p0):
+		
+
 		solp, ier = leastsq(self.errorfunc, 
                     p0, 
-                    args=(x,q),
+                    args=(x,z),
                     Dfun=None,
                     full_output=False,
                     ftol=1e-9,
@@ -112,9 +161,9 @@ class vdos:
                     maxfev=100000,
                     epsfcn=1e-10,
                     factor=0.1)
-		return (solp[0],solp[1])
+		return solp
 	def lorentz(self,p,x):
-		return p[2] / ((x-p[0])**2 + p[1]**2/4)+p[3]
+		return p[2] / ((x-p[0])**2 + p[1]**2/4)
 
 	def errorfunc(self,p,x,z):
 		return self.lorentz(p,x)-z	

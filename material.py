@@ -4,19 +4,23 @@ from ase import Atoms,Atom
 from math import sqrt,pi
 from aces import default
 from ase.io.vasp import write_vasp
-
+from ase.io import read
 from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
 from aces import tools
 from aces.modify import get_unique_atoms
-from aces.env import SRCHOME
 from aces.Units import Units
 from aces import config
 from ase.dft.kpoints import ibz_points
+from aces.modify import atoms_from_dump as afd
 class material:
 	def __init__(self,opt):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
-		self.elements=['C','N','B']
+		# unit might be changed by opt but need to be used first
+		if opt.has_key('units'):
+			self.units=opt['units']
+		self.units=Units(self.units)
+		self.elements=['C','N','B']		
 		self.set_parameters()
 		self.__dict__=dict(self.__dict__,**opt)
 		self.super_setup()
@@ -25,6 +29,7 @@ class material:
 	def set_parameters(self):
 		pass
 	def super_setup(self):
+		self.units=Units(self.units)
 		self.prepare_lammps()
 		self.prepare_phonts()
 		self.bandpoints=ibz_points['fcc']
@@ -34,12 +39,12 @@ class material:
 	def setup(self):
 		pass
 	def prepare_lammps(self):
-		self.potential='pair_style	tersoff\npair_coeff	* * %s/potentials/BNC.tersoff  %s'%(SRCHOME,' '.join(self.elements))
+		self.potential='pair_style	tersoff\npair_coeff	* * %s/BNC.tersoff  %s'%(config.lammpspot,' '.join(self.elements))
 		self.dump="dump_modify dump1 element %s"%(' '.join(self.elements))
 		masses=self.getMassFromLabel(self.elements)
 		self.masses='\n'.join(["mass %d %f"%(i+1,mass) for i,mass in enumerate(masses)])
 		m=self
-		units=Units(m.units)
+		units=self.units
 		m.kb=units.boltz
 		m.nktv=units.nktv2p
 		if(m.method=="nvt"):m.xp=0;
@@ -47,7 +52,7 @@ class material:
 		m.tcfactor=units.tcfactor;
 		m.excNum=m.aveRate/m.excRate;
 		m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
-		m.units=units	
+		
 	def prepare_phonts(self):
 		masses=self.getMassFromLabel(self.elements)
 		self.phontsmasses='\n'.join(["%s %f 0.0"%(label,mass) for label,mass in zip(self.elements,masses)])
@@ -83,7 +88,7 @@ class material:
 			
 
 	def write(self):
-		self.atoms.write("CN.xyz")
+		self.atoms.write("structure.xyz")
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
 		self.POSCAR2data()
 	
@@ -99,7 +104,14 @@ class material:
 		atoms=read('POSCAR')
 		a=lammpsdata(atoms,self.elements)
 		a.writedata()
+	
+	def atoms_from_dump(self,filename):
+		return afd(filename=filename,elements=self.elements)
 		
+	def dump2POSCAR(self,dumpname,poscar='POSCAR'):
+		atoms=self.atoms_from_dump(dumpname)
+		write_vasp(poscar,atoms,sort="True",direct=True,vasp5=True)
+	
 	def getboxrange(self):
 		file=open("range");
 		for i in range(5):

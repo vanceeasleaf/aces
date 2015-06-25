@@ -1,13 +1,37 @@
 from aces.pizza.data import data
-from ase import Atoms
+from ase import Atoms,Atom
 import numpy as np
 class lammpsdata:
-	def __init__(self,atoms,elements=None):
+	def __init__(self,atoms=None,elements=None):
+		if atoms is None:
+			atoms=Atoms()
 		self.atoms=atoms		
 		self.types=self.getTypes()
-		if not elements==None:
+		if not elements is None:
 			self.types=elements
-			
+	def set_src(self,filename):
+		a=data(filename)	
+		a.map(1,'id',2,'type',3,'x',4,'y',5,'z')
+		ats=a.viz(0)[2]	
+		atoms=Atoms()
+		for at in ats:
+			id,type,x,y,z=at
+			if len(self.types)==0:
+				atoms.append(Atom(type,position=[x,y,z]))
+			else:
+				atoms.append(Atom(self.types[type-1],position=[x,y,z]))
+		cell=np.zeros([3,3])
+		xlo,xhi=a.headers["xlo xhi"]
+		ylo,yhi=a.headers["ylo yhi"]
+		zlo,zhi=a.headers["zlo zhi"]
+		xy,xz,yz=a.headers["xy xz yz"]
+		cell[0,0]=xhi-xlo
+		cell[1,1]=yhi-ylo
+		cell[2,2]=zhi-zlo
+		cell[1,0],cell[2,0],cell[2,1]=xy,xz,yz
+		atoms.set_cell(cell)
+		self.atoms=atoms
+		return atoms
 	def mergeVec(self,x,y):
 		direct=np.cross(x,y)
 		if np.allclose(np.linalg.norm(direct),0):

@@ -1,4 +1,5 @@
 from ase import Atoms
+from ase import io
 def get_cluster(n,i,dis,cluster=[]):
 	for j in range(i+1,n):
 		if(dis[i,j]<0.001):
@@ -30,3 +31,11 @@ def get_unique_atoms(atoms):
 	newatoms.set_pbc(pbc)
 	newatoms.set_cell(cell)
 	return newatoms
+
+def atoms_from_dump(filename,elements=None):
+	atoms=io.read(filename,format='lammps')	
+	if elements:
+		s=atoms.numbers
+		symbols=[elements[i-1] for i in s ]
+		atoms.set_chemical_symbols(symbols)
+	return atoms
