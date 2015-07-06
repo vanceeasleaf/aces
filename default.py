@@ -22,7 +22,7 @@ default=dict(
 	metropolis=False,
 	write_structure=False,
 	timestep=units.metal.t(.5e-3),
-	equTime=100000,
+	equTime=500000,
 	langevin=0,
 	nvt=1,jprofile=0,computeTc=1,fourierTc=0,gstart=20000,jcf=0,
 	dumpRate=100000,
