@@ -233,9 +233,15 @@ class structure(material):
 		cbond=np.linalg.norm((pos1[4]-pos1[1],pos1[3]-pos1[0],0))
 		dx=sqrt(3)*cbond*2;
 		dy=3*cbond*2;
-		atoms.rotate('z',phi)
+		atoms=Atoms()
+
+		for i,coord in enumerate(pos2):
+			ele=['C','N'][i<156]
+			atom=Atom(ele,coord)
+			atoms.append(atom)
+		#atoms.rotate('z',phi)
 		atoms.set_cell([dx,dy,10.0])
-		col=unit.repeat((latx,laty,1))
+		col=atoms.repeat((latx,laty,1))
 		return col
 		
 			
