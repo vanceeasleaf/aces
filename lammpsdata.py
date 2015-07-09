@@ -52,7 +52,8 @@ class lammpsdata:
 		a.headers['xlo xhi']=[0,cell[0,0]]
 		a.headers['ylo yhi']=[0,cell[1,1]]
 		a.headers['zlo zhi']=[0,cell[2,2]]
-		a.headers['xy xz yz']=[cell[1,0],cell[2,0],cell[2,1]]
+		if not np.allclose([cell[1,0],cell[2,0],cell[2,1]],[0,0,0]):
+			a.headers['xy xz yz']=[cell[1,0],cell[2,0],cell[2,1]]
 		a.headers['atoms']=len(self.atoms)
 		a.headers['atom types']=len(self.types)
 		atomsdata=[]

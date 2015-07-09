@@ -18,8 +18,14 @@ class structure(material):
 		if self.gnrtype=='armchair':
 			col=prototype(self.latx,self.laty)		
 		elif self.gnrtype=='zigzag':			
-			col=prototype(self.laty,self.latx)	
-			col.rotate('z',pi/2,rotate_cell=True)			
+			col=prototype(self.laty,self.latx)		
+			"""		
+			col.rotate([1,1,0],pi,rotate_cell=True)
+			cell=col.cell[[1,0,2]]
+			cell[2]*=-1
+			col.set_cell(cell)	
+			"""
+			self.swap(col,2)
 		else: raise Exception('Unkown gnr type!')
 		col.set_pbc([self.xp,self.yp,self.zp])
 		atoms=get_unique_atoms(col)

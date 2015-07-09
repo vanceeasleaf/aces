@@ -13,8 +13,9 @@ from aces.Units import Units
 from aces import config
 from ase.dft.kpoints import ibz_points
 from aces.modify import atoms_from_dump as afd
+import numpy as np
 class material:
-	def __init__(self,opt):
+	def __init__(self,opt={}):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
 		# unit might be changed by opt but need to be used first
 		if opt.has_key('units'):
@@ -67,9 +68,12 @@ class material:
 		xmin=atoms.positions[:,0].min()
 		ymax=atoms.positions[:,1].max()
 		ymin=atoms.positions[:,1].min()
+		zmax=atoms.positions[:,2].max()
+		zmin=atoms.positions[:,2].min()
 		lx=xmax-xmin;
 		ly=ymax-ymin;
-		return (lx,ly);
+		lz=zmax-zmin;
+		return (lx,ly,lz);
 		
 	def structure(self):
 		self.atoms=self.lmp_structure()
@@ -79,9 +83,21 @@ class material:
 	def lmp_structure(self):
 		atoms=Atoms()
 		return atoms
+
+	# rotate atoms to swap the x z axis for fix=1 and so on, keep the axis right hand
+	def swap(self,atoms,fix=1):
+		direct=[1,1,1]
+		direct[fix]=0
+		atoms.rotate(direct,pi,rotate_cell=True)
+		order=[[0,2,1],[2,1,0],[1,0,2]][fix]
+		cell=atoms.cell[order]
+		cell[fix]*=-1
+		atoms.set_cell(cell)	
 		
-		
-		
+	def center_box(self,atoms):
+		offset=np.sum(atoms.cell,axis=0)/2
+		atoms.translate(-offset)
+
 	def writePOTCAR(self):
 		s=''.join([tools.read(config.vasppot+"/%s/POTCAR"%ele) for ele in self.elements])
 		tools.write(s,'POTCAR')
@@ -150,3 +166,4 @@ class material:
 		else:self.zfactor=1;
 		self.S=ly*lz;
 		self.box=(xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz)
+
