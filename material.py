@@ -13,6 +13,7 @@ from aces.Units import Units
 from aces import config
 from ase.dft.kpoints import ibz_points
 from aces.modify import atoms_from_dump as afd
+from aces.lammpsdata import lammpsdata
 import numpy as np
 class material:
 	def __init__(self,opt={}):
@@ -35,7 +36,9 @@ class material:
 		self.prepare_phonts()
 		self.bandpoints=ibz_points['fcc']
 		self.bandpath=['Gamma','X','Gamma']
+		self.dim=' '.join(map(str,self.supercell))
 		self.setup()
+		self.atoms=self.lmp_structure()
 	#to be overided
 	def setup(self):
 		pass
@@ -62,7 +65,8 @@ class material:
 		nums=[atomic_numbers[label] for label in labels]
 		masses=[atomic_masses[num] for num in nums]
 		return masses
-		
+	def toString(self,vec):
+		return ' '.join(map(str,vec))
 	def extent(self,atoms):
 		xmax=atoms.positions[:,0].max()
 		xmin=atoms.positions[:,0].min()
@@ -76,7 +80,7 @@ class material:
 		return (lx,ly,lz);
 		
 	def structure(self):
-		self.atoms=self.lmp_structure()
+		
 		self.write()
 		
 	# to be overrided
@@ -106,7 +110,8 @@ class material:
 	def write(self):
 		self.atoms.write("structure.xyz")
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
-		self.POSCAR2data()
+		a=lammpsdata(self.atoms,self.elements)
+		a.writedata()
 	
 	def POSCAR2data(self):
 		"""
@@ -115,7 +120,6 @@ class material:
 		unit_cell.num_atom_types=len(self.elements)
 		tools.write(unit_cell.output_lammps(),"structure")
 		"""
-		from aces.lammpsdata import lammpsdata
 		from  ase.io import read
 		atoms=read('POSCAR')
 		a=lammpsdata(atoms,self.elements)

@@ -9,7 +9,7 @@ from aces.env import *
 class Aces:
 	def __init__(self):
 		self.idx=0
-		print """	_    ____ _____ ____  
+		print """    _    ____ _____ ____  
    / \  / ___| ____/ ___| 
   / _ \| |   |  _| \___ \ 
  / ___ \ |___| |___ ___) |

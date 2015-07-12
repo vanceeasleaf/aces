@@ -23,14 +23,12 @@ class runner(Runner):
 		passthru(cmd)
 		m=self.m
 		#Create fc2.hdf and fc3.hdf
-		dim=' '.join(map(str,m.supercell))
-		passthru(config.phono3py+" --dim='%s'"%(dim))
+		passthru(config.phono3py+" --dim='%s'"%(m.dim))
 		
 	def generate_supercells(self):
 		m=self.m
 		#generate supercells
-		dim=' '.join(map(str,m.supercell))
-		passthru(config.phono3py+"-d --dim='%s'"%(dim))
+		passthru(config.phono3py+"-d --dim='%s'"%(m.dim))
 
 		
 	def generate(self):
@@ -38,25 +36,12 @@ class runner(Runner):
 		self.minimizePOSCAR()
 		self.generate_supercells()
 		files=shell_exec("ls *-*").split('\n')
-		
-		
-		maindir=shell_exec('pwd')
-		for file in files:
-			print file
-			dir="dirs/dir_"+file
-			mkdir(dir)
-			mv(file,dir+'/POSCAR')
-			cd(dir)
-			if m.engine=="lammps":			
-				self.getVaspRun_lammps()
-			elif m.engine=="vasp":
-				self.getVaspRun_vasp()
-			cd(maindir)
+		self.getvasprun(files)
 		self.force_constant(files)
 		
 		#Thermal conductivity calculation
-		dim=' '.join(map(str,m.supercell))
-		passthru(config.phono3py+'--fc3 --fc2 --dim="'+dim+'" -v --mesh="'+' '.join(map(str,m.kpoints))+'"  --br --thm')
+
+		passthru(config.phono3py+'--fc3 --fc2 --dim="'+m.dim+'" -v --mesh="'+' '.join(map(str,m.kpoints))+'"  --br --thm')
 		filename="kappa-m%s.hdf5"%''.join(map(str,m.kpoints))
 		passthru(config.pypath+'kaccum --mesh="'+' '.join(map(str,m.kpoints))+'"   '+filename+' |tee kaccum.dat')
 		

@@ -49,20 +49,20 @@ run 0
 	def generate_meshconf(self):
 		#generate mesh.conf
 		m=self.m
-		dim=' '.join(map(str,m.supercell))
+
 		mesh="""DIM = %s
 ATOM_NAME = %s
 MP = %s
 EIGENVECTORS=.TRUE.
 FORCE_CONSTANTS = WRITE
-"""%(dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
+"""%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
 		write(mesh,'mesh.conf')
 	
 	def generate_supercells(self):
 		m=self.m
 		#generate supercells
-		dim=' '.join(map(str,m.supercell))
-		passthru(config.phonopy+"-d --dim='%s'"%(dim))
+
+		passthru(config.phonopy+"-d --dim='%s'"%(m.dim))
 	
 	def getVaspRun_lammps(self):
 		m=self.m
@@ -113,14 +113,9 @@ Monkhorst-Pack
 	"""%' '.join(map(str,m.kpoints))
 		write(s,'KPOINTS')
 		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
-		
-	def generate(self):
+	
+	def getvasprun(self,files):
 		m=self.m
-		self.minimizePOSCAR()
-		self.generate_supercells()
-		files=shell_exec("ls *-*").split('\n')
-		
-		
 		maindir=shell_exec('pwd')
 		for file in files:
 			print file
@@ -133,6 +128,13 @@ Monkhorst-Pack
 			elif m.engine=="vasp":
 				self.getVaspRun_vasp()
 			cd(maindir)
+
+	def generate(self):
+		m=self.m
+		self.minimizePOSCAR()
+		self.generate_supercells()
+		files=shell_exec("ls *-*").split('\n')
+		self.getvasprun(files)
 		self.force_constant(files)
 		
 		self.generate_meshconf()	
@@ -146,7 +148,7 @@ Monkhorst-Pack
 	def generate_bandconf(self):
 		#generate mesh.conf
 		m=self.m
-		dim=' '.join(map(str,m.supercell))
+
 		bp=m.bandpoints
 		bpath=' '.join([' '.join(map(str,bp[x])) for x in m.bandpath])
 		
@@ -154,7 +156,7 @@ Monkhorst-Pack
 ATOM_NAME = %s
 BAND = %s 
 BAND_POINTS = 101
-"""%(dim,' '.join(m.elements),bpath)
+"""%(m.dim,' '.join(m.elements),bpath)
 		write(band,'band.conf')
 		
 	def drawDos(self):

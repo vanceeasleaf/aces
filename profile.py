@@ -21,10 +21,10 @@ class profile:
 		aveTemp=aveQuants[filter,0]
 		avejx=aveQuants[filter,1]
 		if istep%10==0:
-			dto.plots.append([aveC,aveTemp,"time=%s"%(snapStep*istep)])
+			dto['plots'].append([aveC,aveTemp,"time=%s"%(snapStep*istep)])
 		slope,flux_bulk=self.sslope(aveC,aveTemp,aveN,avejx,upP,deta,S)
 		kappa=self.getFx(istep)/slope*tcfactor*zfactor
-		dto.log+="%d\t%f\n"%(istep,kappa)
+		dto['log']+="%d\t%f\n"%(istep,kappa)
 		
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		fas=fixAveSpace('tempProfile.txt')
@@ -34,7 +34,7 @@ class profile:
 
 		dto=dict(log="step\tkappa\n",plots=[])
 		coord,aveN,aveQuants=fas.iterate(begin,self.kappaConverge,snapStep,upP,deta,S,tcfactor,zfactor,dto)
-		tools.write(dot['log'],'convergenceK.txt')
+		tools.write(dto['log'],'convergenceK.txt')
 		series('x(Augstrom)','temperature(K)',dto['plots'],'convergenceT.png',linewidth=1,legend=False)
 		filter=aveN[:]>0
 		aveC=coord[filter]

@@ -12,6 +12,9 @@ def write(cmd,fileName,mode="w",sep=""):
 	file=open(fileName,mode);
 	file.write(cmd+sep);
 	file.close();
+def debug(cmd):
+    write(cmd,'debug.txt','a',sep="\n")
+    
 def read(fileName):
 	file=open(fileName);
 	s=file.read()
@@ -28,6 +31,9 @@ def exit(info):
 	print info
 	sys.stdout.flush()
 	sys.exit();
+def mkcd(path):
+    mkdir(path)
+    cd(path)
 def cd(path):
 	os.chdir(path)
 def mv(src,dest):

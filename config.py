@@ -5,8 +5,9 @@ mpirun=" /opt/intel/mpi/openmpi/1.6.3/icc.ifort/bin/mpirun  -np ";
 pypath=' /home/xggong/home1/zhouy/soft/anaconda/bin/'
 python=pypath+'python '
 phonopy=pypath+'phonopy '
-
 phono3py=pypath+'phono3py '
 phonts=' /home/xggong/home1/zhouy/soft/PhonTS-1.1.4/src/PhonTS '
 vasp=' /home/xggong/home1/zhouy/vasp '
 vasppot='/home/xggong/home1/zhangyueyu/psudopotential/5.3_LDA'
+shengbte=' /home/xggong/home1/zhouy/tcscripts/ShengBTE/ShengBTE '
+thirdorder=python+'/home/xggong/home1/zhouy/soft/thirdorder/python/thirdorder_vasp.py '

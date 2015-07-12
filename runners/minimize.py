@@ -61,6 +61,7 @@ def minimize_lammps(m):
 	print >>f,"dump dump1 all xyz 1 minimize.xyz"
 	print >>f,dump
 	print >>f,"dump kaka all atom 1 range"
+	print >>f,"dump_modify  kaka sort id"
 	print >>f,"run 0"
 	f.close()
 	shell_exec(config.mpirun+" %s "%m.cores+config.lammps+" <input >log.out")	
