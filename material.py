@@ -15,6 +15,7 @@ from ase.dft.kpoints import ibz_points
 from aces.modify import atoms_from_dump as afd
 from aces.lammpsdata import lammpsdata
 import numpy as np
+from aces.tools import *
 class material:
 	def __init__(self,opt={}):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
@@ -112,7 +113,15 @@ class material:
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
 		a=lammpsdata(self.atoms,self.elements)
 		a.writedata()
-	
+
+	def writeatoms(self,atoms,label='atoms'):
+		mkcd(label)
+		atoms.write("structure.xyz")
+		write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
+		a=lammpsdata(atoms,self.elements)
+		a.writedata()
+		cd('..')
+
 	def POSCAR2data(self):
 		"""
 		poscar = open("POSCAR")

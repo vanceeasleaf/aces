@@ -26,12 +26,13 @@ class structure(material):
 			col.set_cell(cell)	
 			"""
 			self.swap(col,2)
-		else: raise Exception('Unkown gnr type!')
-		col.set_pbc([self.xp,self.yp,self.zp])
+		else: raise Exception('Unkown gnr type!')		
 		atoms=get_unique_atoms(col)
+		col.set_pbc([self.xp,self.yp,self.zp])
 		cell=atoms.cell*bond
 		atoms.set_cell(cell,scale_atoms=True)
 		atoms.center()
+
 		return atoms
 		
 	

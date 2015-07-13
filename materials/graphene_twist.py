@@ -12,14 +12,14 @@ class structure(material):
 
 	def lmp_structure(self):
 		ribbon=graphene(dict(latx=self.latx,laty=self.laty,latz=1,gnrtype=self.gnrtype)).lmp_structure()
+		self.writeatoms(ribbon,'ribbon')
 		self.length=ribbon.cell[0,0]
 		self.center_box(ribbon)
 		for atom in ribbon:
 			atom.position=self.trans(atom.position)
-		atoms=Atoms()
-		atoms.extend(ribbon)
-		atoms.center(vacuum=10)
-		
+		atoms=ribbon
+		atoms.center(vacuum=10,axis=[1,2])
+		atoms.center(axis=[0])
 		return atoms
 
 	def trans(self,pos):

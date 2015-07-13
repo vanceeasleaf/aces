@@ -18,18 +18,24 @@ def get_clusters(n,dis):
 			
 	return clusters
 	
-def get_unique_atoms(atoms):
+def get_unique_atoms(atoms,mic=True):
 	n=len(atoms)
-	dis=atoms.get_all_distances(mic=True)
+	dis=atoms.get_all_distances(mic=mic)
 	clusters=get_clusters(n,dis)
 	newatoms=Atoms()
 	for i in range(n):
 		if clusters[i]:
 			newatoms.append(atoms[i])
-	pbc=atoms.get_pbc()
+	
 	cell=atoms.get_cell()
+	if mic:
+		pbc=[1,1,1]
+	else:
+		pbc=atoms.get_pbc()
 	newatoms.set_pbc(pbc)
 	newatoms.set_cell(cell)
+	if mic:
+		newatoms.positions=newatoms.get_positions(wrap=True)
 	return newatoms
 
 def atoms_from_dump(filename,elements=None):
