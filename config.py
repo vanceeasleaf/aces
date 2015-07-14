@@ -1,13 +1,23 @@
-php=" /home/xggong/home1/zhouy/php/bin/php ";
-lammps=" /home/xggong/home1/zhouy/lammps-24Apr13/src/lmp_ubuntu ";
-lammpspot=" /home/xggong/home1/zhouy/lammps-24Apr13/potentials"
-mpirun=" /opt/intel/mpi/openmpi/1.6.3/icc.ifort/bin/mpirun  -np ";
-pypath=' /home/xggong/home1/zhouy/soft/anaconda/bin/'
-python=pypath+'python '
-phonopy=pypath+'phonopy '
-phono3py=pypath+'phono3py '
-phonts=' /home/xggong/home1/zhouy/soft/PhonTS-1.1.4/src/PhonTS '
-vasp=' /home/xggong/home1/zhouy/vasp '
-vasppot='/home/xggong/home1/zhangyueyu/psudopotential/5.3_LDA'
-shengbte=' /home/xggong/home1/zhouy/tcscripts/ShengBTE/ShengBTE '
-thirdorder=python+'/home/xggong/home1/zhouy/soft/thirdorder/python/thirdorder_vasp.py '
+root="/home/xggong/home1/zhouy/"
+def exepath(a,abs=False):
+	if abs:
+		return ' '+a+' '
+	else:
+		return ' '+dirpath(a)+' '
+def dirpath(a):
+	return root+a.lstrip('/')
+
+php       = exepath("php/bin/php")
+lammps    = exepath("lammps-24Apr13/src/lmp_ubuntu")
+lammpspot = dirpath("lammps-24Apr13/potentials")
+mpirun    = exepath("/opt/intel/mpi/openmpi/1.6.3/icc.ifort/bin/mpirun  -np",abs=True)
+pypath    = dirpath('soft/anaconda/bin/')
+python    = exepath(pypath+'python',abs=True)
+phonopy   = exepath(pypath+'phonopy',abs=True)
+phono3py  = exepath(pypath+'phono3py',abs=True)
+phonts    = exepath('soft/PhonTS-1.1.4/src/PhonTS')
+vasp      = exepath('vasp')
+vasppot   = dirpath('../zhangyueyu/psudopotential/5.3_LDA')
+shengbte  = exepath('tcscripts/ShengBTE/ShengBTE')
+thirdorder= python+exepath('soft/thirdorder/python/thirdorder_vasp.py')
+libs	  =['/opt/intel/mkl/10.0.013/lib/em64t','/opt/intel/mpi/openmpi/1.6.3/icc.ifort/lib']

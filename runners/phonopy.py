@@ -55,6 +55,7 @@ ATOM_NAME = %s
 MP = %s
 EIGENVECTORS=.TRUE.
 FORCE_CONSTANTS = WRITE
+MESH_SYMMETRY = .FALSE.
 """%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
 		write(mesh,'mesh.conf')
 	
@@ -112,11 +113,19 @@ Monkhorst-Pack
 0  0  0
 	"""%' '.join(map(str,m.kpoints))
 		write(s,'KPOINTS')
-		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+		if self.jm:
+			from aces.jobManager import pbs
+			path=pwd()
+			pb=pbs(queue='q1.1',nodes=2,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 24 "+config.vasp+' >log.out')
+			self.jm.reg(pb)
+		else:
+			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
 	
 	def getvasprun(self,files):
 		m=self.m
-		maindir=shell_exec('pwd')
+		maindir=pwd()
+		from aces.jobManager import jobManager
+		self.jm=jobManager()
 		for file in files:
 			print file
 			dir="dirs/dir_"+file
@@ -128,6 +137,7 @@ Monkhorst-Pack
 			elif m.engine=="vasp":
 				self.getVaspRun_vasp()
 			cd(maindir)
+		self.jm.check()
 
 	def generate(self):
 		m=self.m
@@ -137,14 +147,21 @@ Monkhorst-Pack
 		self.getvasprun(files)
 		self.force_constant(files)
 		
+		self.getDos()
+		
+		self.getband()
+
+	def getDos(self):
 		self.generate_meshconf()	
 		passthru(config.phonopy+" --dos  mesh.conf")
 		self.drawDos()
-		
+
+	def getband(self):
 		self.generate_bandconf()
 		passthru(config.phonopy+" -s  band.conf")
 		from aces.bandplot import plotband
-		plotband(labels=' '.join(m.bandpath))
+		plotband(labels=' '.join(self.m.bandpath))
+
 	def generate_bandconf(self):
 		#generate mesh.conf
 		m=self.m
@@ -156,6 +173,7 @@ Monkhorst-Pack
 ATOM_NAME = %s
 BAND = %s 
 BAND_POINTS = 101
+MESH_SYMMETRY = .FALSE.
 """%(m.dim,' '.join(m.elements),bpath)
 		write(band,'band.conf')
 		

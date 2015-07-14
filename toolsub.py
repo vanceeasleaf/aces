@@ -104,6 +104,7 @@ def makeLoopFile(idx,app):
 	if(not universe and not single):genPbs(dir,pro,queue,nodes,procs);
 	cores=procs*nodes
 	app['cores']=cores
+	app['pbsname']=pro
 	write(json.dumps(app),dir+"/app.json");
 
 
@@ -111,6 +112,9 @@ def setSubProject(index,single):
 	if(single):pid=''#exec.background("sh %s/%s/run.sh"%(PROJHOME,index));
 	else:
 		pid=shell_exec("cd %s/%s;qsub lammps.pbs;"%(PROJHOME,index))[0:5];
+		from tools import debug
+		debug("pbsid=%s"%pid)
+		debug(time.strftime('%Y-%m-%d %H:%M:%S'))
 		print "submit: %s\t%s/%s"%(pid,PROJHOME,index);
 	#sleep(1);
 	return pid;

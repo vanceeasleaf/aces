@@ -26,6 +26,7 @@ class App:
 		mkdir('minimize')
 		cd('minimize')
 		minimize_input(self.m)	
+		write(time.strftime('%Y-%m-%d %H:%M:%S'),'done')
 		cd('..')
 		
 	def execute(self):		

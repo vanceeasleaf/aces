@@ -10,7 +10,7 @@ def minimize_vasp(m):
 PREC = accurate
 ENCUT=400
 EDIFF = 1e-6
-IBRION = -1
+IBRION = 1
 ISIF = 2
 ISMEAR = 0 ; SIGMA = 0.1
 ISTART = 0
@@ -31,7 +31,10 @@ Monkhorst-Pack
 0  0  0
 	"""%' '.join(map(str,m.kpoints))
 	write(s,'KPOINTS')
-	shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+	if m.useMini:
+		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+	else:
+		cp('POSCAR','CONTCAR')
 def minimize_lammps(m):
 	f=open('input', 'w')
 	units,structure,potential,timestep,masses,dumpRate,write_structure,metropolis,useMini,dump=m.units,m.structure,m.potential,m.timestep,m.masses,m.dumpRate,m.write_structure,m.metropolis,m.useMini,m.dump

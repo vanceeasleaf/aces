@@ -13,8 +13,11 @@ def write(cmd,fileName,mode="w",sep=""):
 	file.write(cmd+sep);
 	file.close();
 def debug(cmd):
-    write(cmd,'debug.txt','a',sep="\n")
-    
+    write(str(cmd),'debug.txt','a',sep="\n")
+def sleep(u):
+    os.sleep(u)
+def exists(path):
+    return os.path.exists(path)    
 def read(fileName):
 	file=open(fileName);
 	s=file.read()
