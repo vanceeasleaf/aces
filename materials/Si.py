@@ -14,7 +14,7 @@ class structure(material):
 		self.timestep=self.units.metal.t(.55e-3)
 		self.bond=self.units.metal.L(5.430)
 		self.elements=['Si']
-		self.cubic=False
+		self.cubic=True
 	def setup(self):
 		self.bandpoints=ibz_points['fcc']
 		self.bandpath=['Gamma','K','X','Gamma','L']
