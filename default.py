@@ -57,6 +57,7 @@ default=dict(
 	,engine="lammps"
 	
 	,correlation_supercell=[20,20,1]
+	,pho3bte=False
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)

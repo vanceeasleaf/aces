@@ -2,12 +2,16 @@
 import os,sys
 import shutil
 import pandas as pd
+import subprocess as sub 
+import shlex
 def shell_exec(cmd):
 	c=os.popen(cmd).read()
 	return c.strip()
 def passthru(cmd):
-	print os.popen(cmd).read()
-	sys.stdout.flush()	
+	#print os.popen(cmd).read()
+	#sys.stdout.flush()
+    #sub.call(shlex.split(cmd),stdout=sys.stdout)
+    sub.call(cmd,shell=True,stdout=sys.stdout)
 def write(cmd,fileName,mode="w",sep=""):
 	file=open(fileName,mode);
 	file.write(cmd+sep);

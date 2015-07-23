@@ -112,7 +112,7 @@ class material:
 		self.atoms.write("structure.xyz")
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
 		a=lammpsdata(self.atoms,self.elements)
-		a.writedata()
+		self.rot=a.writedata()
 
 	def writeatoms(self,atoms,label='atoms'):
 		mkcd(label)
@@ -132,13 +132,18 @@ class material:
 		from  ase.io import read
 		atoms=read('POSCAR')
 		a=lammpsdata(atoms,self.elements)
-		a.writedata()
-	
+		rot= a.writedata()
+		return rot
+
 	def atoms_from_dump(self,filename):
 		return afd(filename=filename,elements=self.elements)
 		
-	def dump2POSCAR(self,dumpname,poscar='POSCAR'):
+	def dump2POSCAR(self,dumpname,poscar='POSCAR',rotate=True):
 		atoms=self.atoms_from_dump(dumpname)
+		if rotate:
+			d,p,d1,p1=self.rot
+			atoms.rotate(d1,-p1,rotate_cell=True)
+			atoms.rotate(d,-p,rotate_cell=True)
 		write_vasp(poscar,atoms,sort="True",direct=True,vasp5=True)
 	
 	def getboxrange(self):

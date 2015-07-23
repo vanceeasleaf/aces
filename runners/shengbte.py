@@ -27,30 +27,31 @@ class runner(Runner):
 	
 	def force_constant3(self,files):
 		m=self.m
-		cmd='find dirs/dir_3RD.* -name vasprun.xml |sort -n|'+config.thirdorder+" reap %s -2 "%m.dim
+		cmd='find dirs/dir_3RD.* -name vasprun.xml |sort -n|'+config.thirdorder+" reap %s 0.54 "%m.dim
 		passthru(cmd)
 
 	def generate_supercells3(self):
 		m=self.m
 		#generate supercells
-		passthru(config.thirdorder+"sow %s -2"%(m.dim))
+		passthru(config.thirdorder+"sow %s 0.54"%(m.dim))
 	
 	def getControl(self):
 		m=self.m
 		f=open('CONTROL','w')
+		atoms=read('../POSCAR')#m.atoms
 		allocations="""&allocations
 	nelements=%d
 	natoms=%d
 	ngrid(:)=%s
 &end
-"""%(len(m.elements),len(m.atoms),' '.join(map(str,m.kpoints)))
-		cell=m.atoms.cell
-		types=m.toString([m.elements.index(x)+1 for x in m.atoms.get_chemical_symbols()])
+"""%(len(m.elements),len(atoms),' '.join(map(str,m.kpoints)))
+		cell=atoms.cell
+		types=m.toString([m.elements.index(x)+1 for x in atoms.get_chemical_symbols()])
 		pos=""
-		for i,atom in enumerate(m.atoms):
-			pos+="	positions(:,%d)=%s\n"%(i+1,m.toString(m.atoms.get_scaled_positions()[i]))
+		for i,atom in enumerate(atoms):
+			pos+="	positions(:,%d)=%s\n"%(i+1,m.toString(atoms.get_scaled_positions()[i]))
 		crystal="""&crystal
-	lfactor=1.0,
+	lfactor=0.1,
 	lattvec(:,1)=%s
 	lattvec(:,2)=%s
 	lattvec(:,3)=%s
@@ -86,6 +87,7 @@ class runner(Runner):
 	def generate(self):
 		m=self.m
 		self.minimizePOSCAR()
+		#cp('minimize/POSCAR','.')
 		mkdir('secondorder')
 		cd('secondorder')
 		cp('../POSCAR','.')

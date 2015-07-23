@@ -18,7 +18,7 @@ class structure(material):
 	def setup(self):
 		self.bandpoints=ibz_points['fcc']
 		self.bandpath=['Gamma','K','X','Gamma','L']
-		self.potential='pair_style	tersoff\npair_coeff	* * %s/SiC_1994.tersoff  %s'%(config.lammpspot,' '.join(self.elements))
+		self.potential='pair_style	sw\npair_coeff	* * %s/Si.sw  %s'%(config.lammpspot,' '.join(self.elements))
 	def lmp_structure(self):
 		atoms = bulk('Si', 'diamond', a=self.bond, cubic=self.cubic)
 		atoms.set_pbc([self.xp,self.yp,self.zp])

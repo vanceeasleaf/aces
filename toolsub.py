@@ -111,7 +111,7 @@ def makeLoopFile(idx,app):
 def setSubProject(index,single):
 	if(single):pid=''#exec.background("sh %s/%s/run.sh"%(PROJHOME,index));
 	else:
-		pid=shell_exec("cd %s/%s;qsub lammps.pbs;"%(PROJHOME,index))[0:5];
+		pid=shell_exec("cd %s/%s;qsub lammps.pbs;"%(PROJHOME,index));
 		from tools import debug
 		debug("pbsid=%s"%pid)
 		debug(time.strftime('%Y-%m-%d %H:%M:%S'))

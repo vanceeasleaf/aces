@@ -47,7 +47,7 @@ class lammpsdata:
 	def writedata(self,filename="structure"):
 		a=data()
 		a.title=self.atoms.get_chemical_formula()
-		unit=self.get_rotated_atoms()
+		unit,rot=self.get_rotated_atoms()
 		cell=unit.cell
 		a.headers['xlo xhi']=[0,cell[0,0]]
 		a.headers['ylo yhi']=[0,cell[1,1]]
@@ -62,12 +62,12 @@ class lammpsdata:
 			atomsdata.append(x)
 		a.sections['Atoms']=[' '.join(map(str,x))+'\n' for x in atomsdata]
 		a.write(filename)
-		
+		return rot
 	def get_rotated_atoms(self):
 		unit=self.atoms.copy()
 		direct,phi=self.mergeVec(unit.cell[0],[1,0,0])
 		unit.rotate(direct,phi,rotate_cell=True)
 		yn=[0,unit.cell[1,1],unit.cell[1,2]]
-		direct,phi=self.mergeVec(yn,[0,1,0])
-		unit.rotate(direct,phi,rotate_cell=True)
-		return unit
+		direct1,phi1=self.mergeVec(yn,[0,1,0])
+		unit.rotate(direct1,phi1,rotate_cell=True)
+		return unit,(direct,phi,direct1,phi1)

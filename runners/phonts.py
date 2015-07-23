@@ -6,6 +6,7 @@ import aces.config as config
 from ase.io import read
 from ase.io.vasp import write_vasp
 from aces.runners import Runner
+import numpy as np
 class runner(Runner):
 	def runcmd(self):
 		return config.mpirun+" %s "%self.m.cores+config.phonts+"  >log.out"
@@ -64,14 +65,16 @@ run 0
 		passthru(config.phonts)
 
 	def phontsAtoms(self):
-		atoms=read('minimize/range',format='lammps')
+		m=self.m
+		m.dump2POSCAR('minimize/range')
+		atoms=read('POSCAR')
 		cell=atoms.get_cell()
-		content="cell %f %f %f\n"%(cell[0][0],cell[1][1],cell[2][2])
+		if not np.allclose(np.diag(np.diag(cell)),cell):
+			raise Exception('phonts needs cell to be orthorgnal')
+		content="cell %f %f %f\n"%tuple(np.diag(cell))
 		content+="natoms %d\n"%(len(atoms))
 		content+="fractional\n"
 		pos=atoms.get_scaled_positions()
 		for i,atom in enumerate(atoms):
-			if atom.symbol=='H':label='C'
-			if atom.symbol=='He':label='N'
-			content+="%s %s\n"%(label,' '.join(["%s"%x for x in pos[i]]))
+			content+="%s %s\n"%(atom.symbol,m.toString(pos[i]))
 		return content		

@@ -4,12 +4,14 @@ from math import pi,sqrt,cos,sin
 from aces.materials.graphene import structure as graphene
 import numpy as np
 from aces.runners import Runner
+from aces.runners.phonopy import RotateVector
 from aces.tools import *
 import aces.config as config
 import os
 class structure(material):
 	def set_parameters(self):
 		self.angle=pi/4
+		self.twist=0.0
 	def setup(self):
 		self.xp=self.yp=self.zp=0
 		self.enforceThick=False
@@ -98,18 +100,25 @@ class drag(Runner):
 		print >>f,"group x1z1 id "+m.toString(m.x1z1)
 		print >>f,"group x0y0 id "+m.toString(m.x0y0)
 		print >>f,"group x0y1 id "+m.toString(m.x0y1)
-		print >>f,"fix dragx1z0 x1z0 drag "+m.toString(m.posx1z0)+" .5 2"
-		print >>f,"fix dragx1z1 x1z1 drag "+m.toString(m.posx1z1)+" .5 2"
-		print >>f,"fix dragx0y0 x0y0 drag "+m.toString(m.posx0y0)+" .5 2"
-		print >>f,"fix dragx0y1 x0y1 drag "+m.toString(m.posx0y1)+" .5 2"
+
 		print >>f,"reset_timestep 0"
 		T=50
 		print >>f,"velocity all create %f %d mom yes rot yes dist gaussian"%(T,m.seed)
 		print >>f,"fix getEqu  all  nvt temp %f %f %f"%(T,T,m.dtime)
-
+		print >>f,"fix 1 all recenter 50 50 50 units box"
 		print >>f,"dump kaka all atom 100 dump.lammpstrj"
 		print >>f,"dump_modify  kaka sort id"
-		print >>f,"run 200000"
+		print >>f,"fix dragx0y0 x0y0 drag "+m.toString(m.posx0y0)+" .5 2"
+		print >>f,"fix dragx0y1 x0y1 drag "+m.toString(m.posx0y1)+" .5 2"
+		for i in range(20):
+			g=m.angle/2.0
+			m.posx1z1=np.array((50,50,50))+500*RotateVector(np.array([cos(g),0.0,sin(g)]),[1,0,0],m.twist/20.0*i)
+			m.posx1z0=np.array((50,50,50))+500*RotateVector(np.array([cos(g),0.0,-sin(g)]),[1,0,0],m.twist/20.0*i)
+			print >>f,"fix dragx1z0 x1z0 drag "+m.toString(m.posx1z0)+" .5 2"
+			print >>f,"fix dragx1z1 x1z1 drag "+m.toString(m.posx1z1)+" .5 2"
+			print >>f,"run 10000"
+			print >>f,"unfix dragx1z0"
+			print >>f,"unfix dragx1z1"
 		print >>f,"dump lala all atom 1 range"
 		print >>f,"dump_modify  lala sort id"
 		print >>f,"run 0"

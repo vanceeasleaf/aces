@@ -11,6 +11,12 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import numpy as np
+def rotationMatrix(axis,theta):
+	from numpy import cross,eye,dot
+	from scipy.linalg import expm3,norm
+	return expm3(cross(eye(3),axis/norm(axis)*theta))
+def RotateVector(vec,axis,theta):
+	return np.dot(vec,rotationMatrix(axis,theta))
 class runner(Runner):
 	def minimizePOSCAR(self):
 		m=self.m
@@ -29,8 +35,8 @@ boundary        p p p
 read_data       structure
 %s
 %s 
-neighbor        2 bin
-neigh_modify    every 1 delay 1 check yes
+#neighbor        14 bin
+#neigh_modify    every 1 delay 1 check yes
 dump 1 all custom 1 dump.force id  fx fy fz xs ys zs
 dump_modify 1 format "%%d %%30.20f %%30.20f %%30.20f %%30.20f %%30.20f %%30.20f"
 dump_modify  1 sort id
@@ -64,7 +70,7 @@ MESH_SYMMETRY = .FALSE.
 		#generate supercells
 
 		passthru(config.phonopy+"-d --dim='%s'"%(m.dim))
-	
+
 	def getVaspRun_lammps(self):
 		m=self.m
 		
@@ -75,6 +81,8 @@ MESH_SYMMETRY = .FALSE.
 		write(content,"in")
 		#generate dump.force
 		shell_exec(config.lammps+" < in >log.out")
+		d,p,d1,p1=m.rot
+
 		#generate vasprun.xml
 		f=open('dump.force')
 		for i in range(9):f.next()
@@ -82,7 +90,10 @@ MESH_SYMMETRY = .FALSE.
 		poses=""
 		for line in f:
 			line=line.split()
-			forces+="<v>  %s %s %s </v>\n"%tuple(line[1:4])
+			force=np.array(map(float,line[1:4]))
+			force=RotateVector(force,d1,-p1)
+			force=RotateVector(force,d,-p)
+			forces+="<v>  %s %s %s </v>\n"%tuple(force)
 			poses+="<v>  %s %s %s  </v>\n"%tuple(line[4:8])
 		vasprun='<root><calculation><varray name="forces" >\n'
 		vasprun+=forces
@@ -167,7 +178,7 @@ Monkhorst-Pack
 		m=self.m
 
 		bp=m.bandpoints
-		bpath=' '.join([' '.join(map(str,bp[x])) for x in m.bandpath])
+		bpath=' '.join([m.toString(bp[x]) for x in m.bandpath])
 		
 		band="""DIM = %s
 ATOM_NAME = %s
