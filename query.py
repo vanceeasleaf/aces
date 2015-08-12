@@ -44,8 +44,10 @@ def getParas(obj):
 
 	
 def getQueryInfo(workPath,pid,runTime,ob):
+	pid=filter(str.isdigit, str(pid))
 	lastline=shell_exec("tail -1 %s/log.out"%workPath);
-	qstat=shell_exec("qstat %s 2>&1|tail -1 "%pid);
+	qstat=shell_exec("qstat %s 2>&1|tail -1 "%pid )
+
 	step=lastline.split()[0]
 	if step.isdigit():
 		percent="%.1f%%"%(float(step)/runTime*100)
@@ -109,7 +111,7 @@ def tDisorder(result):
 	
 def drawStructure():
 	atoms=read('minimize/range',format='lammps')
-	atoms.write('structure.png')		
+	atoms.write('minimize.png')		
 	
 def ineq(ob,result):
 	now=pwd()

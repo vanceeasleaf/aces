@@ -10,6 +10,7 @@ from aces.runners import Runner
 class structure(material):
 	def set_parameters(self):
 		self.scale=5
+		self.strain=8
 	def setup(self):
 		self.xp=self.yp=self.zp=0
 		self.enforceThick=False
@@ -24,6 +25,7 @@ class structure(material):
 		hi=atoms.positions[:,0].max()-2
 		self.leftgroup=np.arange(len(atoms),dtype='int')[atoms.positions[:,0]<low]+1
 		self.rightgroup=np.arange(len(atoms),dtype='int')[atoms.positions[:,0]>hi]+1
+		self.fmag=self.strain/float(len(self.leftgroup))
 		self.write_graphene(atoms)
 		self.posleft=atoms.positions[self.leftgroup[0]-1].copy()+(50,50,50)
 		self.posright=atoms.positions[self.rightgroup[0]-1].copy()+(50,50,50)
@@ -145,13 +147,14 @@ class drag(Runner):
 		print >>f,"thermo %d"%dumpRate
 		print >>f,"group leftgroup id "+m.toString(m.leftgroup)
 		print >>f,"group rightgroup id "+m.toString(m.rightgroup)
-		print >>f,"fix dragleft leftgroup drag "+m.toString(m.posleft)+" 1 2"
-		print >>f,"fix dragright rightgroup drag "+m.toString(m.posright)+" 1 2"
+		print >>f,"fix dragleft leftgroup drag "+m.toString(m.posleft)+" %f 2"%m.fmag
+		print >>f,"fix dragright rightgroup drag "+m.toString(m.posright)+" %f 2"%m.fmag
 		print >>f,"reset_timestep 0"
 		T=50
 		print >>f,"velocity all create %f %d mom yes rot yes dist gaussian"%(T,m.seed)
 		print >>f,"fix getEqu  all  nvt temp %f %f %f"%(T,T,m.dtime)
-
+		print >>f,"fix 1 all recenter 50 50 50 units box"
+		print >>f,"fix 2 all viscous 0.02"
 		print >>f,"dump kaka all atom 100 dump.lammpstrj"
 		print >>f,"dump_modify  kaka sort id"
 		print >>f,"run 200000"

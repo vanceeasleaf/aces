@@ -193,6 +193,140 @@ def plotband(factor=1.0,
         else:
             plt.show()
         plt.close()
+def plotbanddos(freq,dos,factor=1.0,
+                        f_max=None, 
+                        f_min=None,
+                        is_gnuplot=False,
+                        is_points=False,
+                        is_vertial_line=True,
+                        output_filename='banddos.png',
+                        labels=r'Gamma X Gamma',
+                        show_legend=False,
+                        title=None,filename0='band.yaml'):
+    args=[]
+    options=object(factor=factor,
+                        f_max=f_max, 
+                        f_min=f_min,
+                        is_gnuplot=is_gnuplot,
+                        is_points=is_points,
+                        is_vertial_line=is_vertial_line,
+                        output_filename=output_filename,
+                        labels=labels,
+                        show_legend=show_legend,
+                        title=title
+                        )
+    if not options.is_gnuplot:
+        import matplotlib.pyplot as plt
+        import matplotlib
+        matplotlib.use('Agg')
+        if options.labels:
+            
+            from matplotlib import rc
+            rc('text', usetex=False)
+
+    colors = ['r-', 'g-', 'g-', 'c-', 'm-', 'y-', 'k-', 'b--', 'g--', 'r--', 'c--', 'm--', 'y--', 'k--']
+    if options.is_points:
+        colors = [x + 'o' for x in colors]
+
+    count = 0
+
+
+    if len(args) == 0:
+        filenames = [filename0]
+    else:
+        filenames = args
+
+    if options.is_gnuplot:
+        print "# distance  frequency (bands are separated by blank lines)"
+    min1=100000
+    max1=-100000
+    plt.figure(1, (8, 6))
+    plt.axes([.1, .07, .69, .85])
+    for i, filename in enumerate(filenames):
+        string = open(filename).read()
+        data = yaml.load(string, Loader=Loader)
+        distances, frequencies, segment_positions = get_plot_data(data)
+        min1=min(min1,min(min(frequencies)))
+        max1=max(max1,max(max(frequencies)))
+        
+        if options.is_gnuplot:
+            print "# segments:",
+            for v in segment_positions:
+                print "%10.8f" % v,
+            print "%10.8f" % distances[-1]
+            
+        elif options.is_vertial_line and len(filenames) == 1:
+            for v in segment_positions[1:]:
+                plt.axvline(x=v,linestyle='--',  linewidth=.5, color='black')
+
+        for j, freqs in enumerate(np.array(frequencies).T):
+            if options.is_gnuplot:
+                for d, f in zip(distances, freqs * options.factor):
+                    print d,f
+                print
+            else:
+                if j==0:
+                    plt.plot(distances, freqs * options.factor, colors[i],
+                             label=filename)
+                else:
+                    plt.plot(distances, freqs * options.factor, colors[i])
+
+        if options.is_gnuplot:
+            print
+
+        
+    if not options.is_gnuplot:
+        plt.ylabel('Frequency(THz)')
+        plt.xlabel('Wave vector')
+        plt.xlim(distances[0], distances[-1])
+        if not options.f_max == None:
+            plt.ylim(ymax = options.f_max)
+        #else: plt.ylim(ymax=max1* options.factor)
+        if not options.f_min == None:
+            plt.ylim(ymin = options.f_min)
+        #else: plt.ylim(ymin=min1* options.factor)
+        plt.axhline(y=0, linestyle=':', linewidth=0.5, color='k')
+        if len(filenames) == 1:
+            xticks = segment_positions + [distances[-1]]
+            if options.labels:
+                labels = [x.replace('Gamma',r'$\Gamma$') for x in options.labels.split()]
+                
+                if len(labels)==len(xticks):
+                    plt.xticks(xticks, labels)
+                else:
+                    print "Numbers of labels and band segments don't match."
+                    sys.exit(1)
+            else:
+                plt.xticks(xticks, [''] * len(xticks))
+        else:
+            plt.xticks([])
+        
+        if not options.title == None:
+            plt.title(options.title)
+
+        if options.show_legend:
+            plt.legend()
+        #plt.grid('on')
+        
+        
+        # Plot the band structure and DOS
+        
+        plt.axes([.8, .07, .2, .85])
+        #plt.fill_between(dos, freq,  color='lightgrey', edgecolor='k', lw=1)
+        plt.plot(dos, freq,'k',linewidth=1)
+        plt.axhline(y=0, linestyle=':', linewidth=0.5, color='k')
+        #plt.ylim(0, 35)
+        #plt.ylim(ymin=min1* options.factor)
+        plt.xticks([], [])
+        plt.yticks([], [])
+        plt.xlabel("DOS")
+        if not options.output_filename == None:
+            plt.rcParams['pdf.fonttype'] = 42
+            plt.rcParams['font.family'] = 'serif'
+            plt.savefig(options.output_filename,bbox_inches='tight',transparent=True)
+        else:
+            plt.show()
+        plt.close()
 
 def band3d(imgname='band3d.png',filename='life.txt'):
     from aces.graph import surf,scatter3d

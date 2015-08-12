@@ -4,13 +4,14 @@ from aces.graph import series,plot
 from aces.tools import exit,write,to_txt
 from aces.lineManager import  lineManager
 from scipy.optimize import leastsq
-from aces.dos import plot_smooth
+from aces.dos import plot_smooth,plot_dos,plot_vacf,plot_atomdos
 from math import pi
 import h5py
 class vdos:
 	def __init__(self,timestep=0.0005):
 		self.timestep=timestep
 		self.phase=None
+		print "scanning the velocity file"
 		self.lm=lineManager('velocity.txt')
 		#self.run()
 		self.db=h5py.File('velocity.hdf5')
@@ -21,6 +22,7 @@ class vdos:
 		self.calculateDos()
 
 	def readinfo(self):
+
 		lm=self.lm
 		self.natom=int(lm.getLine(3).split()[0])
 		t1=int(lm.getLine(1).split()[0])
@@ -36,16 +38,45 @@ class vdos:
 		print "Total step=",self.totalStep
 		print "interval=",self.interval
 		self.timestep*=self.interval
+		self.times=np.arange(self.totalStep)*self.timestep
+		maxFreq=1/2.0/self.timestep
+		self.freq=np.linspace(0,1,self.totalStep/2)*maxFreq
 	def correlate(self,a,b):
 		length = len(a)
-		a = rfft(a,axis=0).conjugate()     #  a(t0)b(t0+t)
-		b = rfft(b,axis=0)                 # .conjugate() for b(t0)a(t0+t)
+		if a==b:
+			b = rfft(b,axis=0)
+			a = b
+		else:
+			b = rfft(b,axis=0)
+			a=rfft(a,axis=0)
+		a = a.conjugate()     #  a(t0)b(t0+t)
 		c = irfft(a*b,axis=0)/length
 		return c
 	def correlation_atom(self,id):
-		v=self.velocity_atom(id)
-		vcf=self.correlate(v,v)
-		return vcf
+		node='/correlate_atom/%d'%id
+		if not node in self.db:
+			print 'prepare correlate_atom:%d'%id
+
+			v=self.velocity_atom(id)
+			self.db[node]=self.correlate(v,v)
+		return self.db[node]
+	def dos_atom(self,id):
+		if not '/freq' in self.db:	
+			self.db['/freq']= self.freq
+		node='/dos_atom/%d'%id
+		if not node in self.db:
+			print 'prepare dos_atom:%d'%id
+			vcf=self.correlation_atom(id)
+			vcf=np.average(vcf[:,:3],axis=1)
+			vcf0=vcf[0].copy()
+			vcf/=vcf0			
+			dos=np.abs(rfft(vcf,axis=0))			
+			self.db[node]= dos[:self.totalStep/2]
+		return self.db[node]
+	def cal_atomdos(self):
+		for i in range(self.natom):
+			self.dos_atom(i)
+		plot_atomdos()
 	def calculateDos(self):
 		totalVcf=np.zeros([self.totalStep,4])
 		for i in range(self.natom):
@@ -59,17 +90,18 @@ class vdos:
 			totalVcf[i]/=vcf0
 
 		totalStep=self.totalStep
-		data=np.c_[np.arange(totalStep)*self.timestep,totalVcf]
+		data=np.c_[self.times,totalVcf]
 		to_txt(['correlation_time(ps)','vcaf_x','vcaf_y','vcaf_z','vcaf_av'],data[:totalStep/2],'VACF.txt')
-		totalDos = np.abs(rfft(totalVcf,axis=0))
+		totalDos = np.abs(rfft(totalVcf,axis=0))[:totalStep/2]
 		
 
-		maxFreq=1/2.0/self.timestep
-		data=np.c_[np.linspace(0,1,self.totalStep/2)*maxFreq,totalDos[:totalStep/2]]
+		data=np.c_[self.freq,totalDos]
 		to_txt(['Freq_THz','vdos_x','vdos_y','vdos_z','vdos_av'],data,'VDOS.txt')
 		
 		print 'VACF and VDOS caculated OK'
-		self.plot(totalVcf[:totalStep/2],totalDos[:totalStep/2])
+		plot_dos()
+		plot_vacf()
+		plot_smooth()
 	def velocity_atom(self,id):
 		node='/velocity_atom/%d'%id
 		if not node in self.db:
@@ -168,33 +200,3 @@ class vdos:
 	def errorfunc(self,p,x,z):
 		return self.lorentz(p,x)-z	
 		
-	def select(self,x,n=1000):
-		N=len(x)
-		if N<n:
-			return range(0,N)
-		else:
-			return range(0,N,N/n)
-	def plot(self,totalVcf,totalDos):
-
-		n,m=totalVcf.shape
-		time=np.arange(0,n)*self.timestep
-		xx=self.select(time)
-		time=time[xx]
-		totalVcf=totalVcf[xx]
-		series(xlabel='Correlation Time (ps)',
-			ylabel='Normalized Velocity Auto Correlation Function',
-			datas=[(time,totalVcf[:,0],"vcf_x"),
-			(time,totalVcf[:,1],"vcf_y"),
-			(time,totalVcf[:,2],"vcf_z")]
-			,linewidth=0.3
-			,filename='VACF.png')
-		n,m=totalDos.shape
-		freq=np.linspace(0,1,n)*1/2.0/self.timestep
-		series(xlabel='Frequency (THz)',
-			ylabel='Phonon Density of States',
-			datas=[(freq,totalDos[:,0],"dos_x"),
-			(freq,totalDos[:,1],"dos_y"),
-			(freq,totalDos[:,2],"dos_z")]
-			,linewidth=0.3
-			,filename='VDOS.png')
-		plot_smooth()

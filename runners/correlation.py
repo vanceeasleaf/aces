@@ -34,18 +34,41 @@ class runner(Runner):
 		print >>f,m.potential
 		print >>f,"timestep %f"%m.timestep
 		print >>f,"reset_timestep 0"
-		print >>f,"velocity all create %f %d mom yes rot yes dist gaussian"%(m.T,m.seed)
-		print >>f,"fix getEqu  all  nvt temp %f %f %f"%(m.T,m.T,m.dtime)
+		
+		if m.corrNVT:
+			box=m.box
+			deta=m.deta
+			wfix=m.wfix
+			xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=box
+			fixl1=xlo-deta;fixl2=fixl1+deta*wfix
+			fixr2=xhi+deta;fixr1=fixr2-deta*wfix
+			print >>f,"region	stayl	block   %s  %s INF  INF INF  INF units box"%(fixl1,fixl2)
+			print >>f,"region	stayr	block   %s  %s INF INF   INF  INF units box"%(fixr1,fixr2)
+			print >>f,"region   stay    union  2 stayl stayr"
+			print >>f,"region	main	block   %s  %s INF INF   INF  INF units box"%(fixl2,fixr1)
+			print >>f,"group   stay    region  stay"
+			print >>f,"group   main    region  main"
+			print >>f,"velocity stay set 0 0 0"
+		else:
+			print >>f,"region	main	block   INF  INF INF  INF INF  INF units box"
+			print >>f,"group    main    region  main"
+		print >>f,"velocity main create %f %d mom yes rot yes dist gaussian"%(m.T,m.seed)
+		print >>f,"fix getEqu  main  nvt temp %f %f %f"%(m.T,m.T,m.dtime)
+		print >>f,"dump dump1 all atom %d dump.lammpstrj"%(m.Cinterval*500)
+		print >>f,"dump_modify  dump1 sort id"
 		print >>f,"run %d"%m.equTime
 		print >>f,"unfix getEqu"
 		print >>f,"reset_timestep 0"
-		print >>f,"fix nve all nve"
-		print >>f,"dump lala all custom %s velocity.txt id type vx vy vz"%m.Cinterval
+		print >>f,"fix nve main nve"
+		print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
 		print >>f,"dump_modify  lala sort id"
+
 		print >>f,"run %s"%m.Ctime
 
 		f.close()
 		passthru(config.mpirun+"  %s "%self.m.cores+config.lammps+" <correlation.lmp  >out.dat")
-		self.vd=vdos(m.timestep)
+		self.vd=self.getvdos()
 		self.vd.run()
 		#rm("velocity.txt")
+	def getvdos(self):
+		return vdos(self.m.timestep)

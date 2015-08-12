@@ -46,7 +46,7 @@ def cd(path):
 def mv(src,dest):
 	shell_exec("mv %s %s"%(src,dest))
 def cp(src,dest):
-	shell_exec("cp %s %s"%(src,dest))
+	shell_exec("cp %s %s -r "%(src,dest))
 def mkdir(path):
     path=path.strip()
     path=path.rstrip("\\")

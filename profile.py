@@ -16,7 +16,7 @@ class profile:
 	def kappaConverge(self,istep,coord,aveN,aveQuants,*para):
 		#kappa convergence
 		snapStep,upP,deta,S,tcfactor,zfactor,dto=para
-		filter=aveN[:]>0
+		filter=aveN[:]>1
 		aveC=coord[filter]
 		aveTemp=aveQuants[filter,0]
 		avejx=aveQuants[filter,1]
@@ -28,7 +28,7 @@ class profile:
 		
 	def getTempProfile(self,begin,upP,deta,S,tcfactor,zfactor):
 		fas=fixAveSpace('tempProfile.txt')
-		quants=fas.getConvergence(12,begin)
+		quants=fas.getConvergence(upP+1,begin)
 		tools.to_txt(['Temperature(K)','Jx'],quants,'convergenceT.txt')
 		snapStep=fas.snapStep
 
@@ -36,7 +36,7 @@ class profile:
 		coord,aveN,aveQuants=fas.iterate(begin,self.kappaConverge,snapStep,upP,deta,S,tcfactor,zfactor,dto)
 		tools.write(dto['log'],'convergenceK.txt')
 		series('x(Augstrom)','temperature(K)',dto['plots'],'convergenceT.png',linewidth=1,legend=False)
-		filter=aveN[:]>0
+		filter=aveN[:]>1# at least 1 atom in the bin
 		aveC=coord[filter]
 		aveN=aveN[filter]
 		aveTemp=aveQuants[filter,0]

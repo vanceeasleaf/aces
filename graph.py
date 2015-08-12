@@ -1,6 +1,7 @@
 # encoding : utf8
 import matplotlib
 matplotlib.use('Agg')
+import numpy as np
 import matplotlib.pyplot as pl	
 def twinx(x,y1,y2,filename):
 	fig,ax1=pl.subplots()
@@ -24,13 +25,19 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False):
 	if len(datas)==1:
 		serie=datas[0]
 		pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r')
+		pl.xlim([serie[0].min(),serie[0].max()])
 	else:
+		min0=100000;max0=-100000
 		for serie in datas:
 			pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth)
+			min0=min(serie[0].min(),min0)
+			max0=max(serie[0].max(),max0)
+		pl.xlim([min0,max0])
 	if legend:
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
 	if grid:
 		pl.grid(True)
+	
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
 

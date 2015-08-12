@@ -8,7 +8,7 @@ class Runner:
 	def run(self):
 		__console__=sys.stdout
 		
-		f=open('input', 'w')
+		f=open('input', 'w',0)
 		sys.stdout=f
 		self.generate()
 		sys.stdout=__console__

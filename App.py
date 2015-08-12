@@ -23,12 +23,16 @@ class App:
 		self.runner=Runner.runner(m)
 		
 	def minimize(self):	
+		if self.m.copymini and exists('../0/minimize'):
+			cp('../0/minimize','.')
+		else:self.creatmini()
+				
+	def creatmini(self):
 		mkdir('minimize')
 		cd('minimize')
-		minimize_input(self.m)	
+		minimize_input(self.m)
 		write(time.strftime('%Y-%m-%d %H:%M:%S'),'done')
 		cd('..')
-		
 	def execute(self):		
 		
 		self.minimize()

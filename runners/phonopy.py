@@ -161,7 +161,7 @@ Monkhorst-Pack
 		self.getDos()
 		
 		self.getband()
-
+		self.getbanddos()
 	def getDos(self):
 		self.generate_meshconf()	
 		passthru(config.phonopy+" --dos  mesh.conf")
@@ -172,7 +172,10 @@ Monkhorst-Pack
 		passthru(config.phonopy+" -s  band.conf")
 		from aces.bandplot import plotband
 		plotband(labels=' '.join(self.m.bandpath))
-
+	def getbanddos(self):
+		freq,pdos=self.getpdos()
+		from aces.bandplot import plotbanddos
+		plotbanddos(freq=freq,dos=np.sum(pdos,axis=1),labels=' '.join(self.m.bandpath))
 	def generate_bandconf(self):
 		#generate mesh.conf
 		m=self.m
@@ -187,17 +190,14 @@ BAND_POINTS = 101
 MESH_SYMMETRY = .FALSE.
 """%(m.dim,' '.join(m.elements),bpath)
 		write(band,'band.conf')
-		
-	def drawDos(self):
+	def getpdos(self):
 		xx=np.loadtxt('partial_dos.dat',skiprows=1)
-		ndos=len(xx[0,:])-1
 		freq=xx[:,0]
 		pdos=xx[:,1:]
-		ndos=len(pdos[0,:])
-		
-		datas=[]
-		for i in range(ndos):
-			datas.append((freq,pdos[:,i],''))
+		return freq,pdos
+	def drawDos(self):
+		freq,pdos=self.getpdos()
+		datas=[(freq,p,'') for p in pdos.T]
 		series('Frequency (THz)','Partial Density of States',
 		datas=datas,
 		filename='partial_dos.png',legend=False,grid=True)

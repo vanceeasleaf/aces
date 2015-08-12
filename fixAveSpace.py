@@ -11,7 +11,7 @@ class fixAveSpace:
 		self.lm=lm
 		self.snapStep,self.nbin=self.getNbin()
 		self.nstep=(lm.nline-3)/(self.nbin+1)
-		assert self.nstep*(self.nbin+1)+3==lm.nline
+		#assert self.nstep*(self.nbin+1)+3==lm.nline
 		self.istep=0
 		
 	def getNbin(self):

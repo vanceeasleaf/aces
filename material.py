@@ -69,16 +69,8 @@ class material:
 	def toString(self,vec):
 		return ' '.join(map(str,vec))
 	def extent(self,atoms):
-		xmax=atoms.positions[:,0].max()
-		xmin=atoms.positions[:,0].min()
-		ymax=atoms.positions[:,1].max()
-		ymin=atoms.positions[:,1].min()
-		zmax=atoms.positions[:,2].max()
-		zmin=atoms.positions[:,2].min()
-		lx=xmax-xmin;
-		ly=ymax-ymin;
-		lz=zmax-zmin;
-		return (lx,ly,lz);
+		return atoms.positions.max(axis=0)-atoms.positions.min(axis=0)
+		
 		
 	def structure(self):
 		
@@ -113,6 +105,7 @@ class material:
 		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
 		a=lammpsdata(self.atoms,self.elements)
 		self.rot=a.writedata()
+		self.atoms.write('structure.png')	
 
 	def writeatoms(self,atoms,label='atoms'):
 		mkcd(label)
@@ -120,6 +113,7 @@ class material:
 		write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
 		a=lammpsdata(atoms,self.elements)
 		a.writedata()
+		atoms.write('structure.png')	
 		cd('..')
 
 	def POSCAR2data(self):

@@ -25,7 +25,7 @@ class runner(Runner):
 		#Create FORCE_CONSTANTS
 		passthru(config.phonopy+"--writefc --dim='%s'"%(m.dim))
 	
-	def force_constant3(self,files):
+	def force_constant3(self):
 		m=self.m
 		cmd='find dirs/dir_3RD.* -name vasprun.xml |sort -n|'+config.thirdorder+" reap %s 0.54 "%m.dim
 		passthru(cmd)
@@ -104,7 +104,7 @@ class runner(Runner):
 		files=shell_exec("ls 3RD.*.*|sort -n").split('\n')
 		assert len(files)>0
 		self.getvasprun(files)
-		self.force_constant3(files)
+		self.force_constant3()
 		cd('..')
 		mkdir('SHENG')
 		cd('SHENG')
