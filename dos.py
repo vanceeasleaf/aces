@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 from aces.graph import plot,series
-def getDos(frequencies,weights):
-	asum=np.array(np.cumsum(weights))
-	filter=asum/asum[-1]<0.99
+def getDos(frequencies,weights,filter=None):
+	if filter is None:
+		asum=np.array(np.cumsum(weights))
+		filter=asum/asum[-1]<0.99
 	freq=frequencies[filter]
 	wei=weights[filter]
 	frequency_points,sigma=get_draw_area(freq)
@@ -11,6 +12,13 @@ def getDos(frequencies,weights):
 	#					for f in frequency_points])
 	dos=get_density_of_states_all(frequency_points,freq,wei,sigma)
 	return frequency_points,dos
+def getFilter(weights):
+	asum=np.cumsum(weights,axis=1)
+	filter=np.zeros_like(weights[0],dtype=bool)
+	for a in asum:
+		filter=a/a[-1]<0.99+filter
+
+	return filter
 def get_density_of_states_all(frequency_points,frequencies,weights,sigma):
 	f0,f1=np.meshgrid(frequency_points,frequencies)
 	ff=f0-f1
@@ -59,15 +67,16 @@ def plot_smooth():
 	dp.to_csv('smooth_dos.txt',sep='\t',index=False,float_format ="%f" );
 	plot((freq,'Frequency(THz)'),(ave,'Phonon Density of states'),"smooth_dos.png",grid=True)	
 
-	
+	alldos=[df['vdos_x'],df['vdos_y'],df['vdos_z']]
+	filter=getFilter(alldos)
 	dp=pd.DataFrame()
-	freq,ave=getDos(df['Freq_THz'],df['vdos_x'])
+	freq,ave=getDos(df['Freq_THz'],df['vdos_x'],filter)
 	dp['Freq_x']=freq
 	dp["vdos_x"]=ave
-	freq,ave=getDos(df['Freq_THz'],df['vdos_y'])
+	freq,ave=getDos(df['Freq_THz'],df['vdos_y'],filter)
 	dp['Freq_y']=freq
 	dp["vdos_y"]=ave
-	freq,ave=getDos(df['Freq_THz'],df['vdos_z'])
+	freq,ave=getDos(df['Freq_THz'],df['vdos_z'],filter)
 	dp['Freq_z']=freq
 	dp["vdos_z"]=ave
 	dp.to_csv('smooth_dosxyz.txt',sep='\t',index=False,float_format ="%f" );	
@@ -121,6 +130,38 @@ def plot_atomdos(atoms=range(24),filename='atom_dos.png'):
 		datas=datas
 		,linewidth=0.3
 		,filename=filename,legend=False)
+def plot_regiondos(regions,filename='region_dos.png'):
+	import h5py
+	db=h5py.File('velocity.hdf5')
+	freq=db['/freq']
+	datas=[]
+	alldos=[]
+
+	for region,rname in regions:
+		dos=get_regiondos(region)
+		alldos.append(dos)
+	filter=getFilter(alldos)
+	dp=pd.DataFrame()
+	for region,rname in regions:
+		dos=get_regiondos(region)
+		x,y=getDos(freq,dos,filter)
+		datas.append((x,y,"region:%s"%rname))
+		dp['freq_%s'%rname]=x
+		dp['dos_%s'%rname]=y
+	dp.to_csv('region_dos.txt',sep='\t',index=False,float_format ="%f" );	
+	series(xlabel='Frequency (THz)',
+		ylabel='Phonon Density of States',
+		datas=datas
+		,linewidth=1
+		,filename=filename,legend=True)
+def get_regiondos(region):
+	import h5py
+	db=h5py.File('velocity.hdf5')
+	dos=db['/dos_atom/%d'%region[0]]
+	totaldos=np.zeros_like(dos)
+	for i in region:
+		totaldos+=db['/dos_atom/%d'%i]
+	return totaldos
 if __name__=='__main__':
 	import json
 	fp=open('qloops.txt')

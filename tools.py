@@ -14,7 +14,7 @@ def passthru(cmd):
     sub.call(cmd,shell=True,stdout=sys.stdout)
 def write(cmd,fileName,mode="w",sep=""):
 	file=open(fileName,mode);
-	file.write(cmd+sep);
+	file.write(str(cmd)+sep);
 	file.close();
 def debug(cmd):
     write(str(cmd),'debug.txt','a',sep="\n")

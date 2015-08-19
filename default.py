@@ -60,6 +60,11 @@ default=dict(
 	,pho3bte=False
 	,corrNVT=False
 	,copymini=False
+	,strainStep=5000
+	,maxStrain=0.4
+	,reverseStrain=False
+	,minStrain=-0.4
+	,vStrain=False
 )
 default['Thi']=default['T']+units.metal.T(10)
 default['Tlo']=default['T']-units.metal.T(10)

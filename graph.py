@@ -15,24 +15,26 @@ def twinx(x,y1,y2,filename):
 	ax1.legend(a+b,[y1[1],y2[1]],loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True)
 	pl.close()
-def plot(x,y,filename,grid=False):
-	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False,grid=grid)
+def plot(x,y,filename,grid=False,linewidth=1):
+	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False,grid=grid,linewidth=linewidth)
 	
-def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False):
+def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=None):
 	pl.figure()
 	pl.xlabel(xlabel)
 	pl.ylabel(ylabel)
 	if len(datas)==1:
 		serie=datas[0]
 		pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r')
-		pl.xlim([serie[0].min(),serie[0].max()])
+		if xmax is None:xmax=serie[0].max()
+		pl.xlim([serie[0].min(),xmax])
 	else:
 		min0=100000;max0=-100000
 		for serie in datas:
 			pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth)
 			min0=min(serie[0].min(),min0)
 			max0=max(serie[0].max(),max0)
-		pl.xlim([min0,max0])
+		if xmax is None:xmax=max0
+		pl.xlim([min0,xmax])
 	if legend:
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
 	if grid:
