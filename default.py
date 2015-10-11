@@ -18,7 +18,7 @@ default=dict(
 	thick=units.metal.L(3.35),
 	deta=units.metal.L(3),
 	T=units.metal.T(300),
-
+	dT=units.metal.T(10),
 	metropolis=False,
 	write_structure=False,
 	timestep=units.metal.t(.5e-3),
@@ -59,15 +59,17 @@ default=dict(
 	,correlation_supercell=[1,1,1]
 	,pho3bte=False
 	,corrNVT=False
-	,copymini=False
 	,strainStep=5000
 	,maxStrain=0.4
 	,reverseStrain=False
 	,minStrain=-0.4
-	,vStrain=False
+	,vStrain=True
+	,copyN=-1
+	,shengcut=5.4
+	,phofc=False
 )
-default['Thi']=default['T']+units.metal.T(10)
-default['Tlo']=default['T']-units.metal.T(10)
+default['Thi']=default['T']+default['dT']
+default['Tlo']=default['T']-default['dT']
 
 	
 

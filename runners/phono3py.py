@@ -39,6 +39,7 @@ class runner(Runner):
 			self.sheng()
 		else:
 			self.caltc()
+			self.dumpkappa()
 		#Thermal conductivity calculation
 	def caltc(self):
 		m=self.m
@@ -59,6 +60,7 @@ class runner(Runner):
 		print "START SHENGBTE..."
 		#passthru(config.mpirun+" %s "%m.cores+config.shengbte)
 		passthru(config.shengbte)
+		
 	def matrixFormat(self,mat):
 		n,m=mat.shape
 		s=""
@@ -140,6 +142,16 @@ class runner(Runner):
 		s+=m.toString(v[k]-v[i])+'\n'
 		s+='%d %d %d\n'%(self.s2p[i],self.s2p[j],self.s2p[k])
 		return s
+	def dumpkappa(self):
+		import h5py
+		m=self.m
+		filename="kappa-m%s.hdf5"%''.join(map(str,m.kpoints))
+		f=h5py.File(filename)
+		kappa=f['kappa']
+		T=f['temperature']
+		to_txt(['temperature','kappa'],np.c_[T,kappa[:,0]],'kappa.txt')
+		from aces.graph import plot
+		plot((np.array(T),'Temperature (K)'),(np.array(kappa),'Thermal Conductivity (W/mK)'),filename='kT.png')
 
 
 

@@ -30,7 +30,7 @@ class runner(Runner):
 			device=ijDevice(hook,m)
 		elif m.method=='greenkubo':
 			device=gkDevice(hook,m)
-
+		debug("tcfactor="+str(m.tcfactor))
 		#settings
 		print "units %s"%m.units
 		print "dimension 3"
@@ -51,7 +51,7 @@ class runner(Runner):
 		#computes
 		print "compute           ke  all  ke/atom"
 		print "compute           pe  all  pe/atom"
-		print "compute         stress all stress/atom virial"
+		print "compute         stress all stress/atom NULL virial"
 		print "compute jflux all heat/flux ke pe stress"
 		hook.doAction('compute')
 		#variables

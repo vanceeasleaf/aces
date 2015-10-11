@@ -14,6 +14,7 @@ class structure(material):
 	def lmp_structure(self):
 		atoms=self.getUnitCell().repeat([self.latx,self.laty,1])
 		cell=atoms.cell*self.bond
+		atoms.positions[:,2]+=np.random.uniform(-0.5, 0.5,len(atoms))
 		atoms.set_cell(cell,scale_atoms=True)
 		atoms.set_pbc([self.xp,self.yp,self.zp])
 		atoms.center()

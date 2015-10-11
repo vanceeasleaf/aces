@@ -24,11 +24,13 @@ class lammpsdata:
 		xlo,xhi=a.headers["xlo xhi"]
 		ylo,yhi=a.headers["ylo yhi"]
 		zlo,zhi=a.headers["zlo zhi"]
-		xy,xz,yz=a.headers["xy xz yz"]
+		
 		cell[0,0]=xhi-xlo
 		cell[1,1]=yhi-ylo
 		cell[2,2]=zhi-zlo
-		cell[1,0],cell[2,0],cell[2,1]=xy,xz,yz
+		if a.headers.has_key("xy xz yz"):
+			xy,xz,yz=a.headers["xy xz yz"]
+			cell[1,0],cell[2,0],cell[2,1]=xy,xz,yz
 		atoms.set_cell(cell)
 		self.atoms=atoms
 		return atoms
@@ -52,8 +54,11 @@ class lammpsdata:
 		a.headers['xlo xhi']=[0,cell[0,0]]
 		a.headers['ylo yhi']=[0,cell[1,1]]
 		a.headers['zlo zhi']=[0,cell[2,2]]
-		cell[1,0]-=cell[0,0]*0.5*.001
-		print [cell[1,0]/cell[0,0],cell[2,0]/cell[0,0],cell[2,1]/cell[1,1]];
+		#if(cell[1,0]>cell[0,0]*0.5):cell[1,0]=cell[0,0]/abs(cell[0,0])*int((abs(cell[0,0])*0.5)*1000000)/1000000.0
+		v=1.0
+		if(cell[1,0]<0):v=-1.0
+		cell[1,0]=v*int((abs(cell[1,0]))*10000)/10000.0
+		#print [cell[1,0]/cell[0,0],cell[2,0]/cell[0,0],cell[2,1]/cell[1,1]];
 		if not np.allclose([0,0,0],[cell[1,0]/cell[0,0],cell[2,0]/cell[0,0],cell[2,1]/cell[1,1]],atol=0.01):
 			a.headers['xy xz yz']=[cell[1,0],cell[2,0],cell[2,1]]
 		a.headers['atoms']=len(self.atoms)

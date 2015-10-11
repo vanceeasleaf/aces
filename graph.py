@@ -15,22 +15,35 @@ def twinx(x,y1,y2,filename):
 	ax1.legend(a+b,[y1[1],y2[1]],loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True)
 	pl.close()
-def plot(x,y,filename,grid=False,linewidth=1):
-	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False,grid=grid,linewidth=linewidth)
+def plot(x,y,filename,grid=False,linewidth=1,scatter=False,xmax=None,logx=False,logy=False):
+	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False,grid=grid,linewidth=linewidth,scatter=scatter,xmax=xmax,logx=logx,logy=logy)
 	
-def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=None):
+def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=None,scatter=False,logx=False,logy=False):
 	pl.figure()
 	pl.xlabel(xlabel)
 	pl.ylabel(ylabel)
+	plot=pl.plot
+	if logx:
+		plot=pl.semilogx
+	if logy:
+		plot=pl.semilogy
+	if logx and logy:
+		plot=pl.loglog
+	if scatter:
+		marker='.'
+		linestyle='.'
+	else: 
+		marker=None
+		linestyle='-'
 	if len(datas)==1:
 		serie=datas[0]
-		pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r')
+		plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r',marker=marker,linestyle=linestyle)
 		if xmax is None:xmax=serie[0].max()
 		pl.xlim([serie[0].min(),xmax])
 	else:
 		min0=100000;max0=-100000
 		for serie in datas:
-			pl.plot(serie[0],serie[1],label=serie[2],linewidth=linewidth)
+			plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,marker=marker,linestyle=linestyle)
 			min0=min(serie[0].min(),min0)
 			max0=max(serie[0].max(),max0)
 		if xmax is None:xmax=max0
@@ -48,6 +61,18 @@ def surf(X, Y, Z,filename):
 	fig = pl.figure()
 	ax = fig.add_subplot(111, projection='3d')
 	ax.plot_surface(X, Y, Z)
+	pl.savefig(filename,bbox_inches='tight',transparent=True) 
+	pl.close()
+def imshow(c,filename,extent=[0,1,0,1]):
+	pl.figure()
+	pl.imshow(np.array(c).astype('float'),extent=extent,origin='lower')
+	pl.savefig(filename,bbox_inches='tight',transparent=True) 
+	pl.close()
+def scatter(x,y,c,xlabel,ylabel,filename,marker_size=2.0,marker='s'):
+	pl.figure()
+	pl.xlabel(xlabel)
+	pl.ylabel(ylabel)
+	pl.scatter(x,y,edgecolors='none',s=marker_size,c=c,marker=marker)
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
 def scatter3d(x,y,z,filename):

@@ -7,9 +7,9 @@ class structure(material):
 	def set_parameters(self):
 		self.gnrtype='zigzag'
 		self.tilt=False
-		self.pi3=False
-		self.thick=10.0
+		self.bond=3.193/sqrt(3)
 	def setup(self):
+		self.elements=["Mo","S"]
 		self.bandpoints=ibz_points['hexagonal']
 		self.bandpath=['Gamma','M','K','Gamma']
 	def lmp_structure(self):
@@ -21,30 +21,24 @@ class structure(material):
 			col=prototype(self.latx,self.laty)		
 		elif self.gnrtype=='zigzag':			
 			col=prototype(self.laty,self.latx)		
-			"""		
-			col.rotate([1,1,0],pi,rotate_cell=True)
-			cell=col.cell[[1,0,2]]
-			cell[2]*=-1
-			col.set_cell(cell)	
-			"""
 			self.swap(col,2)
-		else: raise Exception('Unkown gnr type!')		
+		else: raise Exception('Unkown gnr type!')	
+		col.center()	
 		atoms=get_unique_atoms(col)
 		col.set_pbc([self.xp,self.yp,self.zp])
 		cell=atoms.cell*bond
 		atoms.set_cell(cell,scale_atoms=True)
 		atoms.center()
-		if self.pi3:
-			if self.pi3==True:
-				self.pi3=pi/3
-			atoms.rotate('z',self.pi3,rotate_cell=True)
+
 		return atoms
 		
 	
 	def prototype_tilt(self,latx,laty):
 		unit=Atoms()
-		unit.append(Atom('C',[1.0/2,0,0]))
-		unit.append(Atom('C',[0,sqrt(3)/2,0]))
+		b=3.134/self.bond/2
+		unit.append(Atom('Mo',[1.0/2,0,0]))
+		unit.append(Atom('S',[0,sqrt(3)/2,b]))
+		unit.append(Atom('S',[0,sqrt(3)/2,-b]))
 		unit.set_cell((3.0/2,sqrt(3),10.0))
 		unit.cell[0,1]=sqrt(3)/2
 		col=unit.repeat((latx,laty,1))
@@ -58,12 +52,13 @@ class structure(material):
 		
 	def ring(self):
 		#armchair ring
+		b=3.134/self.bond/2
 		atoms=Atoms()
-		atom=Atoms('C',[(1.0,0.0,0.0)])
-		for i in range(6):			
-			atom.rotate('z',pi/3*i)
+		atom=Atoms('MoS2',[(1.0,0.0,0.0),(-1.0,0,b),(-1.0,0,-b)])
+		for i in range(3):			
+			atom.rotate('z',pi*2.0/3*i)
 			atoms.extend(atom.copy())
-		atoms.set_cell([3.0,sqrt(3),self.thick])
+		atoms.set_cell([3.0,sqrt(3),10.0])
 		return atoms
 			
 		

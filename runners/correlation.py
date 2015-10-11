@@ -19,14 +19,12 @@ class runner(Runner):
 		f=open("correlation.lmp","w")
 		print >>f,"units %s"%m.units
 		print >>f,"dimension 3"
-		pbcx=pbcy=pbcz='s'
-		if m.xp==1:pbcx='p'
-		if m.yp==1:pbcy='p'
-		if m.zp==1:pbcz='p'
+		pbcx=pbcy=pbcz='p'
+		if m.corrNVT:pbcx='s'
+
 		print >>f,"boundary %s %s %s"%(pbcx,pbcy,pbcz)
 		print >>f,"atom_style atomic"
 		print >>f,"read_data   correlation_structure"
-		print >>f,"change_box	all	boundary %s %s %s"%(pbcx,pbcy,pbcz)
 		print >>f,"lattice fcc 5" #needed to define the regions
 		print >>f,"thermo %d"%m.dumpRate
 		print >>f,"thermo_modify     lost warn"
@@ -60,15 +58,17 @@ class runner(Runner):
 		print >>f,"unfix getEqu"
 		print >>f,"reset_timestep 0"
 		print >>f,"fix nve main nve"
-		print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
-		print >>f,"dump_modify  lala sort id"
-
+		#print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
+		#print >>f,"dump_modify  lala sort id"
+		print >>f,"dump lala main h5md %s velocity.h5md velocity  box no create_group yes"%m.Cinterval
 		print >>f,"run %s"%m.Ctime
 
 		f.close()
 		passthru(config.mpirun+"  %s "%self.m.cores+config.lammps+" <correlation.lmp  >out.dat")
+		self.dos()
+		#rm("velocity.txt")
+	def dos(self):
 		self.vd=self.getvdos()
 		self.vd.run()
-		#rm("velocity.txt")
 	def getvdos(self):
 		return vdos(self.m.timestep)

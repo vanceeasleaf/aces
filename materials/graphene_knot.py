@@ -11,10 +11,14 @@ class structure(material):
 	def set_parameters(self):
 		self.scale=5
 		self.strain=8
+		self.airebo=False
+		self.vis=0.02
 	def setup(self):
 		self.xp=self.yp=self.zp=0
 		self.enforceThick=False
 		self.useMini=False
+		if self.airebo:
+			self.potential='pair_style	rebo\npair_coeff	* * %s/CH.airebo  %s'%(config.lammpspot,' '.join(['C' for a in self.elements]))
 	def ori_structure(self):
 		atoms=graphene(dict(latx=self.latx,laty=self.laty,latz=1)).lmp_structure()
 		lx=self.extent(atoms)[0]
@@ -140,7 +144,7 @@ class drag(Runner):
 		print >>f,"boundary s s s"
 		print >>f,"dimension 3"
 		print >>f,'read_data structure'
-		print >>f,potential
+		print >>f,'pair_style	tersoff\npair_coeff	* * %s/BNC.tersoff  %s'%(config.lammpspot,' '.join(m.elements))
 		print >>f,"timestep %f"%timestep
 		print >>f,masses
 		print >>f,"thermo_style custom step pe etotal"
@@ -154,7 +158,7 @@ class drag(Runner):
 		print >>f,"velocity all create %f %d mom yes rot yes dist gaussian"%(T,m.seed)
 		print >>f,"fix getEqu  all  nvt temp %f %f %f"%(T,T,m.dtime)
 		print >>f,"fix 1 all recenter 50 50 50 units box"
-		print >>f,"fix 2 all viscous 0.02"
+		print >>f,"fix 2 all viscous %f"%m.vis
 		print >>f,"dump kaka all atom 100 dump.lammpstrj"
 		print >>f,"dump_modify  kaka sort id"
 		print >>f,"run 200000"

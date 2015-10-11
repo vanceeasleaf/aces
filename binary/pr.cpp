@@ -29,12 +29,15 @@ char filename[20]="mesh.yaml";
 	long npr=nqpoint*nbranch;
 	double pr[npr];
 	double fr[npr];
+	char c;
+	int rec=fscanf(fp,"reciprocal_lattice%c\n",&c); 
 	for(long ipr=0;ipr<npr;ipr++){
 				pr[ipr]=0.0;
 			}
 
 			for(int iqp=0;iqp<nqpoint;iqp++){
 				long qline=4+iqp*(3+nbranch*(3+4*natom)+1);
+				if (rec>0){qline+=4;}
 				for(int ibranch=0;ibranch<nbranch;ibranch++){
 					long branchline=qline+3+ibranch*(3+4*natom);
 					fseek(fp,lineNumber[branchline+1],SEEK_SET);

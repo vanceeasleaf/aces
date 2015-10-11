@@ -127,6 +127,7 @@ class material:
 		atoms=read('POSCAR')
 		a=lammpsdata(atoms,self.elements)
 		rot= a.writedata()
+		#debug(rot)
 		return rot
 
 	def atoms_from_dump(self,filename):

@@ -14,19 +14,21 @@ class runner(Runner):
 		m=self.m
 		coordination=self.phontsAtoms()
 		content0="species %d\n"%(len(m.elements))+m.phontsmasses+"""
-D3_cutoff 9.0
-delta 0.0005
+D3_cutoff 2.0
+kpoints %s 1
+delta 0.005
 numerical_2der T
-
-iter_steps 10
-
+numerical_3der T
+iter_steps 3
+pdos 0. 70. 200 10.
+temp 60. 400. 10
 AbInitio  T F 
 FP_interface LAMMPS
-phonons_only T
+#phonons_only T
 Lattice  1.0
 %s
 end
-"""%coordination
+"""%(m.toString(m.kpoints),coordination)
 		write(content0,'phonons_input.dat')
 		passthru(config.phonts) # generate many displacement files
 		mkdir('lammps');cd('lammps')

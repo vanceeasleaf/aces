@@ -152,8 +152,8 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 		f=open('result.txt','w')
 		if(computeTc):
 			os.popen("tail -2000 kappa.txt>tailKp.txt 2>err");
-			df=pd.read_csv("tailKp.txt",sep='\t',header=None)
-			kx=np.average(df[:,1],axis=0)
+			df=pd.read_csv("tailKp.txt",sep=' ',header=None)
+			kx=np.average(np.array(df)[:,1],axis=0)
 	
 		elif(fourierTc):
 			v=lx*ly*lz;
@@ -165,7 +165,7 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 			kx=gk_result.split()[1]
 		
 		f.write("kappa_src=%f\n"%kx);
-		os.exit()
+		return
 	flux_src=p.getFlux(begin,timestep,S,conti,lz,excRate,swapEnergyRate)[0]
 
 	aveC,aveN,aveTemp,avejx=p.getTempProfile(begin,upP,deta,S,tcfactor,zfactor)

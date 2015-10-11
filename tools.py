@@ -61,6 +61,21 @@ def ls(path='*'):
 	return glob.glob(path)
 def pwd():
 	return os.getcwd()
+def parseyaml(filename):
+    try:
+        import yaml
+    except ImportError:
+        print "You need to install python-yaml."
+        exit(1)
+        
+    try:
+        from yaml import CLoader as Loader
+        from yaml import CDumper as Dumper
+    except ImportError:
+        from yaml import Loader, Dumper
+    string = open(filename).read()
+    data = yaml.load(string, Loader=Loader)
+    return data
 class File(file):
     """ An helper class for file reading  """
 
