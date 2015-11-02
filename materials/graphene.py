@@ -3,15 +3,22 @@ from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points
+from aces import config
+from aces.tools import debug
 class structure(material):
 	def set_parameters(self):
 		self.gnrtype='zigzag'
 		self.tilt=False
 		self.pi3=False
 		self.thick=10.0
+		self.pot=False
 	def setup(self):
 		self.bandpoints=ibz_points['hexagonal']
 		self.bandpath=['Gamma','M','K','Gamma']
+		if self.pot==1:
+			debug("graphene potential chosen:SiC_1994.tersoff")
+			self.potential='pair_style	tersoff\npair_coeff	* * %s/SiC_1994.tersoff  %s'%(config.lammpspot,' '.join(['C' for i in self.elements]))
+
 	def lmp_structure(self):
 		if self.tilt:
 			prototype=self.prototype_tilt

@@ -8,19 +8,20 @@ def minimize(m):
 def minimize_vasp(m):
 	s="""SYSTEM = - local optimisation
 PREC = accurate
-ENCUT=400
-EDIFF = 1e-6
-IBRION = 1
-ISIF = 2
+ENCUT=%f
+EDIFF = 1e-8
+IBRION = 2
+NSW=100
+ISIF = 3
 ISMEAR = 0 ; SIGMA = 0.1
 ISTART = 0
 LWAVE = FALSE
 LCHARG = FALSE
-EDIFFG = 0.01
+EDIFFG = -0.01
 ALGO=fast
 LREAL=AUTO
 LPLANE=.TRUE.
-"""
+"""%m.ecut
 	write(s,'INCAR')
 	m.structure()
 	m.writePOTCAR()
@@ -29,7 +30,7 @@ LPLANE=.TRUE.
 Monkhorst-Pack
 %s
 0  0  0
-	"""%' '.join(map(str,m.kpoints))
+	"""%' '.join(map(str,m.mekpoints))
 	write(s,'KPOINTS')
 	if m.useMini:
 		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
@@ -57,7 +58,10 @@ def minimize_lammps(m):
 		print >>f,"min_style metropolis"
 		print >>f,"minimize 1e-12 1e-12 1000000 1000000"
 	if useMini:
-		print >>f,"fix 1 all box/relax x 0.0 y 0.0 nreset 1"
+		if m.enforceThick:
+			print >>f,"fix 1 all box/relax x 0.0 y 0.0 nreset 1"
+		else:
+			print >>f,"fix 1 all box/relax iso 0.0 nreset 1"
 		print >>f,"min_style cg"
 		print >>f,"minimize 1e-12 1e-12 1000000 1000000"
 	print >>f,"write_restart restart.minimize"

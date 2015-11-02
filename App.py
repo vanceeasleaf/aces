@@ -11,10 +11,11 @@ class App:
 			time.sleep(1)
 			print pwd()+'/app.json'
 		"""
-		f=open('app.json')
-		opt=f.read()
-		opt=json.loads(opt)
-		f.close()
+		if exists('app.json'):
+			opt=loadjson('app.json')
+		elif exists('../app.json'):
+			opt=loadjson('../app.json')
+		else:exit('app.json lost!')
 		species=opt['species']
 		s=im('aces.materials.%s'%species)
 		m=s.structure(opt)

@@ -6,6 +6,7 @@ import aces.config as config
 from ase.io import read
 from ase.io.vasp import write_vasp
 from aces.runners import Runner
+from aces.graph import *
 import numpy as np
 class runner(Runner):
 	def runcmd(self):
@@ -14,7 +15,7 @@ class runner(Runner):
 		m=self.m
 		coordination=self.phontsAtoms()
 		content0="species %d\n"%(len(m.elements))+m.phontsmasses+"""
-D3_cutoff 2.0
+D3_cutoff %f
 kpoints %s 1
 delta 0.005
 numerical_2der T
@@ -28,7 +29,7 @@ FP_interface LAMMPS
 Lattice  1.0
 %s
 end
-"""%(m.toString(m.kpoints),coordination)
+"""%(m.shengcut,m.toString(m.kpoints),coordination)
 		write(content0,'phonons_input.dat')
 		passthru(config.phonts) # generate many displacement files
 		mkdir('lammps');cd('lammps')
@@ -80,3 +81,17 @@ run 0
 		for i,atom in enumerate(atoms):
 			content+="%s %s\n"%(atom.symbol,m.toString(pos[i]))
 		return content		
+	def post(self):
+		a=np.loadtxt('freq.dat')
+		ks=a[:,1:4]
+		omega=a[:,4:]
+		b=np.loadtxt('phon_lifetime.dat')
+		tao=b[:len(ks),4:]
+
+		v=np.loadtxt(open('group_vel.dat'))[:,4:]
+		n,m=v.shape
+		v=v.reshape([n,m/3,3])
+		v=np.linalg.norm(v,axis=2)
+		plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
+		to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
+		plot((omega.flatten(),'Frequency (THz)'),(tao.flatten(),'Relaxation Time (ps)'),'tao_freq.png',grid=True,scatter=True,logy=True)

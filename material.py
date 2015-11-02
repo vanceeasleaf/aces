@@ -3,7 +3,8 @@
 from ase import Atoms,Atom
 from math import sqrt,pi
 from aces import default
-from ase.io.vasp import write_vasp
+#from ase.io.vasp import write_vasp
+from aces.f import writevasp
 from ase.io import read
 from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
@@ -37,7 +38,9 @@ class material:
 		self.prepare_phonts()
 		self.bandpoints=ibz_points['fcc']
 		self.bandpath=['Gamma','X','Gamma']
-		self.dim=' '.join(map(str,self.supercell))
+		self.dim=self.toString(self.supercell)
+		if not self.useS3:
+			self.supercell3=self.supercell
 		self.setup()
 		self.atoms=self.lmp_structure()
 	#to be overided
@@ -96,24 +99,51 @@ class material:
 		atoms.translate(-offset)
 
 	def writePOTCAR(self):
-		s=''.join([tools.read(config.vasppot+"/%s/POTCAR"%ele) for ele in self.elements])
-		tools.write(s,'POTCAR')
+		dir='pot'#LDA
+		#paw：PAW-LDA
+		#paw_gga：PAW-GGA-PW91
+		#paw_pbe：PAW-GGA-PBE
+		#pot：USPP-LDA
+		#pot_GGA：USPP-GGA
+		if not self.paw:
+			if self.gga:
+				dir='pot_GGA'
+			else:dir='pot'
+		else:
+			if not self.gga:
+				dir='paw'
+			else:
+				if self.pbe:
+					dir='paw_pbe'
+				else:
+					dir='paw_gga'
+		passthru('cat "" >POTCAR')
+		for ele in self.elements:
+			file=config.vasppot+"/%s/%s/POTCAR"%(dir,ele)
+			z=False
+			if not exists(file):
+				file+='.Z'
+				z=True
+			assert exists(file)
+			if z:
+				passthru('zcat %s >> POTCAR'%file)
+			else:
+				passthru('cat %s >> POTCAR'%file)
+		#s=''.join([tools.read(config.vasppot+"/%s/%s/POTCAR.Z"%(dir,ele)) for ele in self.elements])
+		#tools.write(s,'POTCAR')
 			
 
 	def write(self):
-		self.atoms.write("structure.xyz")
-		write_vasp("POSCAR",self.atoms,sort="True",direct=True,vasp5=True)
-		a=lammpsdata(self.atoms,self.elements)
-		self.rot=a.writedata()
-		self.atoms.write('structure.png')	
-
+		self.watoms(self.atoms)
+	def watoms(self,atoms):
+		atoms.write("structure.xyz")
+		writevasp(atoms)
+		#write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
+		self.POSCAR2data()
+		atoms.write('structure.png')	
 	def writeatoms(self,atoms,label='atoms'):
 		mkcd(label)
-		atoms.write("structure.xyz")
-		write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
-		a=lammpsdata(atoms,self.elements)
-		a.writedata()
-		atoms.write('structure.png')	
+		self.watoms(atoms)
 		cd('..')
 
 	def POSCAR2data(self):
@@ -125,8 +155,11 @@ class material:
 		"""
 		from  ase.io import read
 		atoms=read('POSCAR')
+		#debug(atoms.cell)
 		a=lammpsdata(atoms,self.elements)
 		rot= a.writedata()
+		d,p,d1,p1=rot
+		np.savetxt('POSCARrot',np.r_[d,p,d1,p1])
 		#debug(rot)
 		return rot
 
@@ -136,11 +169,13 @@ class material:
 	def dump2POSCAR(self,dumpname,poscar='POSCAR',rotate=True):
 		atoms=self.atoms_from_dump(dumpname)
 		if rotate:
-			d,p,d1,p1=self.rot
+			rot=np.loadtxt(dirname(dumpname)+'/POSCARrot')
+			d,p,d1,p1=rot[:3],rot[3],rot[4:7],rot[7]
 			atoms.rotate(d1,-p1,rotate_cell=True)
 			atoms.rotate(d,-p,rotate_cell=True)
-		write_vasp(poscar,atoms,sort="True",direct=True,vasp5=True)
-	
+		#write_vasp(poscar,atoms,sort="True",direct=True,vasp5=True)
+		writevasp(atoms,poscar)
+
 	def getboxrange(self):
 		file=open("range");
 		for i in range(5):

@@ -34,7 +34,8 @@ def get_unique_atoms(atoms,mic=True):
 		pbc=atoms.get_pbc()
 	newatoms.set_pbc(pbc)
 	newatoms.set_cell(cell)
-	if mic:
+	newatoms.center()
+	if mic and False:
 		newatoms.positions=newatoms.get_positions(wrap=True)
 	return newatoms
 

@@ -4,14 +4,21 @@ import shutil
 import pandas as pd
 import subprocess as sub 
 import shlex
+import json
+def loadjson(file):
+    return json.loads(read(file))
 def shell_exec(cmd):
+	print "[Command]"+cmd
+	sys.stdout.flush()
 	c=os.popen(cmd).read()
 	return c.strip()
 def passthru(cmd):
 	#print os.popen(cmd).read()
 	#sys.stdout.flush()
     #sub.call(shlex.split(cmd),stdout=sys.stdout)
-    sub.call(cmd,shell=True,stdout=sys.stdout)
+	print "[Command]"+cmd
+	sys.stdout.flush()
+	sub.call(cmd,shell=True,stdout=sys.stdout)
 def write(cmd,fileName,mode="w",sep=""):
 	file=open(fileName,mode);
 	file.write(str(cmd)+sep);
@@ -61,6 +68,8 @@ def ls(path='*'):
 	return glob.glob(path)
 def pwd():
 	return os.getcwd()
+def dirname(path):
+    return os.path.dirname(path)
 def parseyaml(filename):
     try:
         import yaml

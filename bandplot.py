@@ -273,8 +273,7 @@ def plotbanddos(freq,dos,factor=1.0,
 
         if options.is_gnuplot:
             print
-
-        
+    min1*=options.factor    
     if not options.is_gnuplot:
         plt.ylabel('Frequency(THz)')
         plt.xlabel('Wave vector')
@@ -284,8 +283,9 @@ def plotbanddos(freq,dos,factor=1.0,
         #else: plt.ylim(ymax=max1* options.factor)
         if not options.f_min == None:
             plt.ylim(ymin = options.f_min)
-        #else: plt.ylim(ymin=min1* options.factor)
-        plt.axhline(y=0, linestyle=':', linewidth=0.5, color='k')
+        else: plt.ylim(ymin=min1)
+        if abs(min1)>1:
+            plt.axhline(y=0, linestyle=':', linewidth=0.5, color='k')
         if len(filenames) == 1:
             xticks = segment_positions + [distances[-1]]
             if options.labels:
@@ -308,14 +308,15 @@ def plotbanddos(freq,dos,factor=1.0,
             plt.legend()
         #plt.grid('on')
         
-        
+        aa=plt.ylim()
         # Plot the band structure and DOS
         
         plt.axes([.8, .07, .2, .85])
         #plt.fill_between(dos, freq,  color='lightgrey', edgecolor='k', lw=1)
         plt.plot(dos, freq,'k',linewidth=1)
-        plt.axhline(y=0, linestyle=':', linewidth=0.5, color='k')
-        #plt.ylim(0, 35)
+        if abs(min1)>1:
+            plt.axhline(y=0, linestyle=':', linewidth=0.5, color='k')
+        plt.ylim(aa)
         #plt.ylim(ymin=min1* options.factor)
         plt.xticks([], [])
         plt.yticks([], [])

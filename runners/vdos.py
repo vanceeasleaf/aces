@@ -7,7 +7,11 @@ from scipy.optimize import leastsq
 from aces.dos import plot_smooth,plot_dos,plot_vacf,plot_atomdos
 from math import pi
 from aces.tools import *
+from scipy import signal
 import h5py
+
+from aces.qpointsyaml import phononyaml
+import time
 class vdos:
 	def __init__(self,timestep=0.0005):
 		self.phase=None
@@ -139,8 +143,8 @@ class vdos:
 		x=np.linspace(0,1,totalStep/2+1)*1/2.0/self.timestep
 		q1=q
 		x1=x
-		low=max(q.argmax()-20,0)
-		hi=min(q.argmax()+20,len(q))
+		low=max(q.argmax()-100,0)
+		hi=min(q.argmax()+100,len(q))
 		filter=range(low,hi)
 		x=x[filter]
 		q=q[filter]
@@ -155,15 +159,16 @@ class vdos:
 				datas=[(x,q,"origin"),
 				(xv,self.lorentz(p,xv),"fitting")]
 				,linewidth=1
-				,filename='SED/single%s%s.png'%(str(k),freq))
+				,filename='SED/part%s%s.png'%(str(k),freq))
 		if self.totalsed:
 			series(xlabel='Frequency (THz)',
 				ylabel='Single Phonon Power Spectrum',
-				datas=[(x1,q1,"origin")]
+				datas=[(x1,q1,"origin"),
+				(xv,self.lorentz(p,xv),"fitting")]
 				,linewidth=1
-				,filename='SED/single%s%s.png'%(str(k),freq))
+				,filename='SED/all%s%s.png'%(str(k),freq))
 		
-		v=map(str,list(k)+[freq]+list(p))
+		v=map(str,list(k)+[freq,p[0],p[1],1.0/p[1] ])
 		return '\t'.join(v)
 	def getpfactor(self,correlation_supercell=[10,10,1]):
 		from aces.lammpsdata import lammpsdata
@@ -172,29 +177,28 @@ class vdos:
 		return 1j*atoms.positions.dot(b.T)*2*pi
 	def specialk(self,pya,k0=[-0.0327869,0,0]):
 		self.partsed=True;
+		self.totalsed=True;
 		
 		iqp=0
-		k=0
-		
 		for iqp0 in range(pya.nqpoint):
 			k=pya.qposition(iqp0)
 			iqp=iqp0
 			if np.allclose(k0,k):
 				break
-		if k==0:return 0
 		else:
-			self.calculateSED(k,pya.natom)
-			for ibr in range(pya.nbranch):
-				freq=pya.frequency(iqp,ibr)
-				vec=pya.atoms(iqp,ibr)
-				v=self.calculateLife((k,freq,vec))
-				print v
+			print "no k found"
+			return 0
+		q=self.lifeSED(k,pya.natom,iqp,pya)
+
+		for ibr in range(pya.nbranch):
+			freq=pya.frequency(iqp,ibr)
+			vec=pya.atoms(iqp,ibr)
+			v=self.calculateLife((k,freq,vec))
+			print v
 		return 0
-	def life_yaml(self,filename="mesh.yaml",correlation_supercell=[10,10,1]):
+	def life_yaml(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
 		self.pfactor=self.getpfactor(correlation_supercell)
-		
-		from aces.phononyaml import phononyaml
-		import time
+
 		if not exists('SED'):mkdir('SED')
 		pya=phononyaml(filename)
 		if False:
@@ -204,12 +208,12 @@ class vdos:
 			self.specialk(pya,[0.1333333,0,0])
 			self.specialk(pya,[-0.1333333,0,0])
 			return
-		self.specialk(pya,[0,0,0])
+		self.specialk(pya,[0.125,0.75,0])
 
 		return
 		f=open('life.txt','w')
 		c=h5py.File('life.h5')
-		f.write('kx\tky\tkz\tfreq\tw0\ttao\ta0\n')
+		f.write('kx\tky\tkz\tfreq\tw0\tscatter\ttao\n')
 		for iqp in range(pya.nqpoint):
 			for ibr in range(pya.nbranch):
 				node='/%s/%s'%(iqp,ibr)
@@ -221,6 +225,51 @@ class vdos:
 					v=self.calculateLife((k,freq,vec))
 					c[node]=v
 				f.write('%s\n'%c[node][()])
+	def lifesed(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
+
+		self.pfactor=self.getpfactor(correlation_supercell)
+		pya=phononyaml(filename)
+		#self.specialk(pya,[0.5,0.0,0])
+
+		#return
+		f=open('lifesed.txt','w')
+		c=h5py.File('lifesed.h5')
+		f.write('kx\tky\tkz\tw\tw0\tscatter\ttao\n')
+		for iqp in range(pya.nqpoint):
+				node='/%s'%(iqp)
+				print node
+				if not node in c:
+					k=pya.qposition(iqp)
+					v=self.lifeSED(k,pya.natom,iqp,pya)
+					c[node]=v
+				f.write('%s\n'%c[node][()])
+	def fitpart(self,x,q):
+		p0 = np.array([x[q.argmax()], 0.01, q[q.argmax()]]) #Initial guess
+		p=self.fitLife(x,q,p0)
+		return p
+	def lifeSED(self,k,na,iqp,pya):
+
+		q=self.calculateSED(k,na)
+		x=self.freq
+		nbranch=3*na
+		life=[]
+		for i in range(nbranch):				
+			low=max(q.argmax()-100,0)
+			hi=min(q.argmax()+100,len(q)-1)
+			filter=range(low,hi)
+			p=self.fitpart(x[filter],q[filter])
+			life.append(p)
+			q[filter]=0.0
+		life=np.array(life)
+		w=[pya.frequency(iqp,ibr) for ibr in range(nbranch)]
+		o=life[:,0].argsort()
+		life=life[o]
+		v=['\t'.join(map(str,list(k)+[w[i],p[0],p[1],1.0/p[1]]) ) for i,p in enumerate(life)]
+		return '\n'.join(v)
+
+
+
+
 	def sed_band(self,correlation_supercell=[10,10,1]):
 		self.pfactor=self.getpfactor(correlation_supercell)
 		data =parseyaml('band.yaml')
@@ -260,5 +309,5 @@ class vdos:
 		return p[2] / ((x-p[0])**2 + p[1]**(2)/4.0)
 
 	def errorfunc(self,p,x,z):
-		return self.lorentz(p,x)-z	
+		return self.lorentz(p,x)-z
 		

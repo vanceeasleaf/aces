@@ -49,10 +49,17 @@ default=dict(
 	
 	,Cinterval=5
 	,Ctime=200000
-	
+
 	,supercell=[1,1,1]
+	,supercell3=[1,1,1]
+	,useS3=False
 	,kpoints=[20,20,1]
-	
+	,ekpoints=[3,3,1]
+	,ecut=400
+	,paw=True
+	,gga=True
+	,pbe=True
+	,mekpoints=[25,25,1]
 	,conti=False
 	,engine="lammps"
 	
@@ -67,6 +74,8 @@ default=dict(
 	,copyN=-1
 	,shengcut=5.4
 	,phofc=False
+	,leads='graphene'
+	,leadlat=[2,1,1]
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

@@ -1,8 +1,7 @@
 #encoding:utf8
 import json
-from aces.tools import shell_exec,write
+from aces.tools import *
 import os,sys
-from aces.tools import exit
 import aces.config as config
 import time
 from aces.env import *
@@ -96,8 +95,7 @@ def makeLoopFile(idx,app):
 		if(idx%lenn==0):
 			genPbss(PROJHOME,"zy_%s_"%PROJNAME,uqueue,unodes,uprocs,idx,cores);
 
-
-	shell_exec("mkdir -p "+dir);
+	mkdir(dir)
 	if(single):
 		genSh(dir,pro,procs);
 	

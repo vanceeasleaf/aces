@@ -7,18 +7,13 @@ from aces.binary import pr
 from aces.runners import Runner
 from aces.UnitCell.unitcell import UnitCell
 from aces.graph import plot,series
+from aces.script.vasprun import exe as lammpsvasprun
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import time
 import numpy as np
-def rotationMatrix(axis,theta):
-	from numpy import cross,eye,dot
-	from scipy.linalg import expm3,norm
-	return expm3(cross(eye(3),axis/norm(axis)*theta))
-def RotateVector(vec,axis,theta):
-	#debug(rotationMatrix(axis,theta))
-	return np.dot(rotationMatrix(axis,theta),vec)
+
 class runner(Runner):
 	def minimizePOSCAR(self):
 		m=self.m
@@ -29,22 +24,6 @@ class runner(Runner):
 		elif m.engine=="vasp":
 			cp(m.home+'/minimize/CONTCAR','POSCAR')
 	
-	def get_lammps_script(self,m):
-		content="units %s\n"%m.units
-		content+="""atom_style      atomic
-dimension       3
-boundary        p p p 
-read_data       structure
-%s
-%s 
-#neighbor        14 bin
-#neigh_modify    every 1 delay 1 check yes
-dump 1 all custom 1 dump.force id  fx fy fz xs ys zs
-dump_modify 1 format "%%d %%f %%f %%f %%f %%f %%f"
-dump_modify  1 sort id
-run 0
-"""%(m.masses,m.potential)
-		return content
 		
 	def force_constant(self,files):
 		cmd=config.phonopy+"-f "
@@ -81,58 +60,42 @@ MESH_SYMMETRY = .FALSE.
 GROUP_VELOCITY=.TRUE.
 """%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
 		write(mesh,'v.conf')	
+	def generate_qconf(self,q):
+		#generate q.conf
+		m=self.m
+
+		mesh="""DIM = %s
+ATOM_NAME = %s
+FORCE_CONSTANTS = READ
+EIGENVECTORS=.TRUE.
+QPOINTS=.TRUE.
+"""%(m.dim,' '.join(m.elements))
+		write(mesh,'q.conf')	
+		s="%s\n"%len(q)
+		for qq in q:
+			s+="%s\n"%m.toString(qq)
+		write(s,'QPOINTS')
 	def generate_supercells(self):
 		m=self.m
 		#generate supercells
 
 		passthru(config.phonopy+"--tolerance=1e-4 -d --dim='%s'"%(m.dim))
 
-	def getVaspRun_lammps(self):
-		m=self.m
-		
-		#generate structure
-		rot=m.POSCAR2data()
-		#generate in
-		content=self.get_lammps_script(m)
-		write(content,"in")
-		#generate dump.force
-		shell_exec(config.lammps+" < in >log.out")
-		d,p,d1,p1=rot
-
-		#generate vasprun.xml
-		f=open('dump.force')
-		for i in range(9):f.next()
-		forces=""
-		poses=""
-		for line in f:
-			line=line.split()
-			force=np.array(map(float,line[1:4]))
-			pos=np.array(map(float,line[4:8]))
-			force=RotateVector(force,d1,-p1)
-			force=RotateVector(force,d,-p)
-			
-			forces+="<v>  %f %f %f </v>\n"%tuple(force)
-			poses+="<v>  %f %f %f  </v>\n"%tuple(pos)
-		vasprun='<root><calculation><varray name="forces" >\n'
-		vasprun+=forces
-		vasprun+='</varray>\n<structure><varray name="positions">\n'+poses
-		vasprun+='</varray></structure></calculation></root>\n'
-		write(vasprun,'vasprun.xml')
-		f.close()
+	
 		
 	def getVaspRun_vasp(self):
 		s="""SYSTEM=calculate energy
 PREC = Accurate
 IBRION = -1
-ENCUT = 300
-EDIFF = 1.0e-6
+ENCUT = %f
+EDIFF = 1.0e-8
 ISMEAR = 0; SIGMA = 0.01
 IALGO = 38
-LREAL = .FALSE.
+LREAL = AUTO
 ADDGRID = .TRUE.
 LWAVE = .FALSE.
 LCHARG = .FALSE.
-"""
+"""%self.m.ecut
 		write(s,'INCAR')
 		m=self.m
 		m.writePOTCAR()
@@ -141,12 +104,12 @@ LCHARG = .FALSE.
 Monkhorst-Pack
 %s
 0  0  0
-	"""%' '.join(map(str,m.kpoints))
+	"""%' '.join(map(str,m.ekpoints))
 		write(s,'KPOINTS')
 		if self.jm:
 			from aces.jobManager import pbs
 			path=pwd()
-			pb=pbs(queue='q1.1',nodes=2,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 24 "+config.vasp+' >log.out')
+			pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.mpirun+" 4 "+config.vasp+' >log.out')
 			self.jm.reg(pb)
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
@@ -154,26 +117,27 @@ Monkhorst-Pack
 	def getvasprun(self,files):
 		m=self.m
 		maindir=pwd()
-		from aces.jobManager import jobManager
-		self.jm=jobManager()
-		def u(f):
-			return self.filevasprun(f,maindir,m.engine)
+		if m.engine=="vasp":
+			from aces.jobManager import jobManager
+			self.jm=jobManager()
+			for file in files:
+				print file
+				dir="dirs/dir_"+file
+				mkdir(dir)
+				mv(file,dir+'/POSCAR')
+				cd(dir)
+				self.getVaspRun_vasp()
+				cd(maindir)
+			self.jm.check()
+		elif m.engine=="lammps":
+			from multiprocessing.dummy  import Pool
+			pool=Pool()
+			pool.map_async(lammpsvasprun,files)
+			pool.close()
+			pool.join()
 
-		map(u,files)
 
-		self.jm.check()
-	def filevasprun(self,file,maindir,engine):
-		print file
-		cd(maindir)
-		dir="dirs/dir_"+file
-		mkdir(dir)
-		mv(file,dir+'/POSCAR')
-		cd(dir)
-		if engine=="lammps":			
-			self.getVaspRun_lammps()
-		elif engine=="vasp":
-			self.getVaspRun_vasp()
-		cd(maindir)
+
 	def runSPOSCAR(self):
 		m=self.m
 		maindir=pwd()
@@ -225,14 +189,20 @@ Monkhorst-Pack
 		a=time.time()
 		self.force_constant(files)
 		debug('force_constant:%f s'%(time.time()-a))
+		
+		if m.phofc:return self
+		self.postp()
+	def postp(self):
 		self.getband()
-		if m.phofc:return
 		self.getDos()
 		
 		
 		self.getbanddos()
 		self.drawpr()
 		self.getV()
+	def getqpoints(self,q):
+		self.generate_qconf(q)
+		passthru(config.phonopy+"--tolerance=1e-4 q.conf")
 	def getDos(self):
 		self.generate_meshconf()	
 		passthru(config.phonopy+"--tolerance=1e-4 --dos  mesh.conf")

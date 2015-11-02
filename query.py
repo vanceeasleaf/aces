@@ -45,7 +45,7 @@ def getParas(obj):
 	
 def getQueryInfo(workPath,pid,runTime,ob):
 	pid=filter(str.isdigit, str(pid))
-	lastline=shell_exec("tail -1 %s/log.out"%workPath);
+	lastline=shell_exec("tail -3 %s/log.out"%workPath);
 	qstat=shell_exec("qstat %s 2>&1|tail -1 "%pid )
 
 	step=lastline.split()[0]
@@ -149,7 +149,7 @@ def item(ob,result,paras):
 		cd(curPath)
 		App().result()
 		kappa(result)
-		tEnerty(result)
+		#tEnerty(result)
 		nAtom(result)
 		#tDisorder(result)
 		drawStructure()

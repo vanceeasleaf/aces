@@ -1,6 +1,7 @@
 from aces.pizza.data import data
 from ase import Atoms,Atom
 import numpy as np
+from aces.tools import debug
 class lammpsdata:
 	def __init__(self,atoms=None,elements=None):
 		if atoms is None:
@@ -54,7 +55,7 @@ class lammpsdata:
 		a.headers['xlo xhi']=[0,cell[0,0]]
 		a.headers['ylo yhi']=[0,cell[1,1]]
 		a.headers['zlo zhi']=[0,cell[2,2]]
-		#if(cell[1,0]>cell[0,0]*0.5):cell[1,0]=cell[0,0]/abs(cell[0,0])*int((abs(cell[0,0])*0.5)*1000000)/1000000.0
+		if(cell[1,0]>cell[0,0]*0.5):cell[1,0]=cell[0,0]*0.5
 		v=1.0
 		if(cell[1,0]<0):v=-1.0
 		cell[1,0]=v*int((abs(cell[1,0]))*10000)/10000.0
@@ -72,9 +73,12 @@ class lammpsdata:
 		return rot
 	def get_rotated_atoms(self):
 		unit=self.atoms.copy()
+		#debug(unit.cell)
 		direct,phi=self.mergeVec(unit.cell[0],[1,0,0])
 		unit.rotate(direct,phi,rotate_cell=True)
+		#debug(unit.cell)
 		yn=[0,unit.cell[1,1],unit.cell[1,2]]
 		direct1,phi1=self.mergeVec(yn,[0,1,0])
 		unit.rotate(direct1,phi1,rotate_cell=True)
+		#debug(unit.cell)
 		return unit,(direct,phi,direct1,phi1)

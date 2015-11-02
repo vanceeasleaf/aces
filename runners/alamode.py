@@ -6,15 +6,7 @@ from aces.tools import *
 import numpy as np
 from  aces import config
 from aces.runners.phonopy import runner as Runner
-from aces.runners.cs import read_forces
-def matrixFormat(mat):
-	n,m=mat.shape
-	s=""
-	for k in range(n):
-		for p in range(m):
-			s+="\t%f"%mat[k,p]
-		s+="\n"	
-	return s
+from aces.f import read_forces,matrixFormat
 class runner(Runner):
 	def generate(self):
 		#self.minimizePOSCAR()
@@ -29,9 +21,9 @@ class runner(Runner):
 		self.get_anphonin()
 		self.run_anphonin()
 	def run_anphonin(self):
-		passthru(config.anphon+"< band.in > band.out")
-		passthru(config.anphon+"< dos.in > dos.out")
-		passthru(config.anphon+"< tc.in > tc.out")
+		passthru(config.mpirun+str(self.m.cores)+ config.anphon+" band.in > band.out")
+		passthru(config.mpirun+str(self.m.cores)+ config.anphon+" dos.in > dos.out")
+		passthru(config.mpirun+str(self.m.cores)+ config.anphon+" tc.in > tc.out")
 	def getfcs(self):
 		passthru(config.alm+"< fit.in > fit.out")
 		assert exists("alm.fcs")
@@ -77,7 +69,7 @@ class runner(Runner):
 /
 """%(len(atoms),len(m.elements),m.toString(m.elements))
 		interaction="""&interaction
-  NORDER = 1
+  NORDER = 2
 /
 """
 		cell="""&cell
@@ -86,9 +78,9 @@ class runner(Runner):
 /
 """%('\n  '.join([m.toString(atoms.cell[i]) for i in range(3)]))
 		cutoff="""&cutoff
-  *-* None 
+  *-* None %f
 /
-"""
+"""%(self.m.shengcut*1.889726)
 		pos='  \n'.join(['%s '%(m.elements.index(a.symbol)+1)+m.toString(atoms.get_scaled_positions()[i]) for i,a in enumerate(atoms)])
 		position="""&position
 	%s

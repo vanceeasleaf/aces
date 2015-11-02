@@ -15,32 +15,47 @@ def BE(w,T):
 	return 1.0/(np.exp(t)-1.0)
 class runner(Runner):
 	def generate(self):
-		for k in self.m.kpoints:
-			assert k%2==1
 		prun=Prun(self.m)
 		prun.run()
 		self.corr()
-		self.sed_band()
-		self.drawsed()
+		self.fc()
+		self.lifesed()
+		#self.sed_band()
+		#self.drawsed()
 	def corr(self):
-		correlation_supercell=[int(k/2)+1 for k in self.m.kpoints]
-		self.m.correlation_supercell=correlation_supercell
 		crun=Crun(self.m)
 		crun.run()
+		#crun.vd.life_yaml(correlation_supercell=self.m.correlation_supercell)
+		#self.drawlifetime()
+	def fc(self):
+		c=self.m.correlation_supercell
+		q=[]
+		for i in range(c[0]):
+			for j in range(c[1]):
+				for k in range(c[2]):
+					q.append([float(i)/c[0],float(j)/c[1],float(k)/c[2]])
+		m=self.m
 		
-		debug("correlation_supercell="+str(correlation_supercell))
-		crun.vd.life_yaml(correlation_supercell=correlation_supercell)
-		self.drawlifetime()
+		mkcd('qpoints')
+		cp('../FORCE_CONSTANTS','.')
+		cp('../disp.yaml','.')
+		cp('../POSCAR','.')
+		Prun(m).getqpoints(q)
+		cd('..')
 	def dos(self):
 		crun=Crun(self.m)
 		crun.dos()
 	def rerun(self):
 		from aces.runners.vdos import vdos
-		correlation_supercell=[int(k/2)+1 for k in self.m.kpoints]
+		correlation_supercell=self.m.correlation_supercell
 		vdos(self.m.timestep).life_yaml(correlation_supercell=correlation_supercell)
+	def lifesed(self):
+		from aces.runners.vdos import vdos
+		correlation_supercell=self.m.correlation_supercell
+		vdos(self.m.timestep).lifesed(correlation_supercell=correlation_supercell)
 	def sed_band(self):
 		from aces.runners.vdos import vdos
-		correlation_supercell=[int(k/2)+1 for k in self.m.kpoints]
+		correlation_supercell=self.m.correlation_supercell
 		vdos(self.m.timestep).sed_band(correlation_supercell=correlation_supercell)
 	def drawsed(self):
 		sed=np.load('sed.npy')

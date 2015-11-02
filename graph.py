@@ -38,14 +38,14 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=
 	if len(datas)==1:
 		serie=datas[0]
 		plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r',marker=marker,linestyle=linestyle)
-		if xmax is None:xmax=serie[0].max()
-		pl.xlim([serie[0].min(),xmax])
+		if xmax is None:xmax=max(serie[0])
+		pl.xlim([min(serie[0]),xmax])
 	else:
 		min0=100000;max0=-100000
 		for serie in datas:
 			plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,marker=marker,linestyle=linestyle)
-			min0=min(serie[0].min(),min0)
-			max0=max(serie[0].max(),max0)
+			min0=min(min(serie[0]),min0)
+			max0=max(max(serie[0]),max0)
 		if xmax is None:xmax=max0
 		pl.xlim([min0,xmax])
 	if legend:

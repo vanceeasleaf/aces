@@ -3,20 +3,29 @@ from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points
+from aces import config
 class structure(material):
 	def set_parameters(self):
-		self.gnrtype='zigzag'
-		self.tilt=False
-		self.bond=3.193/sqrt(3)
+		self.gnrtype='armchair'
+		self.ax=4.6059999466
+		self.ay=3.3002998829
+		self.thick=20.0
+		self.bond=2.22136
+		self.bond1=2.25747
+		self.pot=False
 	def setup(self):
-		self.elements=["Mo","S"]
-		self.bandpoints=ibz_points['hexagonal']
-		self.bandpath=['Gamma','M','K','Gamma']
+		self.elements=["P"]
+		self.bandpoints=ibz_points['orthorhombic']
+		self.bandpath=['Gamma','Y','S','X','Gamma']
+		self.t=sqrt(self.bond**2-(self.ay/2.0)**2)
+		self.ox=(self.ax-2.0*self.t)/2.0
+		self.oz=sqrt(self.bond1**2-(self.ox)**2)
+		if self.pot==1:
+			print "BP potential chosen:P.sw"
+			self.potential='pair_style	sw\npair_coeff	* * %s/P.sw  %s'%(config.lammpspot,' '.join(self.elements))
+
 	def lmp_structure(self):
-		if self.tilt:
-			prototype=self.prototype_tilt
-		else: prototype=self.prototype
-		bond=self.bond
+		prototype=self.prototype
 		if self.gnrtype=='armchair':
 			col=prototype(self.latx,self.laty)		
 		elif self.gnrtype=='zigzag':			
@@ -26,39 +35,26 @@ class structure(material):
 		col.center()	
 		atoms=get_unique_atoms(col)
 		col.set_pbc([self.xp,self.yp,self.zp])
-		cell=atoms.cell*bond
-		atoms.set_cell(cell,scale_atoms=True)
 		atoms.center()
-
 		return atoms
 		
 	
-	def prototype_tilt(self,latx,laty):
-		unit=Atoms()
-		b=3.134/self.bond/2
-		unit.append(Atom('Mo',[1.0/2,0,0]))
-		unit.append(Atom('S',[0,sqrt(3)/2,b]))
-		unit.append(Atom('S',[0,sqrt(3)/2,-b]))
-		unit.set_cell((3.0/2,sqrt(3),10.0))
-		unit.cell[0,1]=sqrt(3)/2
-		col=unit.repeat((latx,laty,1))
-		return col
 	
 	def prototype(self,latx,laty):
 		#armchair
-		unit=self.ring()
-		col=unit.repeat((latx,laty,1))
+		atoms=self.unit()
+		col=atoms.repeat((latx,laty,1))
 		return col
 		
-	def ring(self):
-		#armchair ring
-		b=3.134/self.bond/2
-		atoms=Atoms()
-		atom=Atoms('MoS2',[(1.0,0.0,0.0),(-1.0,0,b),(-1.0,0,-b)])
-		for i in range(3):			
-			atom.rotate('z',pi*2.0/3*i)
-			atoms.extend(atom.copy())
-		atoms.set_cell([3.0,sqrt(3),10.0])
+	def unit(self):
+		t=self.t
+		atoms=Atoms('P4',
+			[(0.0,0.0,0.0),
+			(t,self.ay*0.5,0.0),
+			(t+self.ox,self.ay*0.5,self.oz),
+			(self.ax-self.ox,0.0,self.oz)
+			])
+		atoms.set_cell([self.ax,self.ay,self.thick])
 		return atoms
 			
 		
