@@ -93,8 +93,7 @@ def rotationMatrix(axis,theta):
 def RotateVector(vec,axis,theta):
 	#debug(rotationMatrix(axis,theta))
 	return np.dot(rotationMatrix(axis,theta),vec)
-def toString(m,sep=' '):
-	return sep.join(map(str,m))
+
 def refinefc3():
 	f=open('FORCE_CONSTANTS_3RD')
 	g=open('fc3new','w')

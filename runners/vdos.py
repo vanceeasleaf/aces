@@ -1,4 +1,4 @@
-from numpy.fft import rfft, irfft
+from numpy.fft import rfft, irfft,fft
 import numpy as np
 from aces.graph import series,plot
 from aces.tools import exit,write,to_txt
@@ -17,11 +17,11 @@ class vdos:
 		self.phase=None
 		self.velocity=velocity(timestep)
 		#self.run()
-		self.db=h5py.File('dos.h5')
-		self.dbi=0
+		
 		self.readinfo()
 		self.totalsed=False
 		self.partsed=False
+		self.test=False
 	def run(self):
 
 		
@@ -29,32 +29,50 @@ class vdos:
 
 	def readinfo(self):
 		self.natom,self.totalStep,self.timestep,self.freq,self.times=self.velocity.info()
+		self.db=h5py.File('dos.h5')
+		
+		
+		
+	def inith5(self,dataset,N,isComplex=False):
+		node='/%s'%dataset
+		label='/label_%s'%dataset
+		if not node in self.db:
+			print 'getting %s in h5'%node
+			type=[np.float,np.complex][isComplex]
+			self.db.create_dataset(node, (self.natom,N,3),dtype=type)
+			self.db[label]=np.zeros(self.natom,dtype=np.int)# weather the atom is calculated
+		return node,label
 	def acf(self,a):
 		length = len(a)
 		a = rfft(a,axis=0)
 		c = irfft(a*a.conjugate(),axis=0)/length
 		return c
-	def correlation_atom(self,id):
-		node='/correlate_atom/%d'%id
-		if not node in self.db:
-			print 'prepare correlate_atom:%d'%id
+	def correlate_atom(self,id):
+		node,label=self.inith5('correlate_atom',self.totalStep)
+		if not self.db[label][id]:
+			print 'prepare %s:%d'%(node,id)
 
 			v=self.velocity_atom(id)
-			self.db[node]=self.acf(v)
-		return self.db[node]
+			self.db[node][id]=self.acf(v)
+			self.db[label][id]=1
+		return self.db[node][id]
 	def dos_atom(self,id):
-		if not '/freq' in self.db:	
-			self.db['/freq']= self.freq
-		node='/dos_atom/%d'%id
-		if not node in self.db:
-			print 'prepare dos_atom:%d'%id
-			vcf=self.correlation_atom(id)
+		node='/freq'
+		if not node in self.db:	
+			print 'getting %s in h5'%node
+			self.db[node]= self.freq
+
+		node,label=self.inith5('dos_atom',self.totalStep/2+1)
+		if not self.db[label][id]:
+			print 'prepare %s:%d'%(node,id)
+			vcf=self.correlate_atom(id)
 			vcf=np.average(vcf[:,:3],axis=1)
 			vcf0=vcf[0].copy()
 			vcf/=vcf0			
 			dos=np.abs(rfft(vcf,axis=0))			
-			self.db[node]= dos[:self.totalStep/2]
-		return self.db[node]
+			self.db[node][id]= dos
+			self.db[label][id]=1
+		return self.db[node][id]
 	def cal_atomdos(self):
 		for i in range(self.natom):
 			self.dos_atom(i)
@@ -63,7 +81,7 @@ class vdos:
 		totalVcf=np.zeros([self.totalStep,4])
 		for i in range(self.natom):
 			print "atom",i
-			vcf=self.correlation_atom(i)
+			vcf=self.correlate_atom(i)
 			totalVcf[:,:3]+=vcf
 			totalVcf[:,3]=np.average(totalVcf[:,:3],axis=1)
 		#normalization
@@ -86,25 +104,76 @@ class vdos:
 		plot_smooth()
 	def velocity_atom(self,id):
 		return self.velocity.atom(id)
-	def fourier_atom(self,id):
-		node='/fourier_atom/%d'%id
-		self.dbi+=1
-		if self.dbi%100000==0:
-			self.db.close()
-			self.db=h5py.File('dos.h5')
-			self.dbi=0
+	def velocity_atom_harmonic(self,id,iseed):
+		if self.testp is None:			
+			k0=self.testk
+			times=np.arange(self.totalStep)*self.timestep
+			pya=self.pya
+			iqp=0
+			for iqp0 in range(pya.nqpoint):
+				k=pya.qposition(iqp0)
+				iqp=iqp0
+				if np.allclose(k0,k):
+					break
+			else:
+				print "no k found"
+				return 0
 			
-		if not node in self.db:
-			print 'prepare fourier_atom:%d'%id
+			sphases=[]
+			vecs=[]
+			for ibr in range(pya.nbranch):
+				freq=pya.frequency(iqp,ibr)
+				vec=pya.atoms(iqp,ibr)
+				natom_unitcell=len(vec)
+				phase=self.getPhase(k,natom_unitcell).conjugate()
+				vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
+				sphases.append(np.exp(1j*2.0*pi*freq*times))
+				vecs.append(vec)
+			self.sphases=sphases
+			self.vecs=vecs
+			p=np.random.rand(100,pya.nbranch)
+			p=np.exp(2j*pi*p)
+			self.rp=p
+			self.testp=True
+			self.nbranch=pya.nbranch
+		p=self.rp		
+
+		sphases=self.sphases
+		vecs=self.vecs
+		v=np.zeros([self.totalStep,3],dtype=np.complex)
+		for ibr in range(self.nbranch):
+			for i in range(3):
+				vec=vecs[ibr]
+				v[:,i]+=vec[id,i]*sphases[ibr]*p[iseed,ibr]
+		return v.real
+
+	def fourier_atom(self,id):
+		node,label=self.inith5('fourier_atom',self.totalStep/2+1,True)
+			
+		if not self.db[label][id]:
+			print 'prepare %s:%d'%(node,id)
 			v=self.velocity_atom(id)
 			r=rfft(v,axis=0)
-			self.db[node]=r
-		return self.db[node][:]
+			self.db[node][id]=r
+			self.db[label][id]=1
+		return self.db[node][id]
 	def getPhase(self,k,natom_unitcell):
 		p=np.exp(self.pfactor.dot(k))
 		v=p[range(0,self.natom,natom_unitcell)]
 		self.phase=np.repeat(v,natom_unitcell)
+		from ase import io 
+		atoms=io.read('POSCAR')
+		symbols=atoms.get_chemical_symbols()
+		masses=self.getMassFromLabel(symbols)
+		Nc=self.natom/natom_unitcell
+		masses=np.array(list(masses)*Nc)
+		self.phase*=np.sqrt(masses/float(Nc))
 		return self.phase
+	def getMassFromLabel(self,labels):
+		from ase.data import atomic_masses,atomic_numbers
+		nums=[atomic_numbers[label] for label in labels]
+		masses=[atomic_masses[num] for num in nums]
+		return masses
 	def calculateSED(self,k,natom_unitcell):
 		totalStep=self.totalStep
 		phi=np.zeros(totalStep/2+1)
@@ -116,42 +185,68 @@ class vdos:
 				fv=self.fourier_atom(i)
 				q+=np.array(fv)*phase[i]
 			phi+=(q*q.conjugate()).real.sum(axis=1)
-		if self.partsed:
+		if self.totalsed:
 			x=np.linspace(0,1,totalStep/2+1)*1/2.0/self.timestep
 
 			series(xlabel='Frequency (THz)',
-				ylabel='Single Phonon Power Spectrum',
+				ylabel='Phonon Energy Spectrum',
 				datas=[(x,phi,"origin")]
 				,linewidth=1
-				,filename='SEDBAND/single%s.png'%(str(k)))
+				,filename='NMA/sed%s.png'%(str(k)))
 		return phi
 
-	def calculateLife(self,eigen):
+	def calculateLife(self,eigen,iqp,ibr):
 		totalStep=self.totalStep
 		k,freq,vec=eigen
-		vec=vec.conjugate()
-		q=np.zeros(totalStep/2+1,dtype=np.complex)
-		nu=len(vec)
-		natom_unitcell=nu
-		phase=self.getPhase(k,nu)
+		vec=vec.real
+		natom_unitcell=len(vec)
+		phase=self.getPhase(k,natom_unitcell)
+		vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
+		if not self.test:
+			q=np.zeros(totalStep/2+1,dtype=np.complex)
+			for i in range(self.natom):
+				fv=self.fourier_atom(i)
+				q+=np.array(fv).dot(vec[i])
+			q=(q*q.conjugate()).real
+		else:
+			self.testp=None
+			qc=np.zeros(totalStep/2+1)
+			nseed=20
+			
+			for u in range(nseed):
+				q=np.zeros(totalStep,dtype=np.complex)
+				for i in range(self.natom):
+					fv=self.velocity_atom_harmonic(i,u)
+					q+=np.array(fv).dot(vec[i])
+				q=fft(q)
+				q=(q*q.conjugate()).real
+				qc+=q[:totalStep/2+1]
+			q=qc/nseed
+		"""
 		for j in range(natom_unitcell):
 			for i in range(j,self.natom,natom_unitcell):
 				fv=self.fourier_atom(i)
 				q+=np.array(fv).dot(vec[j])*phase[i]
-		q=(q*q.conjugate()).real
+		"""
 		
 		x=np.linspace(0,1,totalStep/2+1)*1/2.0/self.timestep
 		q1=q
 		x1=x
-		low=max(q.argmax()-100,0)
-		hi=min(q.argmax()+100,len(q))
+		df=1.0/(2.0*self.timestep)/(self.totalStep/2)
+		span=int(1.0/df)
+		ori=int(freq/df)
+		low=max(ori-1*span,0)
+		hi=min(ori+1*span,len(q)-1)
 		filter=range(low,hi)
 		x=x[filter]
 		q=q[filter]
+		q=self.lowess(x,q)
 		p0 = np.array([x[q.argmax()], 0.01, q[q.argmax()]]) #Initial guess
 		p=self.fitLife(x,q,p0)
 		#to_txt(['Freq','dos'],np.c_[x,q],'SED/single%s%s.txt'%(str(k),freq))
 
+		
+		
 		if self.partsed:
 			xv=np.linspace(x.min(),x.max(),100)
 			series(xlabel='Frequency (THz)',
@@ -159,26 +254,29 @@ class vdos:
 				datas=[(x,q,"origin"),
 				(xv,self.lorentz(p,xv),"fitting")]
 				,linewidth=1
-				,filename='SED/part%s%s.png'%(str(k),freq))
+				,filename='NMA/nmapart_%s_%s_%s_%s.png'%(iqp,ibr,str(k),freq))
 		if self.totalsed:
+			xv=np.linspace(x.min(),x.max(),100)
 			series(xlabel='Frequency (THz)',
 				ylabel='Single Phonon Power Spectrum',
 				datas=[(x1,q1,"origin"),
 				(xv,self.lorentz(p,xv),"fitting")]
 				,linewidth=1
-				,filename='SED/all%s%s.png'%(str(k),freq))
+				,filename='NMA/nma_%s_%s_%s_%s.png'%(iqp,ibr,str(k),freq))
 		
 		v=map(str,list(k)+[freq,p[0],p[1],1.0/p[1] ])
-		return '\t'.join(v)
+		
+		c='\t'.join(v)
+		print "[nma]",c
+		return c
 	def getpfactor(self,correlation_supercell=[10,10,1]):
 		from aces.lammpsdata import lammpsdata
 		atoms=lammpsdata().set_src('correlation_structure')
 		b=atoms.get_reciprocal_cell()*np.c_[correlation_supercell]
 		return 1j*atoms.positions.dot(b.T)*2*pi
-	def specialk(self,pya,k0=[-0.0327869,0,0]):
-		self.partsed=True;
-		self.totalsed=True;
-		
+	def specialk(self,pya,k0=[0,0,0]):
+		self.partsed=True
+		self.totalsed=True
 		iqp=0
 		for iqp0 in range(pya.nqpoint):
 			k=pya.qposition(iqp0)
@@ -188,31 +286,40 @@ class vdos:
 		else:
 			print "no k found"
 			return 0
-		q=self.lifeSED(k,pya.natom,iqp,pya)
-
+		#q=self.lifeSED(k,pya.natom,iqp,pya)
+		print "check orthorgnal"
+		"""
+		natom_unitcell=pya.natom
+		phase=self.getPhase(k,natom_unitcell).conjugate()
+		p=np.zeros([pya.nbranch]*2)
+		for ibr in range(pya.nbranch):
+			for ibr1 in range(pya.nbranch):
+				vec=pya.atoms(iqp,ibr)
+				vec1=pya.atoms(iqp,ibr1)
+				vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
+				vec1=np.einsum('ij,i->ij',np.tile(vec1,[self.natom/natom_unitcell,1]),phase.conjugate())
+				p[ibr,ibr1]=np.einsum('ij,ij',vec,vec1.conjugate())
+		print p
+		"""
 		for ibr in range(pya.nbranch):
 			freq=pya.frequency(iqp,ibr)
 			vec=pya.atoms(iqp,ibr)
-			v=self.calculateLife((k,freq,vec))
-			print v
+			v=self.calculateLife((k,freq,vec),iqp,ibr)
+			
 		return 0
-	def life_yaml(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
+	def lifenmaq(self,filename="qpoints/qpoints.yaml",k=[0,0,0],correlation_supercell=[10,10,1],test=False):
+		self.test=test
 		self.pfactor=self.getpfactor(correlation_supercell)
-
-		if not exists('SED'):mkdir('SED')
 		pya=phononyaml(filename)
-		if False:
-			self.specialk(pya,[-0.0327869,0,0])
-			self.specialk(pya,[0.0327869,0,0])
-			return 
-			self.specialk(pya,[0.1333333,0,0])
-			self.specialk(pya,[-0.1333333,0,0])
-			return
-		self.specialk(pya,[0.125,0.75,0])
-
-		return
-		f=open('life.txt','w')
-		c=h5py.File('life.h5')
+		self.pya=pya
+		self.testk=k
+		if not exists('NMA'):mkdir('NMA')
+		self.specialk(pya,map(float,k))
+	def lifenma(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
+		self.pfactor=self.getpfactor(correlation_supercell)
+		pya=phononyaml(filename)
+		f=open('lifenma.txt','w')
+		c=h5py.File('lifenma.h5')
 		f.write('kx\tky\tkz\tfreq\tw0\tscatter\ttao\n')
 		for iqp in range(pya.nqpoint):
 			for ibr in range(pya.nbranch):
@@ -222,7 +329,7 @@ class vdos:
 					k=pya.qposition(iqp)
 					freq=pya.frequency(iqp,ibr)
 					vec=pya.atoms(iqp,ibr)
-					v=self.calculateLife((k,freq,vec))
+					v=self.calculateLife((k,freq,vec),iqp,ibr)
 					c[node]=v
 				f.write('%s\n'%c[node][()])
 	def lifesed(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
@@ -243,8 +350,10 @@ class vdos:
 					v=self.lifeSED(k,pya.natom,iqp,pya)
 					c[node]=v
 				f.write('%s\n'%c[node][()])
-	def fitpart(self,x,q):
-		p0 = np.array([x[q.argmax()], 0.01, q[q.argmax()]]) #Initial guess
+	def fitpart(self,x,q,n=None):
+		if n is None:
+			n=q.argmax()
+		p0 = np.array([x[n], 0.01, q[n]]) #Initial guess
 		p=self.fitLife(x,q,p0)
 		return p
 	def lifeSED(self,k,na,iqp,pya):
@@ -252,22 +361,56 @@ class vdos:
 		q=self.calculateSED(k,na)
 		x=self.freq
 		nbranch=3*na
-		life=[]
-		for i in range(nbranch):				
-			low=max(q.argmax()-100,0)
-			hi=min(q.argmax()+100,len(q)-1)
-			filter=range(low,hi)
-			p=self.fitpart(x[filter],q[filter])
-			life.append(p)
-			q[filter]=0.0
-		life=np.array(life)
 		w=[pya.frequency(iqp,ibr) for ibr in range(nbranch)]
-		o=life[:,0].argsort()
-		life=life[o]
-		v=['\t'.join(map(str,list(k)+[w[i],p[0],p[1],1.0/p[1]]) ) for i,p in enumerate(life)]
-		return '\n'.join(v)
+		w1=[]
+		df=1.0/(2.0*self.timestep)/(self.totalStep/2)
+		span=int(1.0/df)
+		for i in range(nbranch):
+			node='/%s/%s'%(iqp,i)
+			print node
+			# get the 1Hz neighbor of the original w,because dw couldn't be too large
+			ori=int(w[i]/df)
+			low=max(ori-1*span,0)
+			hi=min(ori+1*span,len(q)-1)
+			filter=range(low,hi)
+			qu=q[filter]
+			xu=x[filter]
+			qs=self.lowess(xu,qu)
+			if False:
+				from scipy import signal
+				peaks, = signal.argrelmax(qs, order=span/3)
+				center=peaks[np.abs(xu[peaks]-w[i]).argmin()]
+				
+			p=self.fitpart(xu,qs)
+			w1.append(p)
+			#q[filter]=0.0
+		w1=np.array(w1)
+		
+		#o=w1[:,0].argsort()
+		#w1=w1[o]
+		v=['\t'.join(map(str,list(k)+[w[i],p[0],p[1],1.0/p[1]]) ) for i,p in enumerate(w1)]
+		c='\n'.join(v)
+		print "[sed]",c
+		return c
 
+	def lowess(self,x, y, f=.1):
+		f=np.sqrt(10)*self.timestep
+		n = len(x)
+		r = int(np.ceil(f*n))
+		h = [np.sort(np.abs(x - x[i]))[r] for i in range(n)]
+		w = np.clip(np.abs((x[:, None] - x[None, :]) / h), 0.0, 1.0)
+		w = (1.0 - w**3)**3
+		y_smooth = np.zeros(n)
+		delta = np.ones(n)
+		for i in range(n):
+			weights = delta * w[:, i]
+			b = np.array([np.sum(weights*y), np.sum(weights*y*x)])
+			a = np.array([[np.sum(weights), np.sum(weights*x)],
+							[np.sum(weights*x), np.sum(weights*x*x)]])
+			beta = np.linalg.solve(a, b)
+			y_smooth[i] = beta[0] + beta[1]*x[i]
 
+		return y_smooth
 
 
 	def sed_band(self,correlation_supercell=[10,10,1]):

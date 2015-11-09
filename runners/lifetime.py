@@ -19,9 +19,9 @@ class runner(Runner):
 		prun.run()
 		self.corr()
 		self.fc()
-		self.lifesed()
-		#self.sed_band()
-		#self.drawsed()
+		self.sed()
+		#self.band()
+		#self.drawband()
 	def corr(self):
 		crun=Crun(self.m)
 		crun.run()
@@ -45,19 +45,23 @@ class runner(Runner):
 	def dos(self):
 		crun=Crun(self.m)
 		crun.dos()
-	def rerun(self):
+	def nmaq(self,k=[0,0,0],test=False):
 		from aces.runners.vdos import vdos
 		correlation_supercell=self.m.correlation_supercell
-		vdos(self.m.timestep).life_yaml(correlation_supercell=correlation_supercell)
-	def lifesed(self):
+		vdos(self.m.timestep).lifenmaq(k=k,correlation_supercell=correlation_supercell,test=test)
+	def nma(self):
+		from aces.runners.vdos import vdos
+		correlation_supercell=self.m.correlation_supercell
+		vdos(self.m.timestep).lifenma(correlation_supercell=correlation_supercell)
+	def sed(self):
 		from aces.runners.vdos import vdos
 		correlation_supercell=self.m.correlation_supercell
 		vdos(self.m.timestep).lifesed(correlation_supercell=correlation_supercell)
-	def sed_band(self):
+	def band(self):
 		from aces.runners.vdos import vdos
 		correlation_supercell=self.m.correlation_supercell
 		vdos(self.m.timestep).sed_band(correlation_supercell=correlation_supercell)
-	def drawsed(self):
+	def drawband(self):
 		sed=np.load('sed.npy')
 		n=len(sed)
 		x=np.arange(n)

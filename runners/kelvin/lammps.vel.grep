@@ -1,0 +1,17 @@
+### Kevin Parrish - Grep out Velocities ###
+import sys
+from os import system
+sys.path.append('NTPY_PATH')
+import ntpy.strchg as st
+
+ext = 'EXT'
+numFft = NUM_FFT
+numAtoms = NUM_ATOMS
+velLog = 'out.lammps.vel'+ ext
+tmpName = 'tmp.vel'+ ext
+
+for ifft in range(numFft):
+	st.grep('ITEM: ATOMS vx vy vz ', numAtoms, velLog+ '.'+ str(ifft+1), tmpName)
+	st.grep('ITEM: ATOMS vx vy vz ', 0, tmpName, velLog+ '.'+ str(ifft+1), flag='-v')
+	system('rm '+ tmpName)
+

@@ -60,12 +60,18 @@ class runner(Runner):
 		print >>f,"fix nve main nve"
 		#print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
 		#print >>f,"dump_modify  lala sort id"
-		print >>f,"dump lala main h5md %s velocity.h5md velocity  box no create_group yes"%m.Cinterval
+		if m.runner=="dynaphopy":
+			print >>f,"dump lala main custom %s  dynaphopy.lammpstrj x y z"%m.Cinterval
+			print >>f,"dump_modify  lala sort id"
+		else:
+			print >>f,"dump lala main h5md %s velocity.h5md velocity  box no create_group yes"%m.Cinterval
 		print >>f,"run %s"%m.Ctime
 
 		f.close()
+
 		passthru(config.mpirun+"  %s "%self.m.cores+config.lammps+" <correlation.lmp  >out.dat")
-		self.dos()
+		if not m.runner=="dynaphopy":
+			self.dos()
 		#rm("velocity.txt")
 	def dos(self):
 		self.vd=self.getvdos()

@@ -12,6 +12,8 @@ def shell_exec(cmd):
 	sys.stdout.flush()
 	c=os.popen(cmd).read()
 	return c.strip()
+def toString(m,sep=' '):
+    return sep.join(map(str,m))
 def passthru(cmd):
 	#print os.popen(cmd).read()
 	#sys.stdout.flush()

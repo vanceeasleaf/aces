@@ -1,0 +1,82 @@
+## ## ## Kevin Parrish ## ## ##
+import nmd
+import numpy as np
+import numpy.ma as ma
+import sys
+sys.path.append(nmd.ntpyPath) # Needed to recognize ntpy module
+import ntpy.param.lj as lj
+import ntpy.param.const as ct
+import ntpy.nmd as norm
+
+## SED PARAMETERS
+ikslice = IKSLICE
+seed = 'SEED'
+ext = seed
+
+
+###--- MAIN ---###
+
+## Load eigenvectors
+gulp = np.load('out.gulp.npz')
+eigvec = gulp['eigvec']
+
+# Spectral energy density
+specED = np.zeros( (nmd.sliceLength, nmd.numTstep/2, nmd.numModes), dtype=float )
+
+# Index of current k-point slice
+currSlice = ikslice * nmd.sliceLength
+
+# FFT block loop
+for ifft in range(nmd.numFft):
+
+	# Read in velocities
+	velx, vely, velz = norm.lmpReadBin('out.lammps.vel'+ ext+ '.'+ str(ifft+ 1)+ '.bin',
+						nmd.numTstep, nmd.numAtoms)
+
+	qdot = np.zeros( (nmd.numTstep) )
+
+	for ikpt in range(nmd.sliceLength):
+		for imode in range(nmd.numModes):
+
+			# Spatial fourier transform factor
+			spatial = 2.0 * np.pi * 1j * (\
+				nmd.latPos[:,0]*( (nmd.kpt[ikpt+(currSlice),0])/(nmd.ljLat) ) + \
+				nmd.latPos[:,1]*( (nmd.kpt[ikpt+(currSlice),1])/(nmd.ljLat) ) + \
+				nmd.latPos[:,2]*( (nmd.kpt[ikpt+(currSlice),2])/(nmd.ljLat) ) ) #ljunits
+			
+			# Conjugate eigenvectors
+			eigx = np.tile(ma.conjugate(eigvec[(nmd.numAtomsUC*3*(ikpt+currSlice))+0: \
+						(nmd.numAtomsUC*3*((ikpt+currSlice)+1)):3, imode]),nmd.numUcell)
+			eigy = np.tile(ma.conjugate(eigvec[(nmd.numAtomsUC*3*(ikpt+currSlice))+1: \
+						(nmd.numAtomsUC*3*((ikpt+currSlice)+1)):3, imode]),nmd.numUcell)
+			eigz = np.tile(ma.conjugate(eigvec[(nmd.numAtomsUC*3*(ikpt+currSlice))+2: \
+						(nmd.numAtomsUC*3*((ikpt+currSlice)+1)):3, imode]),nmd.numUcell)
+
+			# qdot: normal mode kinetic energy corrdinate
+			qdot = np.sum(((velx * eigx) + (vely * eigy) + (velz * eigz)) * \
+					np.exp(spatial) * np.sqrt(nmd.ljMass/nmd.numUcell), axis=1)
+
+			# keXcorr: kinetic energy autocorrelation
+			result = np.correlate(qdot, qdot, mode='full', old_behavior=False)
+			keXcorr = result[result.size/2:] / result[result.size/2]
+
+			# keFft: kinetic energy FFT
+			keFft = np.fft.fft(keXcorr[:])
+
+			# specEDFft: spectral energy density for a single FFT
+			specEDFft = (keFft[:].real * keFft[:].real) + \
+					(keFft[:].imag * keFft[:].imag)
+
+			# Add spectral energy denisty for a single FFT to whole
+			specED[ikpt, :, imode] = specED[ikpt, :, imode] + specEDFft[:nmd.numTstep/2]
+
+		#-- END imode --#
+	#-- END ikpt --#
+#-- END ifft --#
+	
+# Average over FFTS
+specED = specED / nmd.numFft
+
+# Output
+np.save('out.nmd'+ ext+ '.'+ str(ikslice)+ '.npy', specED)
+

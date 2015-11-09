@@ -19,7 +19,6 @@ def maxeig(A):
 	W=C/C.sum()
 	lmax=(A.dot(W)/W).average()
 	return lmax
-
 class runner:
 	def __init__(self,NAH=3,split=True,mu=0.1):
 		self.NAH=NAH
@@ -112,7 +111,23 @@ class runner:
 				A[j,r]=-g(u[j].flatten(),i)
 		F=F.reshape([shape[0],shape[1]*shape[2]])
 		return F,A
+	def getMatrix1(self,F,u):
+		assert len(u)>0
+		self.L=len(u)
+		self.natom=len(u[0])
+		print "getting compressive matrix"
+		As=[]
+		for j in range(self.L):
+			v=-1.0
+			c=[]
+			for i in range(self.NAH):
+				v=np.einsum('...,...',v,u[j])
+				c.append(v)
+			As.append(c)
+		for x in As:
+			for y in x:
 
+		return F,A
 	def run(self):
 		pos,symmetry=self.getSupercell()
 		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')
@@ -224,36 +239,15 @@ class sym(runner):
 		self.rowr=rowr
 	def getT(self,symmetry):
 		n=self.natom
-		e=np.eye(3)
-		
-		for i in range(n):
-			for j in range(i):
-				x=range(n)
-				x[i],x[j]=x[j],x[i]
-				symmetry.append([e,x])
-		
-		return
 		Ts=[]
 		dim=[[0,0]]
-		#build graph		
-		for nh in range(self.NAH):
-			print "building %d th order graph"%(nh+1)
-			G=self.graph(n,symmetry,nh)			
-			print "searching for  %d th independent variables"%(nh+1)
-			groups=self.connectedGraph(G)
-			print "%d th order independent variables: "%(nh+1)
-			for g in groups:			
-				print self.unpa(n,g[0],nh)
-			N=len(groups)*3**(nh+1)
-			M=(3*n)**(nh+1)
-			T0=np.zeros([M,N])
+		v=np.array([map0 for rot,map0 in symmetry],dtype=np.intc)
+		r=np.array([rot for rot,map0 in symmetry],dtype=np.float)
+		#build graph
+		from aces.binary.gett import gettnh		
+		for nh in range(2,self.NAH):
+			T0,N=gettnh(n,v,r,nh)
 			dim.append([dim[-1][0]+M,dim[-1][1]+N])
-			for i,g in enumerate(groups):
-				members=self.getMember(G,nh,g)
-				yr=np.arange(i*3**(nh+1),(i+1)*3**(nh+1))
-				for id,rot in members:		
-					xr=np.arange(id*3**(nh+1),(id+1)*3**(nh+1))
-					T0[xr][:,yr]=self.mulR(rot,nh+1)
 			Ts.append(T0)
 		T=np.zeros(dim[-1])
 		for nh in range(self.NAH):
@@ -263,67 +257,15 @@ class sym(runner):
 			yr=np.arange(d1[1],d2[1])
 			T[xr][:,yr]=Ts[nh]
 		return T.reshape([3*n,-1,dim[-1][1]])
-	def mulR(self,x,p):
-		if p>0:return np.kron(self.mulR(x,p-1),x)
-		else: return 1.0
-	def getMember(self,G,nh,g):		
-		c=g[0]
-		mem=[[c,np.eye(3)]]
-		for r in g[1:]:
-			m=self.getMember(G,nh,r[0])
-			for x,y in m:
-				mem.append([x,y.dot(r[1])])
-		return mem
-	def connectedGraph(self,G):
-		n=len(G)
-		occupied=np.zeros(n,dtype=np.bool)
-		root=[]
-		for i in range(n):
-			if occupied[i]:continue
-			node=self.tree(G,occupied,i)
-			root.append(node)
 
-		return root	
-	def tree(self,G,occupied,i):
-		root=[i]
-		for u in G[i]:
-			j=u[0]
-			if occupied[j]:continue
-			occupied[j]=True
-			node=self.tree(G,occupied,j)
-			root.append([node,u[1]])
-		return root
-
-
-	def graph(self,natom,symmetry,nh=2):
-		N=natom**(nh+1)
-		G=[[] for i in range(N)]
-		for rot,map1 in symmetry:
-			for ii in range(N):
-				idx=[map1[i] for i in self.unpa(natom,ii,nh)]
-				jj=self.pa(natom,idx,nh)
-				G[ii].append([jj,rot])
-				G[jj].append([ii,rot.T])
-		return G
-	def unpa(self,natom,ii,nh=2):
-		idx=[]
-		for i in range(nh,-1,-1):
-			idx.append(ii//natom**i)
-			ii=ii%(natom**i)
-		return idx
-	def pa(self,natom,idx,nh=2):
-		s=0
-		for i in range(nh,-1,-1):
-			s+=idx[nh-i]*natom**i
-		return s		
 	def getMatrix(self,F,u,symmetry):
 		self.getTrainSets(u)
 		print "getting compressive matrix"
 		T=self.T=self.getT(symmetry)
-		self.nIV=T.shape[2]
+		self.nIndependentVariable=T.shape[2]
 		rowr=self.rowr
 		n=self.natom*3
-		A=np.zeros([self.L*n,self.nIV])
+		A=np.zeros([self.L*n,self.nIndependentVariable])
 		g=self.mulU
 		F=F.reshape([self.L*n,1])
 		for j in range(self.L):
