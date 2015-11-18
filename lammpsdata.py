@@ -1,7 +1,7 @@
 from aces.pizza.data import data
 from ase import Atoms,Atom
 import numpy as np
-from aces.tools import debug
+from aces.tools import debug,toString
 class lammpsdata:
 	def __init__(self,atoms=None,elements=None):
 		if atoms is None:
@@ -47,7 +47,7 @@ class lammpsdata:
 	def getTypes(self):
 		return list(set(self.atoms.get_chemical_symbols()))
 		
-	def writedata(self,filename="structure"):
+	def writedata(self,filename="structure",creatbonds=-1.0):
 		a=data()
 		a.title=self.atoms.get_chemical_formula()
 		unit,rot=self.get_rotated_atoms()
@@ -67,8 +67,24 @@ class lammpsdata:
 		atomsdata=[]
 		for i,atom in enumerate(unit):
 			x=[i+1,self.types.index(atom.symbol)+1]+list(atom.position)
+			if creatbonds>0.0:
+					x=[i+1,1,self.types.index(atom.symbol)+1]+list(atom.position)
 			atomsdata.append(x)
-		a.sections['Atoms']=[' '.join(map(str,x))+'\n' for x in atomsdata]
+		a.sections['Atoms']=[toString(x)+'\n' for x in atomsdata]
+		if creatbonds>0.0:
+			dis=unit.get_all_distances(mic=True)
+			bonds=[]
+
+			n=0
+			for i in xrange(len(unit)):
+				for j in xrange(i):
+					if dis[i,j]<creatbonds:
+						n+=1
+						bonds.append([n,1,i+1,j+1])
+			a.sections['Bonds']=[toString(x)+'\n' for x in bonds]	
+			a.headers['bonds']=len(bonds)
+			a.headers['bond types']=1
+
 		a.write(filename)
 		return rot
 	def get_rotated_atoms(self):

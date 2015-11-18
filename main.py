@@ -2,13 +2,10 @@
 # @the host class for a whole project in Automatical Computational Experimental System
 # @author Yang Zhou @Fudan University 2015.4.3
 import sys,os,json
-from aces.query import clean,stop,query
-from aces.toolsub import toolsub
 from aces.tools import exit
-from aces.env import *
+#from aces.env import *
 class Aces:
-	def __init__(self):
-		self.idx=0
+	def logo(self):
 		print """    _    ____ _____ ____  
    / \  / ___| ____/ ___| 
   / _ \| |   |  _| \___ \ 
@@ -17,12 +14,16 @@ class Aces:
 """
 		print "\nWelcome to Automatical Computational Experiment System(ACES)"
 		print "developed by Yang Zhou @Fudan University\n"
-		print "Project Home="+PROJHOME
-		print "Project Name="+PROJNAME
-		print ""
+		#print "Project Home="+PROJHOME
+		#print "Project Name="+PROJNAME
+		print ""		
+	def __init__(self):
+		self.idx=0
+		self.logo()
 		self.single=''
 	def run(self):
 
+		from aces.query import clean,stop,query
 		single=self.single
 
 		universe=''
@@ -39,6 +40,7 @@ class Aces:
 		else:
 			exit("Unkown command!");
 	def commit(self,opt,app):
+		from aces.toolsub import toolsub
 		origin=dict(single=False
 		,species='graphene'
 		,units='metal'

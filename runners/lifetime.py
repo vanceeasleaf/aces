@@ -19,9 +19,10 @@ class runner(Runner):
 		prun.run()
 		self.corr()
 		self.fc()
+		self.nma()
 		self.sed()
-		#self.band()
-		#self.drawband()
+		self.band()
+		
 	def corr(self):
 		crun=Crun(self.m)
 		crun.run()
@@ -30,10 +31,12 @@ class runner(Runner):
 	def fc(self):
 		c=self.m.correlation_supercell
 		q=[]
-		for i in range(c[0]):
-			for j in range(c[1]):
-				for k in range(c[2]):
-					q.append([float(i)/c[0],float(j)/c[1],float(k)/c[2]])
+		u=[int(x/2)*2+1 for x in c]
+		for i in range(u[0]):
+			for j in range(u[1]):
+				for k in range(u[2]):
+					b=np.array([float(i-c[0]/2)/c[0],float(j-c[1]/2)/c[1],float(k-c[2]/2)/c[2]])
+					q.append(b)
 		m=self.m
 		
 		mkcd('qpoints')
@@ -61,6 +64,7 @@ class runner(Runner):
 		from aces.runners.vdos import vdos
 		correlation_supercell=self.m.correlation_supercell
 		vdos(self.m.timestep).sed_band(correlation_supercell=correlation_supercell)
+		self.drawband()
 	def drawband(self):
 		sed=np.load('sed.npy')
 		n=len(sed)

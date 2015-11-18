@@ -46,18 +46,18 @@ class premitiveSuperMapper:
 		for pd,p in enumerate(vpos):
 			for id,a in enumerate(posp):
 				if np.allclose(p,a):
-					s2p[pd]=id+1
+					s2p[pd]=id
 					break
 
-		return s2p,celloffset
+		return s2p,v,celloffset
 	def maps2p(self,i,j,k):
 		if not hasattr(self, 's2p'):
-			self.s2p,self.celloffset=self.getS2p()
+			self.s2p,c,self.celloffset=self.getS2p()
 		v=self.celloffset
 
 		s=toString(v[j]-v[i])+'\n'
 		s+=toString(v[k]-v[i])+'\n'
-		s+='%d %d %d\n'%(self.s2p[i],self.s2p[j],self.s2p[k])
+		s+='%d %d %d\n'%(self.s2p[i]+1,self.s2p[j]+1,self.s2p[k]+1)
 		return s
 
 def disp2atoms(disp='disp.yaml'):

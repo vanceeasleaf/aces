@@ -17,5 +17,4 @@ class velocity:
 		return self.natom,self.totalStep,self.timestep,self.freq,self.times
 	def atom(self,id):
 		db=self.db['/particles/main/velocity/value']
-		#print 'prepare velocity_atom:%d'%id
-		return db[:self.totalStep,id,:]
+		return db[:self.totalStep,id]

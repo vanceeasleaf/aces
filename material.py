@@ -6,6 +6,7 @@ from aces import default
 #from ase.io.vasp import write_vasp
 from aces.f import writevasp
 from ase.io import read
+from ase import io
 from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
 from aces import tools
@@ -17,6 +18,7 @@ from aces.modify import atoms_from_dump as afd
 from aces.lammpsdata import lammpsdata
 import numpy as np
 from aces.tools import *
+from aces.env import SRCHOME,PROJHOME,PROJNAME
 class material:
 	def __init__(self,opt={}):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
@@ -37,12 +39,17 @@ class material:
 		self.prepare_lammps()
 		self.prepare_phonts()
 		self.bandpoints=ibz_points['fcc']
+		self.bandpoints['X']=[.5,0,0]
 		self.bandpath=['Gamma','X','Gamma']
 		self.dim=self.toString(self.supercell)
 		if not self.useS3:
 			self.supercell3=self.supercell
 		self.setup()
-		self.atoms=self.lmp_structure()
+		if self.atomfile:
+			atoms=io.read(str(PROJHOME+"/data/"+self.atomfile),format="vasp")
+			self.atoms=atoms.repeat([self.latx,self.laty,self.latz])
+		else:
+			self.atoms=self.lmp_structure()
 	#to be overided
 	def setup(self):
 		pass
@@ -145,7 +152,11 @@ class material:
 		mkcd(label)
 		self.watoms(atoms)
 		cd('..')
-
+	def getatomicstyle(self):
+		a="atom_style atomic"
+		if self.creatbonds>0.0:
+			a="atom_style bond\natom_modify sort 0 1.\ncomm_modify  cutoff 2.0 "
+		return a
 	def POSCAR2data(self):
 		"""
 		poscar = open("POSCAR")
@@ -155,16 +166,21 @@ class material:
 		"""
 		from  ase.io import read
 		atoms=read('POSCAR')
+		m=self
+		atoms.set_pbc([m.xp,m.yp,m.zp])
 		#debug(atoms.cell)
 		a=lammpsdata(atoms,self.elements)
-		rot= a.writedata()
+		rot= a.writedata(filename="structure",creatbonds=self.creatbonds)
 		d,p,d1,p1=rot
 		np.savetxt('POSCARrot',np.r_[d,p,d1,p1])
 		#debug(rot)
 		return rot
 
 	def atoms_from_dump(self,filename):
-		return afd(filename=filename,elements=self.elements)
+		atoms=afd(filename=filename,elements=self.elements)
+		m=self
+		atoms.set_pbc([m.xp,m.yp,m.zp])
+		return atoms
 		
 	def dump2POSCAR(self,dumpname,poscar='POSCAR',rotate=True):
 		atoms=self.atoms_from_dump(dumpname)

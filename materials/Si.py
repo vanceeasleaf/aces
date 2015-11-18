@@ -8,9 +8,9 @@ from aces import config
 class structure(material):
 	def set_parameters(self):
 		self.enforceThick=False
-		self.latx=288
-		self.laty=4
-		self.latz=4
+		self.latx=1
+		self.laty=1
+		self.latz=1
 		self.timestep=self.units.metal.t(.55e-3)
 		self.bond=self.units.metal.L(5.430)
 		self.elements=['Si']
@@ -22,7 +22,9 @@ class structure(material):
 		self.potential='pair_style	sw\npair_coeff	* * %s/Si.sw  %s'%(config.lammpspot,' '.join(self.elements))
 	def lmp_structure(self):
 		atoms = bulk('Si', 'diamond', a=self.bond, cubic=self.cubic)
+		atoms=atoms.repeat([self.latx,self.laty,self.latz])
 		atoms.set_pbc([self.xp,self.yp,self.zp])
+		
 		if not self.al:
 			atoms.center()
 		return atoms

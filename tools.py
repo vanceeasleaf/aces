@@ -71,7 +71,7 @@ def ls(path='*'):
 def pwd():
 	return os.getcwd()
 def dirname(path):
-    return os.path.dirname(path)
+    return os.path.dirname(path).strip()
 def parseyaml(filename):
     try:
         import yaml

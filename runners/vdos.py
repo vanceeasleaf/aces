@@ -1,11 +1,11 @@
 from numpy.fft import rfft, irfft,fft
 import numpy as np
-from aces.graph import series,plot
+from aces.graph import series,plot,imshow
 from aces.tools import exit,write,to_txt
 from aces.velocityh5 import velocity
 from scipy.optimize import leastsq
 from aces.dos import plot_smooth,plot_dos,plot_vacf,plot_atomdos
-from math import pi
+from math import pi,sqrt
 from aces.tools import *
 from scipy import signal
 import h5py
@@ -73,6 +73,94 @@ class vdos:
 			self.db[node][id]= dos
 			self.db[label][id]=1
 		return self.db[node][id]
+	def dis(self,pos,i,j,offset):
+		x=pos[i,0]-pos[j,0]-offset[0]
+		y=pos[i,1]-pos[j,1]-offset[1]
+		z=pos[i,2]-pos[j,2]-offset[2]
+		return sqrt(x*x+y*y+z*z)
+	def get_nei(self,r,dr,pos,cell):
+		n=len(pos)
+		x=int(r/np.linalg.norm(cell[0]))+1
+		y=int(r/np.linalg.norm(cell[1]))+1
+		z=int(r/np.linalg.norm(cell[2]))+1
+		c=[]
+		for i in range(n):
+			print i
+			for j in range(n):
+				
+				q=[]
+				for ix in range(-x,x+1):
+					for iy in range(-y,y+1):
+						for iz in range(-z,z+1):
+							d=self.dis(pos,i,j,ix*cell[0]+iy*cell[1]+iz*cell[2])
+							if d>r:continue
+							ir=int(d/dr)
+							if ir==0:continue
+							q.append(ir)
+				c.append([i,j,q])
+		return c
+	def cal_lc(self,r,dr,m):
+		from aces.lammpsdata import lammpsdata
+		atoms=lammpsdata().set_src('correlation_structure')
+		atoms.set_pbc([m.xp,m.yp,m.zp])
+		nw=self.totalStep/2+1
+		nr=int(r/dr)+1		
+		n=len(atoms)
+		dis=atoms.get_all_distances(mic=True)
+		pos=atoms.positions
+		cell=atoms.cell
+		symbols=atoms.get_chemical_symbols()
+		masses=self.getMassFromLabel(symbols)
+		if not exists('g.npz'):
+			g=np.zeros([nw,nr],dtype=np.complex)
+			ng=np.zeros(nr,dtype=np.int)
+			c=self.get_nei(r,dr,pos,cell)
+			for i,j,q in c:
+				if j==0:
+					print "center atom:%d/%d"%(i,n)
+				aij=np.einsum('ij,ij->i',self.fourier_atom(i).conjugate(),self.fourier_atom(j))
+				aii=np.einsum('ij,ij->i',self.fourier_atom(i).conjugate(),self.fourier_atom(i))
+				ajj=np.einsum('ij,ij->i',self.fourier_atom(j).conjugate(),self.fourier_atom(j))
+				x=aij/np.sqrt(aii*ajj)*np.sqrt(masses[i]*masses[j])
+				for ir in q:
+					g[:,ir]+=x
+					ng[ir]+=1
+			np.savez('g.npz',g=g,ng=ng)
+		npz=np.load('g.npz')
+		g=npz['g']
+		ng=npz['ng']
+		rs=(np.arange(nr))*dr
+		rs=rs[:-1]
+		def aa(x):
+			if x>0:return 1.0/x 
+			else: return 0.0
+		ivr=[aa(x) for x in ng]#1.0/4.0/np.pi/rs**2
+		g=np.einsum('ij,j->ij',g,ivr)[:,:-1]
+		g=(g.conjugate()*g).real
+		imshow(g,'g.png',extent=[0,1,0,1])
+		data=[]
+		for i in range(0,self.totalStep/2+1,self.totalStep/20):
+			data.append([rs,g[i,:],str(i)])
+		series(xlabel='length (A)',
+		ylabel='Cross Phonon Energy Spectrum',
+		datas=data
+		,linewidth=2
+		,filename='cpes.png')
+		cg=g.cumsum(axis=1)
+		imshow(cg,'cg.png',extent=[0,1,0,1])
+		cg=np.einsum('ij,i->ij',cg,1.0/cg[:,-1])
+		data=[]
+		for i in range(0,self.totalStep/2+1,self.totalStep/10):
+			data.append([rs,cg[i,:],str(i)])
+		series(xlabel='length (A)',
+		ylabel='Cross Phonon Energy Spectrum',
+		datas=data
+		,linewidth=2
+		,filename='cges.png')
+		lc=((cg<0.80).sum(axis=1))*dr
+		x=np.linspace(0,1,self.totalStep/2+1)*1/2.0/self.timestep
+		plot([x,'Frequency (THz)'],[lc,'Coherence length(A)'],'coherence.png')
+		return lc
 	def cal_atomdos(self):
 		for i in range(self.natom):
 			self.dos_atom(i)
@@ -103,7 +191,14 @@ class vdos:
 		plot_vacf()
 		plot_smooth()
 	def velocity_atom(self,id):
-		return self.velocity.atom(id)
+		node,label=self.inith5('velocity_atom',self.totalStep)
+		if not self.db[label][id]:
+			print 'prepare %s:%d'%(node,id)
+
+			v=self.velocity.atom(id)
+			self.db[node][id]=v
+			self.db[label][id]=1
+		return self.db[node][id]
 	def velocity_atom_harmonic(self,id,iseed):
 		if self.testp is None:			
 			k0=self.testk
@@ -129,10 +224,24 @@ class vdos:
 				vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
 				sphases.append(np.exp(1j*2.0*pi*freq*times))
 				vecs.append(vec)
+			sphases1=[]
+			vecs1=[]
+			iqp=5
+			for ibr in range(pya.nbranch):
+				k=pya.qposition(iqp)
+				freq=pya.frequency(iqp,ibr)
+				vec=pya.atoms(iqp,ibr)
+				natom_unitcell=len(vec)
+				phase=self.getPhase(k,natom_unitcell).conjugate()
+				vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
+				sphases1.append(np.exp(1j*2.0*pi*freq*times))
+				vecs1.append(vec)
 			self.sphases=sphases
 			self.vecs=vecs
+			self.sphases1=sphases1
+			self.vecs1=vecs1
 			p=np.random.rand(100,pya.nbranch)
-			p=np.exp(2j*pi*p)
+			p=np.exp(2j*pi*p)*p
 			self.rp=p
 			self.testp=True
 			self.nbranch=pya.nbranch
@@ -142,8 +251,14 @@ class vdos:
 		vecs=self.vecs
 		v=np.zeros([self.totalStep,3],dtype=np.complex)
 		for ibr in range(self.nbranch):
-			for i in range(3):
-				vec=vecs[ibr]
+			vec=vecs[ibr]
+			for i in range(3):				
+				v[:,i]+=vec[id,i]*sphases[ibr]*p[iseed,ibr]
+		sphases=self.sphases1
+		vecs=self.vecs1
+		for ibr in range(self.nbranch):
+			vec=vecs[ibr]
+			for i in range(3):				
 				v[:,i]+=vec[id,i]*sphases[ibr]*p[iseed,ibr]
 		return v.real
 
@@ -157,6 +272,10 @@ class vdos:
 			self.db[node][id]=r
 			self.db[label][id]=1
 		return self.db[node][id]
+	def validatek(self,k):
+		k=self.kcell.T.dot(k)
+		r=self.scell
+		return np.einsum('i,ji',k,r)
 	def getPhase(self,k,natom_unitcell):
 		p=np.exp(self.pfactor.dot(k))
 		v=p[range(0,self.natom,natom_unitcell)]
@@ -198,20 +317,21 @@ class vdos:
 	def calculateLife(self,eigen,iqp,ibr):
 		totalStep=self.totalStep
 		k,freq,vec=eigen
-		vec=vec.real
 		natom_unitcell=len(vec)
 		phase=self.getPhase(k,natom_unitcell)
-		vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
+		vec=np.einsum('ij,i->ij',np.tile(vec.conjugate(),[self.natom/natom_unitcell,1]),phase)
 		if not self.test:
-			q=np.zeros(totalStep/2+1,dtype=np.complex)
+			q=np.zeros(totalStep,dtype=np.complex)
 			for i in range(self.natom):
-				fv=self.fourier_atom(i)
+				fv=self.velocity_atom(i)
 				q+=np.array(fv).dot(vec[i])
+			q=fft(q)
 			q=(q*q.conjugate()).real
+			q=q[:totalStep/2+1]
 		else:
 			self.testp=None
 			qc=np.zeros(totalStep/2+1)
-			nseed=20
+			nseed=1
 			
 			for u in range(nseed):
 				q=np.zeros(totalStep,dtype=np.complex)
@@ -272,11 +392,14 @@ class vdos:
 	def getpfactor(self,correlation_supercell=[10,10,1]):
 		from aces.lammpsdata import lammpsdata
 		atoms=lammpsdata().set_src('correlation_structure')
-		b=atoms.get_reciprocal_cell()*np.c_[correlation_supercell]
-		return 1j*atoms.positions.dot(b.T)*2*pi
-	def specialk(self,pya,k0=[0,0,0]):
-		self.partsed=True
-		self.totalsed=True
+		self.scell=atoms.cell
+		positions=atoms.positions
+		from ase.io import read
+		atoms=read('POSCAR')
+		self.kcell=atoms.get_reciprocal_cell()
+		self.cell=atoms.get_cell()
+		return 1j*positions.dot(self.kcell.T)*2*pi
+	def findk(self,pya,k0):
 		iqp=0
 		for iqp0 in range(pya.nqpoint):
 			k=pya.qposition(iqp0)
@@ -284,23 +407,39 @@ class vdos:
 			if np.allclose(k0,k):
 				break
 		else:
-			print "no k found"
-			return 0
-		#q=self.lifeSED(k,pya.natom,iqp,pya)
+			raise Exception('no k found!')
+		return k,iqp
+	def specialk(self,pya,k0=[0,0,0]):
+		self.partsed=True
+		self.totalsed=True
+		k,iqp=self.findk(pya,k0)
+		#k1,iqp1=self.findk(pya,-np.array(k0))
+		q=self.lifeSED(k,pya.natom,iqp,pya)
 		print "check orthorgnal"
-		"""
+		print "k' that k'.dot(k) is not zero :"
+
 		natom_unitcell=pya.natom
 		phase=self.getPhase(k,natom_unitcell).conjugate()
+		for iqp0 in range(pya.nqpoint):
+			k1=pya.qposition(iqp0)
+			phase1=self.getPhase(k1,natom_unitcell)
+			if np.linalg.norm(np.dot(phase1,phase))>.1:
+				print k1,np.linalg.norm(np.dot(phase1,phase))
+		print "none zero dot product eigenvector sigma pairs with same k are:"
 		p=np.zeros([pya.nbranch]*2)
 		for ibr in range(pya.nbranch):
 			for ibr1 in range(pya.nbranch):
 				vec=pya.atoms(iqp,ibr)
 				vec1=pya.atoms(iqp,ibr1)
-				vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
-				vec1=np.einsum('ij,i->ij',np.tile(vec1,[self.natom/natom_unitcell,1]),phase.conjugate())
-				p[ibr,ibr1]=np.einsum('ij,ij',vec,vec1.conjugate())
-		print p
-		"""
+
+				#vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
+				#vec1=np.einsum('ij,i->ij',np.tile(vec1,[self.natom/natom_unitcell,1]),phase)
+				p[ibr,ibr1]=np.einsum('ij,ij',vec.conjugate(),vec1).real
+				if abs(p[ibr,ibr1])>.01:print ibr,ibr1
+		print "check Born-Karmen condition:"
+		for iqp0 in range(pya.nqpoint):
+			k1=pya.qposition(iqp0)
+			print self.validatek(k1)
 		for ibr in range(pya.nbranch):
 			freq=pya.frequency(iqp,ibr)
 			vec=pya.atoms(iqp,ibr)
@@ -395,6 +534,7 @@ class vdos:
 
 	def lowess(self,x, y, f=.1):
 		f=np.sqrt(10)*self.timestep
+		f=.4
 		n = len(x)
 		r = int(np.ceil(f*n))
 		h = [np.sort(np.abs(x - x[i]))[r] for i in range(n)]

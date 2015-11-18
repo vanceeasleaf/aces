@@ -39,8 +39,8 @@ def get_unique_atoms(atoms,mic=True):
 		newatoms.positions=newatoms.get_positions(wrap=True)
 	return newatoms
 
-def atoms_from_dump(filename,elements=None):
-	atoms=io.read(filename,format='lammps')	
+def atoms_from_dump(filename,elements=None,index=-1):
+	atoms=io.read(filename,format='lammps',index=index)	
 	if elements:
 		s=atoms.numbers
 		symbols=[elements[i-1] for i in s ]

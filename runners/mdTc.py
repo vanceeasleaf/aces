@@ -34,7 +34,7 @@ class runner(Runner):
 		#settings
 		print "units %s"%m.units
 		print "dimension 3"
-		pbcx=pbcy=pbcz='f'
+		pbcx=pbcy=pbcz='s'
 		if m.xp==1:pbcx='p'
 		if m.yp==1:pbcy='p'
 		if m.zp==1:pbcz='p'

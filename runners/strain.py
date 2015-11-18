@@ -69,7 +69,7 @@ class runner(Runner):
 		print >>f,"reset_timestep 0"
 		print >>f,"fix nve main nve"
 		print >>f,"compute    disp all displace/atom"
-		print >>f,"compute    s1 all stress/atom"
+		print >>f,"compute    s1 all stress/atom NULL"
 		print >>f,"compute    rr stayr com"
 		print >>f,"compute    rl stayl com"
 		print >>f,"fix  2  main temp/berendsen %f %f 1"%(m.T,m.T)

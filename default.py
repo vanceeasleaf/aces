@@ -13,7 +13,7 @@ default=dict(
 	upP=3,
 	fixud=0,
 	usinglat=True,
-	latx=4,laty=4,latz=4,
+	latx=1,laty=1,latz=1,
 	ylen=units.metal.L(20),
 	thick=units.metal.L(3.35),
 	deta=units.metal.L(3),
@@ -24,7 +24,7 @@ default=dict(
 	timestep=units.metal.t(.5e-3),
 	equTime=500000,
 	langevin=0,
-	nvt=1,jprofile=0,computeTc=1,fourierTc=0,gstart=20000,jcf=0,
+	nvt=False,jprofile=0,computeTc=1,fourierTc=0,gstart=20000,jcf=0,
 	dumpRate=100000,
 	aveRate=100000,
 	excRate=500,
@@ -72,10 +72,14 @@ default=dict(
 	,minStrain=-0.4
 	,vStrain=True
 	,copyN=-1
-	,shengcut=5.4
+	,shengcut=-4
 	,phofc=False
 	,leads='graphene'
 	,leadlat=[2,1,1]
+	,atomfile=0
+	,creatbonds=-1.0
+	,phanaonly=False
+	,usephana=False
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

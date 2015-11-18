@@ -7,12 +7,29 @@ from aces.runners.vdos import vdos
 from aces.runners import Runner
 from ase.io import read
 from aces.lammpsdata import lammpsdata
+#from aces.f import premitiveSuperMapper
 class runner(Runner):
 	def get_structure(self):
-		atoms=self.m.atoms_from_dump('minimize/range')
-		atoms=atoms.repeat(self.m.correlation_supercell)
-		a=lammpsdata(atoms,self.m.elements)
-		a.writedata('correlation_structure')
+		m=self.m
+		atoms=m.atoms_from_dump('minimize/range')
+		satoms=atoms.repeat(m.correlation_supercell)
+
+		a=lammpsdata(satoms,m.elements)
+		a.writedata('correlation_structure',self.m.creatbonds)
+		#psm=premitiveSuperMapper(atoms,satoms)
+		#s2p,v,=psm.getS2p()
+		s="%s %d\n#l1 l2 l3 k tag\n"%(toString(m.correlation_supercell),len(atoms))
+		c=m.correlation_supercell
+		n=0
+		for i in range(c[0]):
+			for j in range(c[1]):
+				for k in range(c[2]):
+					for p in range(len(atoms)):
+						u=[i,j,k,p,n+1]
+						s+=toString(u)+"\n"
+						n+=1
+		write(s,'phana.map.in')
+		
 	def generate(self):
 		m=self.m
 		self.get_structure()
@@ -23,7 +40,7 @@ class runner(Runner):
 		if m.corrNVT:pbcx='s'
 
 		print >>f,"boundary %s %s %s"%(pbcx,pbcy,pbcz)
-		print >>f,"atom_style atomic"
+		print >>f,m.getatomicstyle()
 		print >>f,"read_data   correlation_structure"
 		print >>f,"lattice fcc 5" #needed to define the regions
 		print >>f,"thermo %d"%m.dumpRate
@@ -60,16 +77,22 @@ class runner(Runner):
 		print >>f,"fix nve main nve"
 		#print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
 		#print >>f,"dump_modify  lala sort id"
+		print >>f,"fix phonon1 all phonon %s %s 0 phana.map.in phonon"%(m.Cinterval,m.Ctime)
 		if m.runner=="dynaphopy":
 			print >>f,"dump lala main custom %s  dynaphopy.lammpstrj x y z"%m.Cinterval
 			print >>f,"dump_modify  lala sort id"
-		else:
+		elif not m.phanaonly:
 			print >>f,"dump lala main h5md %s velocity.h5md velocity  box no create_group yes"%m.Cinterval
 		print >>f,"run %s"%m.Ctime
 
 		f.close()
 
 		passthru(config.mpirun+"  %s "%self.m.cores+config.lammps+" <correlation.lmp  >out.dat")
+		if self.usephana:
+			self.phana()
+			self.phanados()
+		if m.phanaonly:
+			return
 		if not m.runner=="dynaphopy":
 			self.dos()
 		#rm("velocity.txt")
@@ -78,3 +101,57 @@ class runner(Runner):
 		self.vd.run()
 	def getvdos(self):
 		return vdos(self.m.timestep)
+	def phana(self):
+		from aces.tools import read
+		m=self.m
+		bp=m.bandpath
+		bpp=m.bandpoints
+		v=""
+		for i in range(len(bp)-1):
+			v+="%s\n%s\n101\n"%(toString(bpp[bp[i]]),toString(bpp[bp[i+1]]))
+		s="""20
+1
+2
+phana.band.txt
+%sq
+0
+"""%v
+		write(s,'phana.in')
+		
+		passthru(config.phana +'phonon.bin.%d <phana.in'%m.Ctime)
+		s=read('pdisp.gnuplot')				
+		s=s.replace('pdisp.eps','phana.band.eps')
+		write(s,'phana.band.gnuplot')
+		passthru('rm pdisp.gnuplot')
+		passthru('gnuplot phana.band.gnuplot')
+		passthru('convert -rotate 90 phana.band.eps phana.band.png')
+	def phanados(self):
+		from aces.tools import read
+		m=self.m
+		s="""20
+1
+1
+%s
+2
+y
+
+1000
+y
+phana.dos.txt
+0
+"""%toString(m.kpoints)
+		write(s,'phana.dos.in')
+		
+		passthru(config.phana +'phonon.bin.%d <phana.dos.in'%m.Ctime)
+		s=read('pdos.gnuplot')				
+		s=s.replace('pdos.eps','phana.dos.eps')
+		write(s,'phana.dos.gnuplot')
+		passthru('rm pdos.gnuplot')
+		passthru('gnuplot phana.dos.gnuplot')
+		passthru('convert -rotate 90 phana.dos.eps phana.dos.png')
+	#*calculate the spectrum correlation length
+	def getlc(self):
+		vd=self.getvdos()
+		vd.cal_lc(20,.5,self.m)
+		#vd.fourier_atom(id)
+		

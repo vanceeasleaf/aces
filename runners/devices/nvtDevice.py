@@ -7,8 +7,10 @@ class nvtDevice:
 		if(lx/m.deta/2<m.upP):
 			print "upP is too large!"
 			sys.exit()
+		m.Thi=m.T+m.dT
+		m.Tlo=m.T-m.dT
 		self.__dict__=dict(self.__dict__,**m.__dict__)
-
+		self.m=m
 		self.regions=[]
 		hook.addAction('region',self.renderRegion)
 		hook.addAction('variable',self.renderVariable)
@@ -90,11 +92,12 @@ class nvtDevice:
 		print "fix getEqu main nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 
 	def renderElim(self):
-		
+		bath="nve"
+		if self.m.nvt:bath="nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 		if self.langevin==0:
-			print "fix     nve  g_nve  nve"
+			print "fix     nve  g_nve  %s"%bath
 		else:
-			print "fix     nve  main  nve"
+			print "fix     nve  main  %s"%bath
 	def renderTemp(self):
 		hot=self.hot
 		cold=self.cold

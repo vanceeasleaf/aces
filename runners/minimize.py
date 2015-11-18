@@ -19,7 +19,7 @@ LWAVE = FALSE
 LCHARG = FALSE
 EDIFFG = -0.01
 ALGO=fast
-LREAL=AUTO
+LREAL=FALSE
 LPLANE=.TRUE.
 """%m.ecut
 	write(s,'INCAR')
@@ -40,7 +40,7 @@ def minimize_lammps(m):
 	f=open('input', 'w')
 	units,structure,potential,timestep,masses,dumpRate,write_structure,metropolis,useMini,dump=m.units,m.structure,m.potential,m.timestep,m.masses,m.dumpRate,m.write_structure,m.metropolis,m.useMini,m.dump
 	print >>f,"units %s"%units
-	print >>f,"atom_style atomic"
+	print >>f,m.getatomicstyle()
 	print >>f,"boundary p p p"
 	print >>f,"dimension 3"
 	structure()

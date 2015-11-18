@@ -8,6 +8,8 @@ def dirpath(a):
 	return root+a.lstrip('/')
 
 php       = exepath("php/bin/php")
+phana     = exepath("soft/lammps-25Sep15/tools/phonon/phana")
+phanalib  = dirpath("soft/phona")
 lammps    = exepath("soft/lammps-25Sep15/src/lmp_mpi")
 lammpspot = dirpath("soft/lammps-25Sep15/potentials")
 mpirun    = exepath("/opt/intel/mpi/openmpi/1.6.3/icc.ifort/bin/mpirun  -np ",abs=True)

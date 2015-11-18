@@ -8,7 +8,7 @@ from aces.f import RotateVector
 
 def get_lammps_script(m):
 	content="units %s\n"%m.units
-	content+="""atom_style      atomic
+	content+="""%s
 dimension       3
 boundary        p p p 
 read_data       structure
@@ -20,7 +20,7 @@ dump 1 all custom 1 dump.force id  fx fy fz xs ys zs
 dump_modify 1 format "%%d %%f %%f %%f %%f %%f %%f"
 dump_modify  1 sort id
 run 0
-"""%(m.masses,m.potential)
+"""%(m.getatomicstyle(),m.masses,m.potential)
 	return content
 def getVaspRun_lammps(m):
 	#generate structure
