@@ -31,6 +31,23 @@ class runner(Runner):
 		write(time.strftime('%Y-%m-%d %H:%M:%S'),'done')
 		cd('..')
 		return m.dump2POSCAR(m.home+'/minimize/range')
+	def test(self):
+		dm=.1
+		omega=np.arange(dm,60,dm)#THz
+		factor=1e12**2*1e-20*1e-3/1.6e-19/6.23e23
+		energies=(omega*2.0*np.pi)**2*factor
+		#energies=np.arange(0,10,.01)
+		h = -np.array((-2, 1,0, 1, -2,1,0,1,-2)).reshape((3,3))
+		h1 = -np.array((-2, 1, 1, -2)).reshape((2,2))
+		#x=1.0/np.sqrt(2)
+		#h1=h=-np.array((-2,x,0,0,x,-1,x,0,0,x,-2,x,0,0,x,-1)).reshape((4,4))
+		#energies = np.arange(-3, 3, 0.1)
+		calc = TransportCalculator(h=h, h1=h1, energies=energies,dos=True)
+		T = calc.get_transmission()
+		#print T
+		dos=calc.get_dos()*omega
+		plot([omega,'Frequency (THz)'],[T,'Transmission'],'test_green_transmission.png')
+		plot([omega,'Frequency (THz)'],[dos,'Phonon Density of State'],'test_green_dos.png')
 	def generate(self):
 		self.m.xp=1
 		self.leadm=self.preLead()
@@ -40,6 +57,14 @@ class runner(Runner):
 		
 		fclead=self.fc('lead',self.leadm)
 		fccenter=self.fc('center',self.centerm)
+		#write(np.around(fc[:,:,0,0],3),'orig_forces')
+		n=self.leadm.hatom
+		fccenter[:n,-n:]=0
+		fccenter[-n:,:n]=0
+		write(np.around(fccenter[:,:,0,0],3),'fccenter')
+		fclead=fclead[:2*n][:2*n]
+		fccenter=self.reshape(fccenter)
+		fclead=self.reshape(fclead)
 		dm=.5
 		omega=np.arange(dm,60,dm)#THz
 		factor=1e12**2*1e-20*1e-3/1.6e-19/6.23e23
@@ -57,6 +82,7 @@ class runner(Runner):
 		#1cm^(-1) = 3 * 10^(10) hz =>Hz*cm=1/3e10
 		#a cm^-1=b THz =>a=b *1e12 Hz*cm
 		#a meV = b cm^-1 => a = b cm-1/meV
+		#omcm=omega*521.471？
 		omcm=omega*1e12*1/3e10
 		omme=omcm *1e12*6.6260755e-34/1.6e-19*1000
 		w=omega*1e12*2.0*np.pi
@@ -66,15 +92,23 @@ class runner(Runner):
 		j=c*trans/2.0/np.pi
 		kappa=j.cumsum()*dm
 		to_txt(['Frequency (THz)','Frequency (cm^-1)','Frequency (meV)','Phonon Transmission','Phonon Density of State','Mode Capacity (J/m^3/K)','Mode Thermal Conductance (W/m^2/K)','Accumulate Thermal Conductance (W/m^2/K)'],np.c_[omega,omcm,omme,trans,dos,c,j,kappa],'transmission.txt')
+		self.post()
+	def post(self):
+		f=np.loadtxt('transmission.txt',skiprows=1)
+		plot([f[:,0],'Frequency (THz)'],[f[:,4],'Phonon Density of State'],'green_dos.png')
+		plot([f[:,0],'Frequency (THz)'],[f[:,3],'Phonon Transmission'],'green_transmission.png')
+		plot([f[:,0],'Frequency (THz)'],[f[:,6],'Mode Thermal Conductance (W/m^2/K)'],'green_mode_conductance.png')
+	def reshape(self,fc):
+		n,m=fc.shape[:2]
+		fc=np.einsum('ikjl',fc).reshape([n*3,m*3])
+		return fc
 	def fc(self,dir,mm):
 		fc=readfc2(dir+'/FORCE_CONSTANTS')
 		atoms=read(dir+'/POSCAR')
 		fc=self.nomalizeFC(fc,mm,atoms)		
 		
 		fc=self.rearangefc(fc,atoms,dir)
-		n,m=fc.shape[:2]
-		fc=np.einsum('ikjl',fc).reshape([n*3,m*3])
-		print fc.shape
+
 		return fc
 	def phonopy(self,dir,mm):
 		if exists(dir+'/FORCE_CONSTANTS'):
@@ -96,6 +130,7 @@ class runner(Runner):
 		s=im('aces.materials.%s'%m.leads)
 		lat=m.leadlat
 		mm=s.structure(dict(latx=lat[0],laty=lat[1],latz=lat[2],xp=1,yp=1,zp=1))
+		mm.dimension=m.dimension
 		s=im('aces.lead')
 		u=s.Lead(mm)
 		u.cores=m.cores

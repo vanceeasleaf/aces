@@ -37,10 +37,13 @@ class material:
 	def super_setup(self):
 		self.units=Units(self.units)
 		self.prepare_lammps()
+
 		self.prepare_phonts()
 		self.bandpoints=ibz_points['fcc']
 		self.bandpoints['X']=[.5,0,0]
-		self.bandpath=['Gamma','X','Gamma']
+		self.bandpoints['Y']=[0,0.5,0]
+		self.bandpath=['Gamma','X','Y','Gamma']
+		self.premitive=np.eye(3)
 		self.dim=self.toString(self.supercell)
 		if not self.useS3:
 			self.supercell3=self.supercell
@@ -48,8 +51,13 @@ class material:
 		if self.atomfile:
 			atoms=io.read(str(PROJHOME+"/data/"+self.atomfile),format="vasp")
 			self.atoms=atoms.repeat([self.latx,self.laty,self.latz])
+			self.atoms.center()
 		else:
 			self.atoms=self.lmp_structure()
+		if self.dimension==1:
+			self.masses+="\nfix   1d all setforce NULL 0. 0.\nvelocity  all set NULL 0.0 0.0 units box"
+		elif self.dimension==2:
+			self.masses+="\nfix   1d all setforce NULL NULL 0.\nvelocity  all set NULL NULL 0.0 units box"
 	#to be overided
 	def setup(self):
 		pass

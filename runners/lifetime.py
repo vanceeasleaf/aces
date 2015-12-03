@@ -17,11 +17,19 @@ class runner(Runner):
 	def generate(self):
 		prun=Prun(self.m)
 		prun.run()
-		self.corr()
 		self.fc()
-		self.nma()
-		self.sed()
-		self.band()
+		m=self.m
+		m.usephana=False
+		mkdir('phi')
+		main=pwd()
+		for i in range(m.nseed):
+			mkcd('phi/%d'%i)
+			self.corr()
+			cd(main)
+		#self.corr()
+		#self.nma()
+		#self.sed()
+		#self.band()
 		
 	def corr(self):
 		crun=Crun(self.m)

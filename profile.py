@@ -107,7 +107,7 @@ class profile:
 		
 
 		if(method=="muller"):
-			fat=fixAveTime("swapEnergy.txt")
+			fat=fixAveTime("swap.txt")
 			fx=fat.getSlopes(begin)[:,0]
 			fx=np.abs(fx)/timestep/S/2
 			

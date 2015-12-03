@@ -85,11 +85,11 @@ class runner(Runner):
 		f.write(parameters)
 		f.write(flags)
 		f.close()
-	def sca(self):
+	def sca(self,th=0.0):
 
 		qpoints_full=np.loadtxt('BTE.qpoints_full')
 		ks=qpoints_full[:,2:4]
-		f=self.direction(ks,-90.0)
+		f=self.direction(ks,th)
 		ids=qpoints_full[:,1].astype(np.int)[f]
 		qpoints=np.loadtxt('BTE.qpoints')
 		idx=qpoints[:,0].astype(np.int)
@@ -97,7 +97,7 @@ class runner(Runner):
 
 		w=np.loadtxt('BTE.w_final')
 		omega=np.loadtxt('BTE.omega')/(2.0*np.pi)
-		w[omega<omega.flatten().max()*0.005]=float('nan')
+		#w[omega<omega.flatten().max()*0.005]=float('nan')
 		tao=1.0/w+1e-6
 
 		rt=tao[u,:3]
@@ -110,7 +110,7 @@ class runner(Runner):
 		series(xlabel='Frequency (THz)',
 		ylabel='Relaxation Time (ps)',
 		datas=data,
-		filename='scaling.png',scatter=True,legend=False,logx=True,logy=True)
+		filename='scaling-%f.png'%th,scatter=True,legend=False,logx=True,logy=True)
 	def sca1(self):
 		qpoints_full=np.loadtxt('BTE.qpoints_full')
 		ks=qpoints_full[:,2:4]
@@ -191,7 +191,7 @@ class runner(Runner):
 		b=u-t
 		b[b>np.pi]-=2.0*np.pi
 		b[b<-np.pi]+=2.0*np.pi		
-		filter=np.abs(b)<5.0*np.pi/180.0
+		filter=np.abs(b)<.5*np.pi/180.0
 		return filter
 	def post(self):
 		cd('SHENG')

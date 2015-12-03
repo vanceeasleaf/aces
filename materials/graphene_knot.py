@@ -13,10 +13,12 @@ class structure(material):
 		self.strain=8
 		self.airebo=False
 		self.vis=0.02
-	def setup(self):
-		self.xp=self.yp=self.zp=0
+		self.xp=1
+		self.yp=self.zp=0
 		self.enforceThick=False
 		self.useMini=False
+	def setup(self):
+		
 		if self.airebo:
 			self.potential='pair_style	rebo\npair_coeff	* * %s/CH.airebo  %s'%(config.lammpspot,' '.join(['C' for a in self.elements]))
 	def ori_structure(self):

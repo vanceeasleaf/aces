@@ -5,6 +5,7 @@ import pandas as pd
 import subprocess as sub 
 import shlex
 import json
+from aces.scanf import *
 def loadjson(file):
     return json.loads(read(file))
 def shell_exec(cmd):
@@ -43,7 +44,7 @@ def pwrite(fp,s):
 	print s,
 	fp.write(s)
 	sys.stdout.flush()	
-def exit(info):
+def exit(info='Exited by user!'):
 	print info
 	sys.stdout.flush()
 	sys.exit();

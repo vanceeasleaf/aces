@@ -74,7 +74,8 @@ class runner(Runner):
 		print >>f,"run %d"%m.equTime
 		print >>f,"unfix getEqu"
 		print >>f,"reset_timestep 0"
-		print >>f,"fix nve main nve"
+		#print >>f,"fix nve main nve"
+		print >>f,"fix getEqu  main  nvt temp %f %f %f"%(m.T,m.T,m.dtime)
 		#print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
 		#print >>f,"dump_modify  lala sort id"
 		print >>f,"fix phonon1 all phonon %s %s 0 phana.map.in phonon"%(m.Cinterval,m.Ctime)
@@ -88,7 +89,7 @@ class runner(Runner):
 		f.close()
 
 		passthru(config.mpirun+"  %s "%self.m.cores+config.lammps+" <correlation.lmp  >out.dat")
-		if self.usephana:
+		if m.usephana:
 			self.phana()
 			self.phanados()
 		if m.phanaonly:

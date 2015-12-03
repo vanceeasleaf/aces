@@ -55,7 +55,25 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=
 	
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
-
+def wfig(filename,f,legend=False):
+	pl.figure()
+	f()
+	
+	if legend:
+		pl.legend(loc='best').get_frame().set_alpha(0.0)
+	pl.savefig(filename,bbox_inches='tight',transparent=True) 
+	pl.close()
+class fig:
+	def __init__(self,filename,legend=False):
+		self.filename=filename
+		self.legend=legend
+	def __enter__(self):
+		pl.figure()
+	def __exit__(self, type,value, trace):
+		if self.legend:
+			pl.legend(loc='best').get_frame().set_alpha(0.0)
+		pl.savefig(self.filename,bbox_inches='tight',transparent=True) 
+		pl.close() 
 def surf(X, Y, Z,filename):
 	from mpl_toolkits.mplot3d import Axes3D
 	fig = pl.figure()

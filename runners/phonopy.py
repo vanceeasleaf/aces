@@ -46,7 +46,8 @@ MP = %s
 EIGENVECTORS=.TRUE.
 FORCE_CONSTANTS = WRITE
 MESH_SYMMETRY = .FALSE.
-"""%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
+PRIMITIVE_AXIS = %s
+"""%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)),toString(m.premitive.flatten()))
 		write(mesh,'mesh.conf')
 	def generate_vconf(self):
 		#generate v.conf
@@ -58,7 +59,8 @@ MP = %s
 FORCE_CONSTANTS = READ
 MESH_SYMMETRY = .FALSE.
 GROUP_VELOCITY=.TRUE.
-"""%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)))
+PRIMITIVE_AXIS = %s
+"""%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)),toString(m.premitive.flatten()))
 		write(mesh,'v.conf')	
 	def generate_qconf(self,q):
 		#generate q.conf
@@ -69,7 +71,8 @@ ATOM_NAME = %s
 FORCE_CONSTANTS = READ
 EIGENVECTORS=.TRUE.
 QPOINTS=.TRUE.
-"""%(m.dim,' '.join(m.elements))
+PRIMITIVE_AXIS = %s
+"""%(m.dim,' '.join(m.elements),toString(m.premitive.flatten()))
 		write(mesh,'q.conf')	
 		s="%s\n"%len(q)
 		for qq in q:
@@ -255,7 +258,8 @@ ATOM_NAME = %s
 BAND = %s 
 BAND_POINTS = 101
 MESH_SYMMETRY = .FALSE.
-"""%(m.dim,' '.join(m.elements),bpath)
+PRIMITIVE_AXIS = %s
+"""%(m.dim,' '.join(m.elements),bpath,toString(m.premitive.flatten()))
 		write(band,'band.conf')
 	def getpdos(self):
 		xx=np.loadtxt('partial_dos.dat',skiprows=1)

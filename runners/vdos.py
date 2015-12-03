@@ -1,4 +1,4 @@
-from numpy.fft import rfft, irfft,fft
+from numpy.fft import rfft, irfft,fft,ifft
 import numpy as np
 from aces.graph import series,plot,imshow
 from aces.tools import exit,write,to_txt
@@ -222,11 +222,11 @@ class vdos:
 				natom_unitcell=len(vec)
 				phase=self.getPhase(k,natom_unitcell).conjugate()
 				vec=np.einsum('ij,i->ij',np.tile(vec,[self.natom/natom_unitcell,1]),phase)
-				sphases.append(np.exp(1j*2.0*pi*freq*times))
+				sphases.append(np.exp(1j*2.0*pi*(freq+1j*.05)*times))
 				vecs.append(vec)
 			sphases1=[]
 			vecs1=[]
-			iqp=5
+			iqp=1
 			for ibr in range(pya.nbranch):
 				k=pya.qposition(iqp)
 				freq=pya.frequency(iqp,ibr)
@@ -254,12 +254,12 @@ class vdos:
 			vec=vecs[ibr]
 			for i in range(3):				
 				v[:,i]+=vec[id,i]*sphases[ibr]*p[iseed,ibr]
-		sphases=self.sphases1
-		vecs=self.vecs1
-		for ibr in range(self.nbranch):
-			vec=vecs[ibr]
-			for i in range(3):				
-				v[:,i]+=vec[id,i]*sphases[ibr]*p[iseed,ibr]
+		#sphases=self.sphases1
+		#vecs=self.vecs1
+		#for ibr in range(self.nbranch):
+		#	vec=vecs[ibr]
+		#	for i in range(3):				
+		#		v[:,i]+=vec[id,i]*sphases[ibr]*p[iseed,ibr]
 		return v.real
 
 	def fourier_atom(self,id):
@@ -278,6 +278,7 @@ class vdos:
 		return np.einsum('i,ji',k,r)
 	def getPhase(self,k,natom_unitcell):
 		p=np.exp(self.pfactor.dot(k))
+		#print p
 		v=p[range(0,self.natom,natom_unitcell)]
 		self.phase=np.repeat(v,natom_unitcell)
 		from ase import io 
@@ -295,37 +296,76 @@ class vdos:
 		return masses
 	def calculateSED(self,k,natom_unitcell):
 		totalStep=self.totalStep
-		phi=np.zeros(totalStep/2+1)
-		phase=self.getPhase(k,natom_unitcell)
 		
+		phase=self.getPhase(k,natom_unitcell)
+		phase1=self.getPhase(-np.array(k),natom_unitcell)
+		nd=1
+		d=totalStep-nd+1
+		phi=np.zeros(d)
+		#print phase
 		for j in range(natom_unitcell):
-			q=np.zeros([totalStep/2+1,3],dtype=np.complex)
+			q=np.zeros([totalStep,3],dtype=np.complex)
+			#q1=np.zeros([totalStep,3],dtype=np.complex)
 			for i in range(j,self.natom,natom_unitcell):
-				fv=self.fourier_atom(i)
+				fv=self.velocity_atom(i)
 				q+=np.array(fv)*phase[i]
-			phi+=(q*q.conjugate()).real.sum(axis=1)
+				#q+=np.array(fv)*phase1[i]
+			for k0 in range(nd):
+				u0=k0+d
+				#if u0>len(q):
+				#	u0=len(q)
+				u1=u0-d
+				q0=fft(q[u1:u0],axis=0)
+				#q0=q0[:totalStep/2+1]
+				phi+=(q0*q0.conjugate()).real.sum(axis=1)
+		phi=phi[:d/2+1]/nd
+		s=np.zeros_like(phi)
+		df=1.0/(2.0*self.timestep)/(self.totalStep/2)
+		span=int(1.0/df)
+		phi=self.smo(phi,50)
 		if self.totalsed:
-			x=np.linspace(0,1,totalStep/2+1)*1/2.0/self.timestep
+			x=np.linspace(0,1,d/2+1)*1/2.0/self.timestep
 
 			series(xlabel='Frequency (THz)',
 				ylabel='Phonon Energy Spectrum',
 				datas=[(x,phi,"origin")]
 				,linewidth=1
-				,filename='NMA/sed%s.png'%(str(k)))
+				,filename='NMA/sed%s.png'%(str(k)),logy=True)
 		return phi
-
+	
 	def calculateLife(self,eigen,iqp,ibr):
 		totalStep=self.totalStep
 		k,freq,vec=eigen
+		vec0=vec
+		#vec[0,0]=1/np.sqrt(2)
+		#vec[1,0]=1/np.sqrt(2)*-1j
+		#vec[0,0],vec[1,0]=.5*(1.0+1j),1.0/np.sqrt(2)
 		natom_unitcell=len(vec)
-		phase=self.getPhase(k,natom_unitcell)
-		vec=np.einsum('ij,i->ij',np.tile(vec.conjugate(),[self.natom/natom_unitcell,1]),phase)
+		phase=self.getPhase(np.array(k),natom_unitcell)
+		vec=np.einsum('ij,i->ij',np.tile(vec0.conjugate(),[self.natom/natom_unitcell,1]),phase)
+		phase1=self.getPhase(-np.array(k),natom_unitcell)
+		#print np.tile(vec.conjugate(),[self.natom/natom_unitcell,1])[:,0]
+		vec1=np.einsum('ij,i->ij',np.tile(vec0,[self.natom/natom_unitcell,1]),phase1)
+		#print vec[:,0]
 		if not self.test:
 			q=np.zeros(totalStep,dtype=np.complex)
+			q1=np.zeros(totalStep,dtype=np.complex)
 			for i in range(self.natom):
 				fv=self.velocity_atom(i)
 				q+=np.array(fv).dot(vec[i])
+				q1+=np.array(fv).dot(vec1[i])
+			#q1=ifft(q)
 			q=fft(q)
+			q1=fft(q1)
+			"""
+			result = np.correlate(q, q, mode='full', old_behavior=False)
+			keXcorr = result[result.size/2:] / result[result.size/2]
+
+			# keFft: kinetic energy FFT
+			keFft = fft(keXcorr[:])
+			q=keFft
+			"""
+			q=q+q1
 			q=(q*q.conjugate()).real
 			q=q[:totalStep/2+1]
 		else:
@@ -353,16 +393,18 @@ class vdos:
 		q1=q
 		x1=x
 		df=1.0/(2.0*self.timestep)/(self.totalStep/2)
-		span=int(1.0/df)
+		span=int(.5/df)
 		ori=int(freq/df)
 		low=max(ori-1*span,0)
 		hi=min(ori+1*span,len(q)-1)
 		filter=range(low,hi)
 		x=x[filter]
-		q=q[filter]
-		q=self.lowess(x,q)
+		q=q[filter]/1e10
+		#q=self.lowess(x,q)
+		q=self.smo(q,3)
 		p0 = np.array([x[q.argmax()], 0.01, q[q.argmax()]]) #Initial guess
 		p=self.fitLife(x,q,p0)
+		p=np.abs(p)
 		#to_txt(['Freq','dos'],np.c_[x,q],'SED/single%s%s.txt'%(str(k),freq))
 
 		
@@ -498,6 +540,7 @@ class vdos:
 	def lifeSED(self,k,na,iqp,pya):
 
 		q=self.calculateSED(k,na)
+		#return
 		x=self.freq
 		nbranch=3*na
 		w=[pya.frequency(iqp,ibr) for ibr in range(nbranch)]
@@ -514,13 +557,13 @@ class vdos:
 			filter=range(low,hi)
 			qu=q[filter]
 			xu=x[filter]
-			qs=self.lowess(xu,qu)
+			#qs=self.lowess(xu,qu)
 			if False:
 				from scipy import signal
 				peaks, = signal.argrelmax(qs, order=span/3)
 				center=peaks[np.abs(xu[peaks]-w[i]).argmin()]
 				
-			p=self.fitpart(xu,qs)
+			p=self.fitpart(xu,qu)
 			w1.append(p)
 			#q[filter]=0.0
 		w1=np.array(w1)
@@ -531,7 +574,14 @@ class vdos:
 		c='\n'.join(v)
 		print "[sed]",c
 		return c
-
+	def smo(self,y,n):
+		s=np.zeros_like(y)
+		for i in range(0,n):
+			p1=np.roll(y,i)
+			p1[:i]=0.0
+			s+=p1
+		phi=s/float(n)
+		return phi
 	def lowess(self,x, y, f=.1):
 		f=np.sqrt(10)*self.timestep
 		f=.4
@@ -592,5 +642,5 @@ class vdos:
 		return p[2] / ((x-p[0])**2 + p[1]**(2)/4.0)
 
 	def errorfunc(self,p,x,z):
-		return self.lorentz(p,x)-z
+		return np.log(self.lorentz(p,x))-np.log(z)
 		

@@ -24,7 +24,7 @@ default=dict(
 	timestep=units.metal.t(.5e-3),
 	equTime=500000,
 	langevin=0,
-	nvt=False,jprofile=0,computeTc=1,fourierTc=0,gstart=20000,jcf=0,
+	nvt=True,jprofile=0,computeTc=1,fourierTc=0,gstart=20000,jcf=0,
 	dumpRate=100000,
 	aveRate=100000,
 	excRate=500,
@@ -80,6 +80,8 @@ default=dict(
 	,creatbonds=-1.0
 	,phanaonly=False
 	,usephana=False
+	,dimension=3
+	,nseed=10
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

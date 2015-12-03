@@ -245,7 +245,7 @@ def comfirmStop(single):
 		return;
 	
 	tarname="zy_%s_"%PROJNAME;
-	if(len(tarname)<10):
+	if(len(tarname)<12):
 		works=shell_exec("qstat|grep %s"%tarname).split('\n');
 		for work in works:
 			if work.strip()=="":continue;

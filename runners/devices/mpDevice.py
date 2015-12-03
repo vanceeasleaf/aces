@@ -54,10 +54,10 @@ class mpDevice:
 	def renderElim(self):
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 	def renderFlux(self):
-		print "fix	temp_profile    main    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(self.aveRate,self.aveRate,self.deta)
+		print "fix	temp_profile    all    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(self.aveRate,self.aveRate,self.deta)
 		# 输出热流空间分布,不计算热导率
 		if self.jprofile==1:
-			print "dump jprofile main custom %d jprofile.txt id v_jx v_jy v_jz v_temp v_jcx v_jcy v_jcz vx vy vz x y z"%(self.dumpRate)
+			print "dump jprofile all custom %d jprofile.txt id v_jx v_jy v_jz v_temp v_jcx v_jcy v_jcz vx vy vz x y z"%(self.dumpRate)
 			print "dump_modify  jprofile sort id"
 	def renderSwap(self):
 		lx=self.lx;

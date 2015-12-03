@@ -12,8 +12,16 @@ class lammpsdata:
 			self.types=elements
 	def set_src(self,filename):
 		a=data(filename)	
-		a.map(1,'id',2,'type',3,'x',4,'y',5,'z')
+		bond=False
+		if a.headers.has_key("bonds"):
+			bond=True
+		if bond:
+			a.map(1,'id',2,'type',3,'mtype',4,'x',5,'y',6,'z')
+		else:
+			a.map(1,'id',2,'type',3,'x',4,'y',5,'z')
+		
 		ats=a.viz(0)[2]	
+		#print ats
 		atoms=Atoms()
 		for at in ats:
 			id,type,x,y,z=at

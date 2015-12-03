@@ -62,6 +62,11 @@ class runner(Runner):
 		print "reset_timestep 0"
 		print "velocity all create %f %d mom yes rot yes dist gaussian"%(m.T,m.seed)
 		hook.doAction('equ')
+		
+		#/* 定时输出dump文件并按id排序*/
+		if(m.dumpxyz):
+			print "dump dump1 all atom %d dump.lammpstrj"%(m.dumpRate)
+			print "dump_modify  dump1 sort id"
 		print "run %d"%m.equTime
 		print "unfix getEqu"
 		print "reset_timestep 0"
@@ -72,10 +77,6 @@ class runner(Runner):
 		hook.doAction('swap')
 
 
-		#/* 定时输出dump文件并按id排序*/
-		if(m.dumpxyz):
-			print "dump dump1 all atom %d dump.lammpstrj"%(m.dumpRate)
-			print "dump_modify  dump1 sort id"
 
 
 		#/* 定时输出速度文件用于计算速度关联函数*/
