@@ -126,14 +126,14 @@ class runner:
 			As.append(c)
 		for x in As:
 			for y in x:
-
+				pass
 		return F,A
 	def run(self):
 		pos,symmetry=self.getSupercell()
 		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')
 		if len(files)>100:	files=files[:100]
 		F,u=self.getForce(pos,files)
-		if False:
+		if True:
 			F0=[]
 			u0=[]
 			for i,f in enumerate(F):

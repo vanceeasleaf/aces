@@ -22,6 +22,7 @@ class vdos:
 		self.totalsed=False
 		self.partsed=False
 		self.test=False
+		self.all=False
 	def run(self):
 
 		
@@ -30,7 +31,6 @@ class vdos:
 	def readinfo(self):
 		self.natom,self.totalStep,self.timestep,self.freq,self.times=self.velocity.info()
 		self.db=h5py.File('dos.h5')
-		
 		
 		
 	def inith5(self,dataset,N,isComplex=False):
@@ -192,13 +192,24 @@ class vdos:
 		plot_smooth()
 	def velocity_atom(self,id):
 		node,label=self.inith5('velocity_atom',self.totalStep)
-		if not self.db[label][id]:
+		if not self.__dict__.has_key('vsil'):
+			self.vsil=np.array(self.db[label],dtype=np.int)
+		if not self.vsil[id]:
 			print 'prepare %s:%d'%(node,id)
 
 			v=self.velocity.atom(id)
 			self.db[node][id]=v
 			self.db[label][id]=1
-		return self.db[node][id]
+			self.vsil[id]=1
+		if not self.__dict__.has_key('vsi'):
+			self.vsi=[0]*self.natom
+			self.vsilabel=[False]*self.natom
+		if not self.vsilabel[id]:
+			if not self.__dict__.has_key('dbvs'):
+				self.dbvs=self.db[node]
+			self.vsi[id]=self.dbvs[id]
+			self.vsilabel[id]=True
+		return self.vsi[id]
 	def velocity_atom_harmonic(self,id,iseed):
 		if self.testp is None:			
 			k0=self.testk
@@ -332,8 +343,14 @@ class vdos:
 				,linewidth=1
 				,filename='NMA/sed%s.png'%(str(k)),logy=True)
 		return phi
-	
+
 	def calculateLife(self,eigen,iqp,ibr):
+		q=self.modeSed(eigen,iqp,ibr)
+		k,freq,vec=eigen
+		return self.modefit(iqp,ibr,k,freq,q)
+	def modeSed(self,eigen,iqp,ibr):
+		if self.all:
+			return self.allModeSed(iqp,ibr)
 		totalStep=self.totalStep
 		k,freq,vec=eigen
 		vec0=vec
@@ -343,20 +360,20 @@ class vdos:
 		natom_unitcell=len(vec)
 		phase=self.getPhase(np.array(k),natom_unitcell)
 		vec=np.einsum('ij,i->ij',np.tile(vec0.conjugate(),[self.natom/natom_unitcell,1]),phase)
-		phase1=self.getPhase(-np.array(k),natom_unitcell)
+		#phase1=self.getPhase(-np.array(k),natom_unitcell)
 		#print np.tile(vec.conjugate(),[self.natom/natom_unitcell,1])[:,0]
-		vec1=np.einsum('ij,i->ij',np.tile(vec0,[self.natom/natom_unitcell,1]),phase1)
+		#vec1=np.einsum('ij,i->ij',np.tile(vec0,[self.natom/natom_unitcell,1]),phase1)
 		#print vec[:,0]
 		if not self.test:
 			q=np.zeros(totalStep,dtype=np.complex)
-			q1=np.zeros(totalStep,dtype=np.complex)
+			#q1=np.zeros(totalStep,dtype=np.complex)
 			for i in range(self.natom):
 				fv=self.velocity_atom(i)
 				q+=np.array(fv).dot(vec[i])
-				q1+=np.array(fv).dot(vec1[i])
+				#q1+=np.array(fv).dot(vec1[i])
 			#q1=ifft(q)
 			q=fft(q)
-			q1=fft(q1)
+			#q1=fft(q1)
 			"""
 			result = np.correlate(q, q, mode='full', old_behavior=False)
 			keXcorr = result[result.size/2:] / result[result.size/2]
@@ -365,7 +382,7 @@ class vdos:
 			keFft = fft(keXcorr[:])
 			q=keFft
 			"""
-			q=q+q1
+			#q=q+q1
 			q=(q*q.conjugate()).real
 			q=q[:totalStep/2+1]
 		else:
@@ -388,20 +405,22 @@ class vdos:
 				fv=self.fourier_atom(i)
 				q+=np.array(fv).dot(vec[j])*phase[i]
 		"""
-		
+		return q
+	def modefit(self,iqp,ibr,k,freq,q):
+		totalStep=self.totalStep
 		x=np.linspace(0,1,totalStep/2+1)*1/2.0/self.timestep
 		q1=q
 		x1=x
 		df=1.0/(2.0*self.timestep)/(self.totalStep/2)
-		span=int(.5/df)
-		ori=int(freq/df)
+		span=int(1.5/df)
+		ori=q.argmax()#int(freq/df)
 		low=max(ori-1*span,0)
 		hi=min(ori+1*span,len(q)-1)
 		filter=range(low,hi)
 		x=x[filter]
 		q=q[filter]/1e10
 		#q=self.lowess(x,q)
-		q=self.smo(q,3)
+		#q=self.smo(q,3)
 		p0 = np.array([x[q.argmax()], 0.01, q[q.argmax()]]) #Initial guess
 		p=self.fitLife(x,q,p0)
 		p=np.abs(p)
@@ -410,7 +429,7 @@ class vdos:
 		
 		
 		if self.partsed:
-			xv=np.linspace(x.min(),x.max(),100)
+			xv=x#np.linspace(x.min(),x.max(),1000)
 			series(xlabel='Frequency (THz)',
 				ylabel='Single Phonon Power Spectrum',
 				datas=[(x,q,"origin"),
@@ -421,7 +440,7 @@ class vdos:
 			xv=np.linspace(x.min(),x.max(),100)
 			series(xlabel='Frequency (THz)',
 				ylabel='Single Phonon Power Spectrum',
-				datas=[(x1,q1,"origin"),
+				datas=[(x1,q1/1e10,"origin"),
 				(xv,self.lorentz(p,xv),"fitting")]
 				,linewidth=1
 				,filename='NMA/nma_%s_%s_%s_%s.png'%(iqp,ibr,str(k),freq))
@@ -430,7 +449,7 @@ class vdos:
 		
 		c='\t'.join(v)
 		print "[nma]",c
-		return c
+		return c,q1
 	def getpfactor(self,correlation_supercell=[10,10,1]):
 		from aces.lammpsdata import lammpsdata
 		atoms=lammpsdata().set_src('correlation_structure')
@@ -485,7 +504,7 @@ class vdos:
 		for ibr in range(pya.nbranch):
 			freq=pya.frequency(iqp,ibr)
 			vec=pya.atoms(iqp,ibr)
-			v=self.calculateLife((k,freq,vec),iqp,ibr)
+			v,q=self.calculateLife((k,freq,vec),iqp,ibr)
 			
 		return 0
 	def lifenmaq(self,filename="qpoints/qpoints.yaml",k=[0,0,0],correlation_supercell=[10,10,1],test=False):
@@ -496,6 +515,33 @@ class vdos:
 		self.testk=k
 		if not exists('NMA'):mkdir('NMA')
 		self.specialk(pya,map(float,k))
+	def allnmaq(self,filename="qpoints/qpoints.yaml",k=[0,0,0]):
+		self.all=True
+		assert exists('phis.h5')
+		self.phis=h5py.File('phis.h5')
+		self.lifenmaq(filename,k)
+	def allModeSed(self,iqp,ibr):
+		node='/%s/%s'%(iqp,ibr)
+		return np.array(self.phis[node])
+	def allnma(self,filename="qpoints/qpoints.yaml"):
+		pya=phononyaml(filename)
+		f=open('allnma.txt','w')
+		f.write('kx\tky\tkz\tfreq\tw0\tscatter\ttao\n')
+		self.all=True
+		c=h5py.File('allnma.h5')
+		assert exists('phis.h5')
+		self.phis=h5py.File('phis.h5')
+		for iqp in range(pya.nqpoint):
+			for ibr in range(pya.nbranch):
+				node='/%s/%s'%(iqp,ibr)
+				print node
+				if not node in c:
+					k=pya.qposition(iqp)
+					freq=pya.frequency(iqp,ibr)
+					vec=pya.atoms(iqp,ibr)
+					v,q=self.calculateLife((k,freq,vec),iqp,ibr)
+					c[node]=v
+				f.write('%s\n'%c[node][()])
 	def lifenma(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
 		self.pfactor=self.getpfactor(correlation_supercell)
 		pya=phononyaml(filename)
@@ -510,8 +556,9 @@ class vdos:
 					k=pya.qposition(iqp)
 					freq=pya.frequency(iqp,ibr)
 					vec=pya.atoms(iqp,ibr)
-					v=self.calculateLife((k,freq,vec),iqp,ibr)
+					v,q=self.calculateLife((k,freq,vec),iqp,ibr)
 					c[node]=v
+					c['/q/'+node]=q
 				f.write('%s\n'%c[node][()])
 	def lifesed(self,filename="qpoints/qpoints.yaml",correlation_supercell=[10,10,1]):
 
@@ -625,8 +672,10 @@ class vdos:
 		np.save('wtick.npy',x)
 		np.save('sed.npy',sed)
 	def fitLife(self,x,z,p0):
-		
-
+		u=np.zeros(len(p0)+1)
+		u[:len(p0)]=p0
+		u[-1]=1
+		p0=u
 		solp, ier = leastsq(self.errorfunc, 
                     p0, 
                     args=(x,z),
@@ -639,8 +688,8 @@ class vdos:
                     factor=0.1)
 		return solp
 	def lorentz(self,p,x):
-		return p[2] / ((x-p[0])**2 + p[1]**(2)/4.0)
+		return p[2] / ((x-p[0])**2 + p[1]**(2)/4.0)+p[3]
 
 	def errorfunc(self,p,x,z):
-		return np.log(self.lorentz(p,x))-np.log(z)
+		return self.lorentz(p,x)-z
 		

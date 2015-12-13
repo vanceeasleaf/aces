@@ -14,14 +14,15 @@ class structure(material):
 		self.laty=1
 		self.latz=1
 		self.timestep=self.units.metal.t(.55e-3)
-		self.elements=['H']
+		self.elements=['H','He']
 		self.fpubeta=1.0
 		self.fpug=0.0
 		self.creatbonds=1.2
-		self.fpua=False
+		self.fpua=True
 		self.fpub=False
 		self.usepre=True
 		self.nd=3
+		self.ihe=False
 	def setup(self):
 		if self.usepre:
 			self.premitive=np.diag([1.0/self.latx,1.0/self.laty,1.0])
@@ -29,7 +30,7 @@ class structure(material):
 		if self.fpua==True:a='fpua'
 		if self.fpub:a='fpub'
 		#k r0 beta g
-		self.potential='bond_style	%s\nbond_coeff	* 1.0 1.0 %s %s\n'%(a,self.fpubeta,self.fpug)
+		self.potential='neighbor 2.0 nsq\nbond_style	%s\nbond_coeff	* 1.0 1.0 %s %s\n'%(a,self.fpubeta,self.fpug)
 		#self.potential='bond_style	harmonic\nbond_coeff	* 1.0 1.0\n'
 		#self.potential+='\npair_style  none'
 	def lmp_structure(self):
@@ -37,8 +38,12 @@ class structure(material):
 		atoms=prototype(self.latx,self.laty,self.latz)
 		atoms.set_pbc([self.xp,self.yp,self.zp])
 		atoms.center()
-		return atoms
-		
+		if self.ihe:
+			symbols=atoms.get_chemical_symbols()
+			for i in self.ihe:
+				symbols[i]='He'
+			atoms.set_chemical_symbols(symbols)
+		return atoms	
 	
 	def prototype(self,latx,laty,latz):
 		#armchair

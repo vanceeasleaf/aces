@@ -7,7 +7,7 @@ def minimize(m):
 	else: raise Exception('Unknow minimize type!')
 def minimize_vasp(m):
 	s="""SYSTEM = - local optimisation
-PREC = accurate
+PREC = high
 ENCUT=%f
 EDIFF = 1e-8
 IBRION = 2

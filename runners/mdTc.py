@@ -61,6 +61,10 @@ class runner(Runner):
 		print m.potential
 		print "reset_timestep 0"
 		print "velocity all create %f %d mom yes rot yes dist gaussian"%(m.T,m.seed)
+		if m.dimension==1:
+			print "velocity  all set NULL 0.0 0.0 units box"
+		elif m.dimension==2:
+			print "velocity  all set NULL NULL 0.0 units box"
 		hook.doAction('equ')
 		
 		#/* 定时输出dump文件并按id排序*/

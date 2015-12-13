@@ -87,7 +87,7 @@ class nvtDevice:
 		print "variable          delta_temp   equal  c_up_temp-c_down_temp"
 	def renderEqu(self):
 		#print "velocityRamp g_nve create %f %d  vx %f %f x %f %f mom yes rot yes dist gaussian"%(self.T,self.seed,self.Tlo,self.Thi,self.hotl2[-1],self.hotr1[-1])
-		print "velocity g_nve create %f %d   mom yes rot yes dist gaussian"%(self.T,self.seed)
+		#print "velocity g_nve create %f %d   mom yes rot yes dist gaussian"%(self.T,self.seed)
 		print "velocity stay set 0 0 0"
 		print "fix getEqu main nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 

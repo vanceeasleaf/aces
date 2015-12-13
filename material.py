@@ -155,7 +155,8 @@ class material:
 		writevasp(atoms)
 		#write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
 		self.POSCAR2data()
-		atoms.write('structure.png')	
+		if len(atoms)<1000:
+			atoms.write('structure.png')	
 	def writeatoms(self,atoms,label='atoms'):
 		mkcd(label)
 		self.watoms(atoms)

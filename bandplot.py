@@ -139,6 +139,8 @@ def plotband(factor=1.0,
                 plt.axvline(x=v,linestyle='--',  linewidth=.5, color='black')
 
         for j, freqs in enumerate(np.array(frequencies).T):
+            print freqs
+            if (np.abs(freqs)<1e-0).all():continue
             if options.is_gnuplot:
                 for d, f in zip(distances, freqs * options.factor):
                     print d,f
@@ -260,6 +262,7 @@ def plotbanddos(freq,dos,factor=1.0,
                 plt.axvline(x=v,linestyle='--',  linewidth=.5, color='black')
 
         for j, freqs in enumerate(np.array(frequencies).T):
+            if (np.abs(freqs)<1).all():continue
             if options.is_gnuplot:
                 for d, f in zip(distances, freqs * options.factor):
                     print d,f

@@ -78,6 +78,22 @@ PRIMITIVE_AXIS = %s
 		for qq in q:
 			s+="%s\n"%m.toString(qq)
 		write(s,'QPOINTS')
+	def generate_vqconf(self,q):
+		#generate q.conf
+		m=self.m
+
+		mesh="""DIM = %s
+ATOM_NAME = %s
+FORCE_CONSTANTS = READ
+GROUP_VELOCITY=.TRUE.
+QPOINTS=.TRUE.
+PRIMITIVE_AXIS = %s
+"""%(m.dim,' '.join(m.elements),toString(m.premitive.flatten()))
+		write(mesh,'q.conf')	
+		s="%s\n"%len(q)
+		for qq in q:
+			s+="%s\n"%m.toString(qq)
+		write(s,'QPOINTS')
 	def generate_supercells(self):
 		m=self.m
 		#generate supercells
@@ -206,6 +222,21 @@ Monkhorst-Pack
 	def getqpoints(self,q):
 		self.generate_qconf(q)
 		passthru(config.phonopy+"--tolerance=1e-4 q.conf")
+	def getvqpoints(self,q):
+		self.generate_vqconf(q)
+		passthru(config.phonopy+"--tolerance=1e-4 q.conf")
+		data =parseyaml('qpoints.yaml')
+		file=open("v.txt",'w')
+		for phonon in data['phonon']:
+			qp=phonon['q-position']
+			for band in phonon['band']:
+				frequency=band['frequency']
+				v=np.array(band['group_velocity'])
+				v=np.linalg.norm(v)
+				print >>file,"%s\t%f\t%f"%('\t'.join(map(str,qp)),frequency,v)
+		file.close()
+		v=np.loadtxt('v.txt')
+		plot((v[:,3],'Frequency (THz)'),(v[:,4],'Group Velocity (Angstrom/ps)'),'v_freq.png',grid=True,scatter=True)
 	def getDos(self):
 		self.generate_meshconf()	
 		passthru(config.phonopy+"--tolerance=1e-4 --dos  mesh.conf")

@@ -1,13 +1,15 @@
 import numpy as np
 from aces.tools import exists
 class lineManager:
-	def __init__(self,filename):
+	def __init__(self,filename,cache=True):
 		self.f=open(filename)
+		self.cache=cache
 		self._line=self.parse(self.f,filename)		
 		self.nline=len(self._line)
+		
 	def parse(self,f,filename):
 		npy=filename+'.npy'
-		if exists(npy):return np.load(npy)
+		if self.cache and exists(npy)  :return np.load(npy)
 		print "scanning the file %s"%filename
 		_line=[0]
 		while f.readline():

@@ -9,7 +9,10 @@ class gkDevice:
 
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 	def renderElim(self):
-		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
+		if self.nvt:
+			print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
+		else:
+			print "fix nve all nve"
 	def renderFlux(self):
 		xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=self.box
 		v=lx*ly*lz

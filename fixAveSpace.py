@@ -2,7 +2,7 @@ import numpy as np
 from aces.lineManager import  lineManager
 class fixAveSpace:
 	def __init__(self,filename):
-		lm=lineManager(filename)
+		lm=lineManager(filename,cache=False)
 		self.title=lm.getLine(0).replace("# ","")
 		s=lm.getLine(2).replace("# ","")
 		labels=s.split(' ')
@@ -11,7 +11,6 @@ class fixAveSpace:
 		self.lm=lm
 		self.snapStep,self.nbin=self.getNbin()
 		self.nstep=(lm.nline-3)/(self.nbin+1)
-		#assert self.nstep*(self.nbin+1)+3==lm.nline
 		self.istep=0
 		
 	def getNbin(self):

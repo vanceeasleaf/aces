@@ -2,7 +2,7 @@ import numpy as np
 from aces.lineManager import  lineManager
 class fixAveTime:
 	def __init__(self,filename):
-		lm=lineManager(filename)
+		lm=lineManager(filename,cache=False)
 		self.title=lm.getLine(0).replace("# ","")
 		s=lm.getLine(1).replace("# ","")
 		labels=s.split(' ')

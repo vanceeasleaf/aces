@@ -16,7 +16,7 @@ class mpDevice:
 		hook.addAction('elimination',self.renderElim)
 		hook.addAction('flux',self.renderFlux)
 		hook.addAction('swap',self.renderSwap)
-		
+		self.m=m
 	def renderRegion(self):
 		box,upP,deta,nswap=self.para
 		xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=box
@@ -52,7 +52,10 @@ class mpDevice:
 	def renderEqu(self):
 		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
 	def renderElim(self):
-		print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
+		if self.nvt:
+			print "fix getEqu  all  nvt temp %f %f %f"%(self.T,self.T,self.dtime)
+		else:
+			print "fix nve all nve"
 	def renderFlux(self):
 		print "fix	temp_profile    all    ave/spatial  1  %d  %d  x  lower  %f      v_temp  v_jx file  tempProfile.txt  norm sample units box"%(self.aveRate,self.aveRate,self.deta)
 		# 输出热流空间分布,不计算热导率

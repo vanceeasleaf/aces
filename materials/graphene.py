@@ -10,7 +10,7 @@ class structure(material):
 		self.gnrtype='zigzag'
 		self.tilt=False
 		self.pi3=False
-		self.thick=10.0
+		self.az=10.0
 		self.pot=False
 	def setup(self):
 		self.bandpoints=ibz_points['hexagonal']
@@ -70,7 +70,7 @@ class structure(material):
 		for i in range(6):			
 			atom.rotate('z',pi/3*i)
 			atoms.extend(atom.copy())
-		atoms.set_cell([3.0,sqrt(3),self.thick])
+		atoms.set_cell([3.0,sqrt(3),self.az])
 		return atoms
 			
 		

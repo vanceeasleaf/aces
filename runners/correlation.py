@@ -68,17 +68,24 @@ class runner(Runner):
 			print >>f,"region	main	block   INF  INF INF  INF INF  INF units box"
 			print >>f,"group    main    region  main"
 		print >>f,"velocity main create %f %d mom yes rot yes dist gaussian"%(m.T,m.seed)
+		if m.dimension==1:
+			print >>f, "velocity  main set NULL 0.0 0.0 units box"
+		elif m.dimension==2:
+			print >>f,"velocity  main set NULL NULL 0.0 units box"
 		print >>f,"fix getEqu  main  nvt temp %f %f %f"%(m.T,m.T,m.dtime)
 		print >>f,"dump dump1 all atom %d dump.lammpstrj"%(m.Cinterval*500)
 		print >>f,"dump_modify  dump1 sort id"
 		print >>f,"run %d"%m.equTime
 		print >>f,"unfix getEqu"
 		print >>f,"reset_timestep 0"
-		#print >>f,"fix nve main nve"
-		print >>f,"fix getEqu  main  nvt temp %f %f %f"%(m.T,m.T,m.dtime)
+		if not m.nvt:
+			print >>f,"fix nve main nve"
+		else:
+			print >>f,"fix getEqu  main  nvt temp %f %f %f"%(m.T,m.T,m.dtime)
 		#print >>f,"dump lala main custom %s velocity.txt id type vx vy vz"%m.Cinterval
 		#print >>f,"dump_modify  lala sort id"
-		print >>f,"fix phonon1 all phonon %s %s 0 phana.map.in phonon"%(m.Cinterval,m.Ctime)
+		if m.usephana:
+			print >>f,"fix phonon1 all phonon %s %s 0 phana.map.in phonon"%(m.Cinterval,m.Ctime)
 		if m.runner=="dynaphopy":
 			print >>f,"dump lala main custom %s  dynaphopy.lammpstrj x y z"%m.Cinterval
 			print >>f,"dump_modify  lala sort id"
@@ -94,7 +101,7 @@ class runner(Runner):
 			self.phanados()
 		if m.phanaonly:
 			return
-		if not m.runner=="dynaphopy":
+		if not m.runner=="dynaphopy" and not m.runner=='lifetime':
 			self.dos()
 		#rm("velocity.txt")
 	def dos(self):
