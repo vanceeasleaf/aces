@@ -23,6 +23,7 @@ class structure(material):
 		self.usepre=True
 		self.nd=3
 		self.ihe=False
+		self.fpuk=1.0
 	def setup(self):
 		if self.usepre:
 			self.premitive=np.diag([1.0/self.latx,1.0/self.laty,1.0])
@@ -30,7 +31,7 @@ class structure(material):
 		if self.fpua==True:a='fpua'
 		if self.fpub:a='fpub'
 		#k r0 beta g
-		self.potential='neighbor 2.0 nsq\nbond_style	%s\nbond_coeff	* 1.0 1.0 %s %s\n'%(a,self.fpubeta,self.fpug)
+		self.potential='neighbor 2.0 nsq\nbond_style	%s\nbond_coeff	* %s 1.0 %s %s\n'%(a,self.fpuk,self.fpubeta,self.fpug)
 		#self.potential='bond_style	harmonic\nbond_coeff	* 1.0 1.0\n'
 		#self.potential+='\npair_style  none'
 	def lmp_structure(self):

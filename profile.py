@@ -35,7 +35,7 @@ class profile:
 		dto=dict(log="step\tkappa\n",plots=[])
 		coord,aveN,aveQuants=fas.iterate(begin,self.kappaConverge,snapStep,upP,deta,S,tcfactor,zfactor,dto)
 		tools.write(dto['log'],'convergenceK.txt')
-		series('x(Augstrom)','temperature(K)',dto['plots'],'convergenceT.png',linewidth=1,legend=True)
+		series('x(Augstrom)','temperature(K)',dto['plots'],'convergenceT.png',linewidth=1,legend=False)
 		filter=aveN[:]>1# at least 1 atom in the bin
 		aveC=coord[filter]
 		aveN=aveN[filter]

@@ -15,6 +15,9 @@ def shell_exec(cmd):
 	return c.strip()
 def toString(m,sep=' '):
     return sep.join(map(str,m))
+def qdel(a):
+    x="qdel "+toString(a)
+    passthru(x)
 def passthru(cmd):
 	#print os.popen(cmd).read()
 	#sys.stdout.flush()

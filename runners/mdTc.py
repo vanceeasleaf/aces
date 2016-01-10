@@ -7,6 +7,16 @@ import aces.config as config
 from ase.io import read
 from ase.io.vasp import write_vasp
 from aces.runners import Runner
+import numpy as np
+from aces.graph import plot,series
+from numpy.fft import fft,rfft,irfft
+def acf(a):
+	length = len(a)
+	print "start fourier transform of correlation"
+	a = rfft(a,axis=0)
+	print "start inverse fourier transform of correlation"
+	c = irfft(a*a.conjugate(),axis=0)/length
+	return c
 class Hook:
 	def __init__(self):
 		self.labels={}
@@ -87,11 +97,85 @@ class runner(Runner):
 		if(m.dumpv):
 			print "dump dump2 all custom %d dump.velocity type vx vy vz"%(m.dumpRate)
 			print "dump_modify  dump2 sort id"
-
+		if m.dimension==1:
+			print "fix   1d1 all setforce NULL 0. 0."
 		print "run	%d"%(m.runTime)
 
 	def runcmd(self):
 		return config.mpirun+"  %s "%self.m.cores+config.lammps+" <input  >log.out"
-	
+	def post(self):
+		m=self.m
+		if m.method=="greenkubo":
+			if m.fourierTc:
+				self.correlation()
+			elif m.computeTc:
+				self.reduce(1,m.runTime)
+			
+	def correlation(self):
+		m=self.m
+		if not exists("jin.npy"):
+			print "loading jin.txt"
+			j=np.loadtxt('jin.txt',skiprows=2)[:,1]
+			np.save('jin.npy',j)
+		j=np.load('jin.npy')
+		print "loaded"
+		n=len(j)
+		if not exists("jj0.npy"):
+			
+			jj0=acf(j)[:n/2+1]
+			np.save('jj0.npy',jj0)
+		jj0=np.load('jj0.npy')[:m.aveRate]
+
+		xlo,xhi,ylo,yhi,zlo,zhi,lx,ly,lz=m.box
+		v=lx*ly*lz
+		factor=m.corRate*m.timestep/(v*m.kb*m.T*m.T)*m.zfactor*m.tcfactor
+		x=range(len(jj0))
+		plot([x,'Correlation Time (ps)'],[jj0,'Heat Flut Correlation Function'],'acf.png')
+		plot([x,'Correlation Time (ps)'],[jj0.cumsum()*factor,'Thermal Conductivity (W/mK)'],'kappa.png')
+
+	def reduce(self,n=1,name0=500000):
+		name='ac'+str(name0)+'.dat'
+		m=self.m
+		xs=[]
+		for i in range(n):
+			dir='../%d/'%i
+			print dir
+			x=np.loadtxt(dir+name)
+			xs.append(x[:,1])
+		ts=x[:,0]
+		xs=np.array(xs)
+		avexs=xs.mean(axis=0)
+		np.savetxt('aveac.txt',np.c_[ts,avexs])
+		
+		plot([ts,'Correlation Time (ps)'],[avexs,'Heat Flut Correlation Function'],'aveac.png')
+		datas=[]
+		for i in range(n):
+			datas.append([ts,xs[i],'b'])
+		series(xlabel='Correlation Time (ps)',ylabel='Heat Flut Correlation Function',
+			datas=datas,filename='ac.png',legend=False)
+		name='tc'+str(name0)+'.dat'
+		xs=[]
+		for i in range(n):
+			dir='../%d/'%i
+			print dir
+			x=np.loadtxt(dir+name)
+			xs.append(x[:,1])
+		ts=x[:,0]
+		xs=np.array(xs)
+		avexs=xs.mean(axis=0)
+		np.savetxt('avetc.txt',np.c_[ts,avexs])
+		plot([ts,'Correlation Time (ps)'],[avexs,'Thermal Conductivity (W/mK)'],'avetc.png')
+		datas=[]
+		for i in range(n):
+			datas.append([ts,xs[i],'b'])
+		series(xlabel='Correlation Time (ps)',ylabel='Thermal Conductivity (W/mK)',
+			datas=datas,filename='tc.png',legend=False)
+
+	def fftac(self):
+		x=np.loadtxt('aveac.txt')
+		N=len(x)/100
+		y=np.fft.rfft(x[:,1])[:N/2+1]
+		plot([np.arange(N/2+1),'Frequency (Thz)'],[(y*y.conjugate()).real,'Power Spectrum '],'powerspect.png')
+
 
 

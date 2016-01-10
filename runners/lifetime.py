@@ -14,6 +14,9 @@ def BE(w,T):
 	#return np.exp(-t)
 	return np.nan_to_num(1.0/(np.exp(t)-1.0))
 class runner(Runner):
+	def postp(self):
+		prun=Prun(self.m)
+		prun.postp()
 	def generate(self):
 		prun=Prun(self.m)
 		prun.run()
@@ -107,6 +110,35 @@ class runner(Runner):
 		#X,W=np.meshgrid(x,w)
 		#scatter(X,W,sed,'Wave Vector','Frequency (THz)','sed.png',marker_size=2,marker='s')
 		imshow(np.log(sed.T),'sed.png',extent=[0,1,0,1])
+	def reducephi(self,nd,*pn):
+		from aces.qpointsyaml import phononyaml
+		pya=phononyaml("qpoints/qpoints.yaml")
+		nq=pya.nqpoint
+		nbr=pya.nbranch
+
+		import h5py
+		nma=h5py.File('lifenma.h5')
+		q=np.array(nma['/q/0/0'])
+		n=len(q)
+		v=np.zeros([nq*nbr,n])
+		def onedir(dir,num):
+			print dir
+			nma=h5py.File(dir)
+			for i in range(nq):
+				for j in range(nbr):
+					node='/%d/%d'%(i,j)
+					v[i*nbr+j,:]+=np.array(nma[node])*num
+			return num
+		N=0
+		for i in range(nd):
+			dir,num=pn[i*2:i*2+2]
+			N+=onedir(dir,num)
+		v/=N
+		phis=h5py.File('phis.h5')
+		for i in range(nq):
+			for j in range(nbr):
+				node='/%d/%d'%(i,j)
+				phis[node]=v[i*nbr+j,:]
 	def reduce(self,nd,*pn):
 		from aces.qpointsyaml import phononyaml
 		pya=phononyaml("qpoints/qpoints.yaml")
@@ -128,7 +160,7 @@ class runner(Runner):
 			return len(num)
 		N=0
 		for i in range(nd):
-			dir,num=pn[i:i+2]
+			dir,num=pn[i*2:i*2+2]
 			N+=onedir(dir,num)
 		#N+=onedir('../q3.1',30)
 		#N+=onedir('../q3.2',90)

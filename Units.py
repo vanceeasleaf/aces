@@ -130,14 +130,14 @@ constants['lj']['angstrom']=constants["si"]['angstrom']/constants["si"]['ar_sigm
 constants['lj']['femtosecond']=constants["si"]['femtosecond']*sqrt(constants["si"]['ar_epsilon']/constants["si"]['ar_mass']/constants["si"]['ar_sigma']/constants["si"]['ar_sigma'])
 constants['lj']['kelvin']=constants["si"]['kelvin']*(constants["si"]['boltz']/constants["si"]['ar_epsilon'])
 class Units:
-	def __init__(self,targetUnit):
+	def __init__(self,targetUnit,mass=39.95):
 		targetUnit=str(targetUnit)
-		self.metal=unitBase(targetUnit,'metal')
-		self.lj=unitBase(targetUnit,'lj')
-		self.real=unitBase(targetUnit,'real')
-		self.si=unitBase(targetUnit,'si')
-		self.electron=unitBase(targetUnit,'electron')
-		self.cgs=unitBase(targetUnit,'cgs')
+		self.metal=unitBase(targetUnit,'metal',mass=mass)
+		self.lj=unitBase(targetUnit,'lj',mass=mass)
+		self.real=unitBase(targetUnit,'real',mass=mass)
+		self.si=unitBase(targetUnit,'si',mass=mass)
+		self.electron=unitBase(targetUnit,'electron',mass=mass)
+		self.cgs=unitBase(targetUnit,'cgs',mass=mass)
 		# current unit of environment
 		self.targetUnit=targetUnit
 		units=targetUnit
@@ -148,9 +148,12 @@ class Units:
 	def __getattr__( self, name ):
 		return constants[self.targetUnit][name]
 class unitBase:
-	def __init__(self,targetUnit,srcUnits):
+	def __init__(self,targetUnit,srcUnits,mass=39.95):
 		self.targetUnit=targetUnit
 		self.srcUnits=srcUnits
+		r=39.95/mass
+		constants['lj']['femtosecond']*=sqrt(r)
+		self.mass=mass
 	def t(self,val=1.0):
 		return  val*self.unitConvert('t')
 	def L(self,val=1.0):
@@ -165,9 +168,10 @@ class unitBase:
 		units=self.targetUnit
 		srcUnits=self.srcUnits
 		if type=='L':return constants[units]['angstrom']/constants[srcUnits]['angstrom']
-		if type=="t":return constants[units]['femtosecond']/constants[srcUnits]['femtosecond']
+		if type=="t":
+			return constants[units]['femtosecond']/constants[srcUnits]['femtosecond']
 		if type=="T":return constants[units]['kelvin']/constants[srcUnits]['kelvin']
-		if type=="M":return constants[units]['ar_mass']/constants[srcUnits]['ar_mass']
+		if type=="M":return self.mass/constants[srcUnits]['ar_mass']
 		if type=="E":
 			a=constants[units]['boltz']*constants[units]['kelvin']
 			b=constants[srcUnits]['boltz']*constants[srcUnits]['kelvin']

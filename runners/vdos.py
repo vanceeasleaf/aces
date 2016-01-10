@@ -346,6 +346,8 @@ class vdos:
 
 	def calculateLife(self,eigen,iqp,ibr):
 		q=self.modeSed(eigen,iqp,ibr)
+		if exists('velocity.h5md'):
+			passthru('rm velocity.h5md')
 		k,freq,vec=eigen
 		return self.modefit(iqp,ibr,k,freq,q)
 	def modeSed(self,eigen,iqp,ibr):

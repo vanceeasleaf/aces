@@ -1,7 +1,7 @@
 import numpy as np
 from aces.tools import exists
 class lineManager:
-	def __init__(self,filename,cache=True):
+	def __init__(self,filename,cache=False):
 		self.f=open(filename)
 		self.cache=cache
 		self._line=self.parse(self.f,filename)		
@@ -15,7 +15,8 @@ class lineManager:
 		while f.readline():
 			_line.append(f.tell())
 		del _line[-1]
-		np.save(npy,_line)
+		if self.cache:
+			np.save(npy,_line)
 		return _line
 		
 	def getLine(self,i):

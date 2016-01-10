@@ -111,7 +111,8 @@ def tDisorder(result):
 	
 def drawStructure():
 	atoms=read('minimize/range',format='lammps')
-	atoms.write('minimize.png')		
+	if len(atoms)<200:
+		atoms.write('minimize.png')		
 	
 def ineq(ob,result):
 	now=pwd()

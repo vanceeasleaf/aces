@@ -108,15 +108,18 @@ class nvtDevice:
 			tmstat='nvt temp'
 			r=""
 		for i in range(self.nstat):
-			print "fix   %s %s %s  %f %f  %s %s"%(hot[i],hot[i],tmstat,self.Thi,self.Thi,self.dtime,r)
-			print "fix   %s %s %s  %f %f  %s %s"%(cold[i],cold[i],tmstat,self.Tlo,self.Tlo,self.dtime,r)
+			
 			if self.langevin==0:
+				print "fix   %s %s %s  %f %f  %s %s"%(hot[i],hot[i],tmstat,self.Thi,self.Thi,self.dtime,r)
+				print "fix   %s %s %s  %f %f  %s %s"%(cold[i],cold[i],tmstat,self.Tlo,self.Tlo,self.dtime,r)
 				print "compute my%s %s temp/com"%(hot[i],hot[i])
 				print "fix_modify %s temp my%s"%(hot[i],hot[i])
 				print "compute my%s %s temp"%(cold[i],cold[i])
 				print "compute_modify my%s extra 0"%(cold[i])
 				print "fix_modify %s temp my%s"%(cold[i],cold[i])
 			else:
+				print "fix   %s %s %s  %f %f  %s %s"%(hot[i],hot[i],tmstat,self.Thi*3.0/self.dimension,self.Thi*3.0/self.dimension,self.dtime,r)
+				print "fix   %s %s %s  %f %f  %s %s"%(cold[i],cold[i],tmstat,self.Tlo*3.0/self.dimension,self.Tlo*3.0/self.dimension,self.dtime,r)
 				print "compute my%s %s temp"%(hot[i],hot[i])
 				print "fix_modify %s temp my%s"%(hot[i],hot[i])
 				print "compute my%s %s temp"%(cold[i],cold[i])
