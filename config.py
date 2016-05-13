@@ -9,6 +9,12 @@ def dirpath(a):
 
 php       = exepath("php/bin/php")
 phana     = exepath("soft/lammps-25Sep15/tools/phonon/phana")
+espresso  = dirpath('soft/QE+EPW/espresso-4.0.3/')
+epw		  = exepath(espresso+"EPW/bin/epw.x",abs=True)
+ph        =	exepath(espresso+"/bin/ph.x",abs=True)
+pw        =	exepath(espresso+"/bin/pw.x",abs=True)
+boltztrap = exepath("soft/boltztrap-1.2.5/src/BoltzTraP")
+x_trans = exepath("soft/boltztrap-1.2.5/src/x_trans")
 phanalib  = dirpath("soft/phona")
 lammps    = exepath("soft/lammps-25Sep15/src/lmp_mpi")
 lammpspot = dirpath("soft/lammps-25Sep15/potentials")

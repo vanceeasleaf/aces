@@ -103,6 +103,11 @@ PRIMITIVE_AXIS = %s
 	
 		
 	def getVaspRun_vasp(self):
+		m=self.m 
+		if m.isym:
+			sym="ISYM = 1"
+		else:
+			sym="ISYM = 0"
 		s="""SYSTEM=calculate energy
 PREC = High
 IBRION = -1
@@ -114,7 +119,8 @@ LREAL = .FALSE.
 ADDGRID = .TRUE.
 LWAVE = .FALSE.
 LCHARG = .FALSE.
-"""%self.m.ecut
+%s
+"""%(self.m.ecut,sym)
 		write(s,'INCAR')
 		m=self.m
 		m.writePOTCAR()
@@ -125,7 +131,7 @@ Monkhorst-Pack
 0  0  0
 	"""%' '.join(map(str,m.ekpoints))
 		write(s,'KPOINTS')
-		if self.jm:
+		if 'jm' in self.__dict__:
 			from aces.jobManager import pbs
 			path=pwd()
 			pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.mpirun+" 4 "+config.vasp+' >log.out')
