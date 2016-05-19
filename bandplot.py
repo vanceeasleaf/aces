@@ -36,7 +36,8 @@
 
 import sys
 import numpy as np
-
+import matplotlib
+matplotlib.use('Agg')
 try:
     import yaml
 except ImportError:
@@ -82,7 +83,7 @@ def plotband(factor=1.0,
                         output_filename='band.png',
                         labels=r'Gamma X Gamma',
                         show_legend=False,
-                        title=None,filename0='band.yaml'
+                        title=None,filename0='band.yaml',args=[],legends=[]
                         ):
     options=object(factor=factor,
                         f_max=f_max, 
@@ -95,7 +96,7 @@ def plotband(factor=1.0,
                         show_legend=show_legend,
                         title=title
                         )
-    args=[]
+
     if not options.is_gnuplot:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -105,7 +106,7 @@ def plotband(factor=1.0,
             from matplotlib import rc
             rc('text', usetex=False)
 
-    colors = ['r-', 'g-', 'g-', 'c-', 'm-', 'y-', 'k-', 'b--', 'g--', 'r--', 'c--', 'm--', 'y--', 'k--']
+    colors = ['r-', 'g-', 'b-', 'c-', 'm-', 'y-', 'k-', 'b--', 'g--', 'r--', 'c--', 'm--', 'y--', 'k--']
     if options.is_points:
         colors = [x + 'o' for x in colors]
 
@@ -122,6 +123,8 @@ def plotband(factor=1.0,
     min1=100000
     max1=-100000
     for i, filename in enumerate(filenames):
+        if len(legends)==0:legend=filename
+        else:legend=legends[i]
         string = open(filename).read()
         data = yaml.load(string, Loader=Loader)
         distances, frequencies, segment_positions = get_plot_data(data)
@@ -139,7 +142,6 @@ def plotband(factor=1.0,
                 plt.axvline(x=v,linestyle='--',  linewidth=.5, color='black')
 
         for j, freqs in enumerate(np.array(frequencies).T):
-            print freqs
             if (np.abs(freqs)<1e-0).all():continue
             if options.is_gnuplot:
                 for d, f in zip(distances, freqs * options.factor):
@@ -148,7 +150,7 @@ def plotband(factor=1.0,
             else:
                 if j==0:
                     plt.plot(distances, freqs * options.factor, colors[i],
-                             label=filename)
+                             label=legend)
                 else:
                     plt.plot(distances, freqs * options.factor, colors[i])
 
@@ -167,7 +169,7 @@ def plotband(factor=1.0,
             plt.ylim(ymin = options.f_min)
         else: plt.ylim(ymin=min1* options.factor)
         plt.axhline(y=0, linestyle=':', linewidth=0.5, color='g')
-        if len(filenames) == 1:
+        if len(filenames) == 1 or True:
             xticks = segment_positions + [distances[-1]]
             if options.labels:
                 labels = [x.replace('Gamma',r'$\Gamma$') for x in options.labels.split()]
