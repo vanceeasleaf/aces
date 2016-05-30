@@ -79,7 +79,7 @@ class profile:
 			pt21=cter+upP;pt22=m-1-upP
 		return (pt11,pt12,pt21,pt22)
 	def getSideSlope(self,aveC,aveTemp,aveN,avejx,pt11,pt12):
-		slope1=self.slope(aveC,aveTemp,pt11,pt12)
+		slope1=self.slopeDiff(aveC,aveTemp,pt11,pt12)
 		slope1=np.abs(slope1)
 		savejx=avejx[pt11:pt12+1]
 		saveN=aveN[pt11:pt12+1]
@@ -101,7 +101,7 @@ class profile:
 		method=self.method
 		if(method=="nvt"):
 			fat=fixAveTime("nvtWork.txt")
-			fx=fat.getSlopes(begin)[:,0]
+			fx=.5*(fat.getSlopes(begin)[:,0]-fat.getSlopes(begin)[:,1])
 			fx=np.abs(fx)/timestep/S
 			flux_src=fx[-1]
 		
@@ -129,7 +129,8 @@ class profile:
 		if istep<len(fx):return fx[istep]
 		else: 
 			return fx[-1]
-
+	def slopeDiff(self,x,y,pt1,pt2):
+		return (y[pt2]-y[pt1])/(x[pt2]-x[pt1])
 	def slope(self,x,y,pt1,pt2):
 		n=pt2-pt1+1;
 		sxy=0.0;sx=0.0;sy=0.0;sx2=0.0;
