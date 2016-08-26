@@ -17,7 +17,8 @@ class structure(material):
 			['Sn','S' ],
 			['Sn','Se'],
 			['Ge','S' ],
-			['Ge','Se']
+			['Ge','Se'],
+			['Sn','Te']
 		]
 		self.elements=es[self.choice]
 		self.bandpoints=ibz_points['orthorhombic']

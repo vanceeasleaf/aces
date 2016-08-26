@@ -134,7 +134,10 @@ Monkhorst-Pack
 		if 'jm' in self.__dict__:
 			from aces.jobManager import pbs
 			path=pwd()
-			pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.mpirun+" 4 "+config.vasp+' >log.out')
+			if m.queue=="q3.4":
+				pb=pbs(queue=m.queue,nodes=12,procs=1,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
+			else:
+				pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.mpirun+" 4 "+config.vasp+' >log.out')
 			self.jm.reg(pb)
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
@@ -217,6 +220,10 @@ Monkhorst-Pack
 		
 		if m.phofc:return self
 		self.postp()
+	def get_force_sets(self):
+		files=shell_exec("ls dirs").split('\n')
+		files=map(lambda x:x.replace('dir_',''),files)
+		self.force_constant(files)
 	def postp(self):
 		self.getband()
 		self.getDos()
