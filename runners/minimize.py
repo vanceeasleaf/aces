@@ -6,6 +6,10 @@ def minimize(m):
 	elif m.engine=="vasp":minimize_vasp(m)
 	else: raise Exception('Unknow minimize type!')
 def minimize_vasp(m):
+	if m.isym:
+		sym="ISYM = 1"
+	else:
+		sym="ISYM = 0"
 	s="""SYSTEM = - local optimisation
 PREC = high
 ENCUT=%f
@@ -14,13 +18,14 @@ IBRION = 2
 NSW=100
 ISIF = 3
 ISMEAR = 0 ; SIGMA = 0.1
+POTIM=0.01
 ISTART = 0
 LWAVE = FALSE
 LCHARG = FALSE
 EDIFFG = -0.01
 LREAL=FALSE
-LPLANE=.TRUE.
-"""%m.ecut
+%s
+"""%(m.ecut,sym)
 	write(s,'INCAR')
 	m.structure()
 	m.writePOTCAR()

@@ -137,7 +137,7 @@ Monkhorst-Pack
 			if m.queue=="q3.4":
 				pb=pbs(queue=m.queue,nodes=12,procs=1,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
 			else:
-				pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.mpirun+" 4 "+config.vasp+' >log.out')
+				pb=pbs(queue=m.queue,nodes=1,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
 			self.jm.reg(pb)
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
