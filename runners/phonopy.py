@@ -113,14 +113,15 @@ PREC = High
 IBRION = -1
 ENCUT = %f
 EDIFF = 1.0e-8
-ISMEAR = 0; SIGMA = 0.01
+ISMEAR = -5; SIGMA = 0.01
 IALGO = 38
 LREAL = .FALSE.
 ADDGRID = .TRUE.
 LWAVE = .FALSE.
 LCHARG = .FALSE.
+NPAR = %d
 %s
-"""%(self.m.ecut,sym)
+"""%(self.m.ecut,m.nodes,sym)
 		write(s,'INCAR')
 		m=self.m
 		m.writePOTCAR()

@@ -13,7 +13,7 @@ class pbs:
 	def submit(self):
 		cmd="cd %s;qsub %s 2>&1"%(self.path,self.filename)
 		debug(cmd)
-
+		print cmd
 		x=self.ssh_cmd('xggong','cluster',cmd)
 		#assert not x.strip()==''
 		debug(x)
