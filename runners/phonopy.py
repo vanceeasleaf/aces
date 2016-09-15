@@ -44,7 +44,7 @@ class runner(Runner):
 ATOM_NAME = %s
 MP = %s
 EIGENVECTORS=.TRUE.
-FORCE_CONSTANTS = WRITE
+FORCE_CONSTANTS = READ
 MESH_SYMMETRY = .FALSE.
 PRIMITIVE_AXIS = %s
 """%(m.dim,' '.join(m.elements),' '.join(map(str,m.kpoints)),toString(m.premitive.flatten()))
@@ -138,7 +138,7 @@ Monkhorst-Pack
 			if m.queue=="q3.4":
 				pb=pbs(queue=m.queue,nodes=12,procs=1,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
 			else:
-				pb=pbs(queue=m.queue,nodes=1,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
+				pb=pbs(queue=m.queue,nodes=2,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 24 "+config.vasp+' >log.out')
 			self.jm.reg(pb)
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
@@ -302,6 +302,7 @@ Monkhorst-Pack
 ATOM_NAME = %s
 BAND = %s 
 BAND_POINTS = 101
+FORCE_CONSTANTS = READ
 MESH_SYMMETRY = .FALSE.
 PRIMITIVE_AXIS = %s
 """%(m.dim,' '.join(m.elements),bpath,toString(m.premitive.flatten()))
@@ -333,5 +334,5 @@ PRIMITIVE_AXIS = %s
 		pl.ylim([0.0,1.0])
 		pl.xlabel('Frequency (THz)')
 		pl.ylabel('Paticipation Ratio')
-		pl.savefig('Paticipation_atio.png',bbox_inches='tight',transparent=True) 
+		pl.savefig('Paticipation_ratio.png',bbox_inches='tight',transparent=True) 
 		pl.close()

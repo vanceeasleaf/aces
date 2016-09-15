@@ -103,7 +103,7 @@ def makeLoopFile(idx,app):
 	cores=procs*nodes
 	app['cores']=cores
 	app['pbsname']=pro
-	write(json.dumps(app),dir+"/app.json");
+	write(json.dumps(app,indent=4),dir+"/app.json");
 
 
 def setSubProject(index,single):
