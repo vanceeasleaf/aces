@@ -9,7 +9,7 @@ def dirpath(a):
 
 php       = exepath("php/bin/php")
 phana     = exepath("soft/lammps-25Sep15/tools/phonon/phana")
-espresso  = dirpath('soft/QE+EPW/espresso-4.0.3/')
+espresso  = dirpath('soft/espresso-5.4.0/')
 epw		  = exepath(espresso+"EPW/bin/epw.x",abs=True)
 ph        =	exepath(espresso+"/bin/ph.x",abs=True)
 pw        =	exepath(espresso+"/bin/pw.x",abs=True)
