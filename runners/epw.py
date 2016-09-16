@@ -39,6 +39,7 @@ class runner(Runner):
 		passthru(cmd1)
 		passthru(cmd2)
 		passthru(cmd3)
+		cd(maindir)
 	def collect(self):
 		nqpt=len(ls("diam.dyn*"))-1
 		for iqpt in np.arange(1,nqpt+1):
