@@ -103,6 +103,17 @@ class runner(Runner):
 			cd('../..')
 		self.jm.check()
 		cd(maindir)
+	def getPotName(self):
+		maindir=pwd()
+		cd(config.qepot)
+		files=ls("*")
+		cd(maindir)
+		import re  
+		q=[re.split("[_\.]",a)[0].capitalize() for a in files]
+		u={}
+		for i,v in enumerate(q):
+			u[v]=files[i]
+		return u
 	def prepare(self):
 		m=self.m
 		mkdir("phonons/inp")
@@ -111,9 +122,10 @@ class runner(Runner):
 		mmm=np.abs(m.atoms.cell).max()*2.0
 		cell='\n  '.join([m.toString(m.atoms.cell[i]/mmm) for i in range(3)])
 		masses=m.getMassFromLabel(m.elements)
-		potentials=['Si.pz-vbc.UPF','C.UPF']
+		pots=self.getPotName()
+		potentials=[post[a] for a in m.elements]
 		atomspecies='\n'.join(toString(a) for a in zip(m.atoms.get_chemical_symbols(),masses,potentials))
-		path=dirname(dirname(config.epw.strip()))+'/examples/sic/pp/'
+		path=config.qepot
 		skpoints="K_POINTS automatic\n%s 1 1 1"%toString(m.ekpoints)
 		s=""" &control
     calculation     = 'TYPE'
