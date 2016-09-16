@@ -295,7 +295,6 @@ def plotbanddos(freq,dos,factor=1.0,
             xticks = segment_positions + [distances[-1]]
             if options.labels:
                 labels = [x.replace('Gamma',r'$\Gamma$') for x in options.labels.split()]
-                
                 if len(labels)==len(xticks):
                     plt.xticks(xticks, labels)
                 else:
