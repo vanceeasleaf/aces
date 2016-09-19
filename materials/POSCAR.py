@@ -10,6 +10,9 @@ class structure(material):
 
 		self.setElements()
 		self.premitive/=np.array([self.latx,self.laty,self.latz])
+		self.csetup()
+	def csetup(self):
+		pass
 	def setElements(self):
 		self.elements=self.POSCAR.split('\n')[5].strip().split()
 	def lmp_structure(self):

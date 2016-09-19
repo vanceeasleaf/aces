@@ -15,7 +15,6 @@ class Runner:
 		f.close()
 		cmd=self.runcmd()
 		shell_exec(cmd)
-		self.post()
 	def runcmd(self):
 		return ""
 	def post(self):

@@ -83,6 +83,9 @@ default=dict(
 	,dimension=3
 	,nseed=10
 	,isym=True
+	,nkf=[10,10,10]
+	,nqf=[10,10,10]
+	,ismear=0
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

@@ -26,6 +26,29 @@ class runner(Runner):
 		self.getPhonons()
 		self.getEpwIn()
 		self.getepw()
+	def lifetime(self):
+		xx=np.loadtxt('linewidth.elself',skiprows=2)
+		E=xx[:,2]
+		a=E.argsort()
+		h=4.13566743e-15 #eV s	
+		h=h*1000*1e12 #meV ps	
+		pi2=3.14159265359*2.0
+		hbar=h/pi2
+		linewidth=xx[:,3] #meV
+		lifetime=hbar/linewidth
+		plot((E[a],'Electron Energy (meV)'),(lifetime[a],'Electron Lifetime (ps)'),filename='linewidth_elself.png')
+	def srunepw1(self):
+		m=self.m
+		subcores=m.cores
+		epw=config.mpirun+str(subcores)+config.epw+" -npool "+str(subcores)
+		cmd3=epw+" <epw1.in > epw1.out"
+		passthru(cmd3)
+	def srunepw(self):
+		m=self.m
+		subcores=m.cores
+		epw=config.mpirun+str(subcores)+config.epw+" -npool "+str(subcores)
+		cmd3=epw+" <epw.in > epw.out"
+		passthru(cmd3)
 	def getepw(self):
 		m=self.m
 		maindir=pwd()
@@ -84,7 +107,7 @@ class runner(Runner):
 	def get_dos(self):
 		m=self.m
 		amass=self.get_amass()
-		nks="nk1=%d,nk2= %d,nk3= %d"%tuple(m.kpoints)
+		nks="nk1=15,nk2= 15,nk3= 15"
 		write("""&input
     asr='simple',  
     dos=.true. 
@@ -110,11 +133,14 @@ class runner(Runner):
 		freq/=33.367
 		plot((freq,'Frequency (THz)'),(dos,'Density of States'),filename='total_dos.png')
 	def get_band(self):
+		
 		amass=self.get_amass()
 		m=self.m
 		bp=m.bandpoints
-		bpath=[m.toString(bp[x]) for x in m.bandpath]
-		bs='\t40\n'.join(bpath)
+		rcell=m.atoms.get_reciprocal_cell().T
+		kp =[rcell.dot(bp[x]) for x in m.bandpath]
+		bpath=[m.toString(x) for x in kp]
+		bs='\t101\n'.join(bpath)
 		write("""&input
     asr='simple',  
     %s
@@ -125,6 +151,9 @@ class runner(Runner):
   %d
   %s 1"""%(amass,len(m.bandpath),bs),"band.in")
 		shell_exec(config.espresso+"bin/matdyn.x < band.in >band.out")
+
+		self.get_bandplot()
+		
 		a=np.loadtxt("band.plot")
 		c=np.unique(a[:,0])
 		c=c[0:-1]
@@ -143,21 +172,32 @@ class runner(Runner):
     frequency:   %f\n"""%(i+1,y/33.367)
 			s+="\n"
 		write(s,"band.yaml")
-		self.getbanddos()
-		pass
+		
+		
+	def get_bandplot(self):
+		freq,dos=self.readdos()
 		write("""diam.freq
-0 600
+0 %f
 band.plot
 band.ps
 0.0
-50.0 0.0""","plotband.in")
+50.0 0.0"""%(freq.max()),"plotband.in")
 		shell_exec(config.espresso+"bin/plotband.x < plotband.in >plotband.out")
+	def post(self):
+		self.get_force_constants()
+		self.get_dos()
+		self.get_band()		
+		self.getbanddos()
 	def get_force_constants(self):
 		write("""&input
    fildyn='diam.dyn', zasr='simple', flfrc='diam.fc'
  /""","q2r.in")
 		shell_exec(config.espresso+"bin/q2r.x < q2r.in >q2r.out")
 	def getKlist(self,dir="./"):
+		q=np.loadtxt(dir+"diam.dyn0",skiprows=2)
+		assert len(q)>0
+		return q
+		#another way ,which maybe not acurrate and cause some bugs
 		file=open(dir+"ph.out")
 		q=[]
 		from aces.scanf import sscanf
@@ -175,12 +215,12 @@ band.ps
 	def getEpwIn(self):
 		m=self.m
 		nks="nk1         = %d\n  nk2         = %d\n  nk3         = %d"%tuple(m.ekpoints)
-		nkfs="nkf1         = %d\n  nkf2         = %d\n  nkf3         = %d"%tuple(m.ekpoints)
+		nkfs="nkf1         = %d\n  nkf2         = %d\n  nkf3         = %d"%tuple(m.nkf)
 		nqs="nq1         = %d\n  nq2         = %d\n  nq3         = %d"%tuple(m.kpoints)
-		nqfs="nqf1         = %d\n  nqf2         = %d\n  nqf3         = %d"%tuple(m.kpoints)
+		nqfs="nqf1         = %d\n  nqf2         = %d\n  nqf3         = %d"%tuple(m.nqf)
 		amass=self.get_amass()
 		q=self.getKlist(dir="phonons/")
-		qs=' .5\n'.join([m.toString(a) for a in q])
+		qs='\n'.join([m.toString(a)+" %f"%(1.0/len(q)) for a in q])
 		s="""--
 &inputepw
   prefix      = 'diam'
@@ -195,7 +235,6 @@ band.ps
   epwwrite    = .true.
   epwread     = .false.
 
-  nbndsub     =  4
   nbndskip    =  0
 
   wannierize  = .true.
@@ -203,7 +242,7 @@ band.ps
   iprint      = 2
   dis_win_max = 12
   dis_froz_max= 7
-  proj(1)     = 'Si:sp3'   
+  proj(1)     = 'random'   
 
   iverbosity  = 0
 
@@ -214,14 +253,14 @@ band.ps
   tphases     = .false.
 
   elecselfen  = .true.
-  phonselfen  = .false.
+  phonselfen  = .true.
   a2f         = .true.
 
-  parallel_k  = .false.
-  parallel_q  = .true.
+  parallel_k  = .true.
+  parallel_q  = .false.
 
   fsthick     = 2.80284905 ! eV
-  eptemp      = 200 ! K
+  eptemp      = 300 ! K
   degaussw    = 0.1 ! eV
 
   dvscf_dir   = '../phonons/save'
@@ -235,20 +274,28 @@ band.ps
  /
   %d cartesian
 %s
+
 """%(amass,nqs,nks,nqfs,nkfs,len(q),qs)
+
 		write(s,"epw/epw.in")
 
 	def prepare(self):
+		"""为了保证q+k也在k的格点上，必须要求qs*cell*[nk1,nk2,nk3]为整数，即nk=N*nq
+		否则可能出现Error in routine createkmap (1):
+		"""
+		m=self.m
+		u=np.array(m.ekpoints)/np.array(m.kpoints)
+		assert np.allclose(np.floor(u+.5),u,rtol=0.01)
 		m=self.m
 		mkdir("phonons")
 		mkdir("epw")
 		pos='  \n'.join(['%s '%(a.symbol)+m.toString(m.atoms.get_scaled_positions()[i]) for i,a in enumerate(m.atoms)])
-		mmm=np.abs(m.atoms.cell).max()*2.0
+		mmm=1.0#np.abs(m.atoms.cell).max()*2.0
 		cell='\n  '.join([m.toString(m.atoms.cell[i]/mmm) for i in range(3)])
 		masses=m.getMassFromLabel(m.elements)
 		pots=self.getPotName()
 		potentials=[pots[a] for a in m.elements]
-		atomspecies='\n'.join(toString(a) for a in zip(m.atoms.get_chemical_symbols(),masses,potentials))
+		atomspecies='\n'.join(toString(a) for a in zip(m.elements,masses,potentials))
 		path=config.qepot
 		skpoints="K_POINTS automatic\n%s 1 1 1"%toString(m.ekpoints)
 		s=""" &control
@@ -260,27 +307,28 @@ band.ps
     outdir          = './'
     tprnfor         = .true.
     tstress         = .true.
+    etot_conv_thr = 1.0d-5
+    forc_conv_thr = 1.0d-4
  /
  &system
     ibrav           = 0
     celldm(1)       =%f
     nat             = %d
     ntyp            = %d
-    ecutwfc         = 60
+    ecutwfc         = 40
     occupations     = 'smearing'
     smearing        = 'mp'
     degauss         = 0.02
-    nbnd            = 4
  /
  &electrons
     diagonalization = 'david'
     mixing_beta     = 0.7
-    conv_thr        = 1.0d-10
+    conv_thr        = 1.0d-8
  /
 PHONON
 ATOMIC_SPECIES
   %s
-ATOMIC_POSITIONS alat
+ATOMIC_POSITIONS crystal
 %s
 %s
 CELL_PARAMETERS alat
@@ -310,7 +358,7 @@ CELL_PARAMETERS alat
   fildvscf = 'dvscf'
   ldisp    = .true
   %s
-  tr2_ph   =  1.0d-12
+  tr2_ph   =  1.0d-10
  /
 """%nqs
 		write(s,'phonons/ph.in')
