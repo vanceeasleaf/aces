@@ -44,7 +44,7 @@ class runner(Runner):
 		epw=config.mpirun+str(subcores)+config.epw+" -npool "+str(subcores)
 		cmd3=epw+" <epw1.in > epw1.out"
 		passthru(cmd3)
-	def runepw(self):
+	def rerunepw(self):
 		m=self.m
 		subcores=m.cores
 		if not exists('epw.in'):
@@ -52,12 +52,19 @@ class runner(Runner):
 		epw=config.mpirun+str(subcores)+config.epw+" -npool "+str(subcores)
 		cmd3=epw+" <epw.in > epw.out"
 		passthru(cmd3)
+	def runepw(self):
+		self.getepwin()
+		self.rerunepw()
 	def postbol(self):
 		seebeck=np.loadtxt("diam_seebeck.dat",skiprows=2)
+		ef=self.getfermi()
+		mu=seebeck[:,0]-ef
+		filter=(mu<2) * (mu>-2)
+		mu=mu[filter]
+		seebeck=seebeck[filter]
 		s1=seebeck[:,2]
 		s2=seebeck[:,6]
 		s3=seebeck[:,10]
-		mu=seebeck[:,0]
 		from aces.graph import fig,pl
 		with fig("Seebeck.png",legend=True):
 			pl.plot(mu,s1,label="Sxx")
@@ -66,6 +73,7 @@ class runner(Runner):
 			pl.xlabel("$\mu$-Ef (eV)")
 			pl.ylabel("Seebeck Coefficient (V/K)")
 		sigma=np.loadtxt("diam_elcond.dat")
+		sigma=sigma[filter]
 		with fig("Sigma.png",legend=True):
 			pl.plot(mu,sigma[:,2],label="$\sigma$ xx")
 			pl.plot(mu,sigma[:,4],label="$\sigma$ yy")
@@ -73,6 +81,7 @@ class runner(Runner):
 			pl.xlabel("$\mu$-Ef (eV)")
 			pl.ylabel("Electrical conductivity (1/$\Omega$/m)")
 		kappa=np.loadtxt("diam_kappa.dat")
+		kappa=kappa[filter]
 		with fig("kappa.png",legend=True):
 			pl.plot(mu,kappa[:,2],label="$\kappa$ xx")
 			pl.plot(mu,kappa[:,4],label="$\kappa$ yy")
@@ -102,6 +111,7 @@ class runner(Runner):
 			boltz_2d_dir='z'
 		else:
 			boltz_2d_dir='no'
+		boltz_2d_dir='z'
 		s="""!!! -- Begin of BoltzWann input -- !!!
 boltzwann                    = true
 boltz_calc_also_dos          = true
@@ -111,15 +121,16 @@ smr_type                     = gauss
 boltz_dos_adpt_smr           = false
 boltz_dos_smr_fixed_en_width = 0.03
 kmesh                        = %s
-boltz_mu_min                 = -8.
-boltz_mu_max                 = 8.
-boltz_mu_step                = 0.1
+boltz_mu_min                 = -4.
+boltz_mu_max                 = 4.
+boltz_mu_step                = 0.01
 boltz_temp_min               = 300.
 boltz_temp_max               = 300.
 boltz_temp_step              = 50
 boltz_relax_time             = 10.
 !!! --- End of BoltzWann input --- !!!     
 num_wann          = 14
+search_shells=50
 iprint   2
 dis_win_max       = 17.d0
 dis_froz_max      = 6.4d0
@@ -144,6 +155,8 @@ end kpoints
 		#pw2wannier90 make some operation to cell and finally judge rcell == acell (<1e-6) and it's too strict 
 		#so we have to change constant eps6to 1e-5
 		#im espresso/Modules/constant.f90
+        #search_shells default=12 but I change it 50 to avoid expected
+        #termination of wannier90
 		write(s,"diam.win")
 		s="""&inputpp 
    outdir = './'
@@ -155,7 +168,8 @@ end kpoints
    write_unk = .false.
 /"""
 		write(s,"diam.pw2wan")
-	def postw(self):
+	def runbol(self):
+		self.getwin()
 		p=config.espresso+"bin/postw90.x";
 		if not exists(p):
 			print "p not exists"
@@ -169,7 +183,7 @@ end kpoints
 		pw2w=self.getx("pw2wannier90",pool=False)
 		passthru(pw2w +"<diam.pw2wan >pw2wan.out")
 		passthru(wannier+"  diam")
-		self.postw()
+		self.runbol()
 	def getbol(self):
 		m=self.m
 		maindir=pwd()
@@ -182,6 +196,11 @@ end kpoints
 		m=self.m
 		maindir=pwd()
 		mkcd('epw')
+		"""为了保证q+k也在k的格点上，必须要求qs*cell*[nk1,nk2,nk3]为整数，即nk=N*nq
+		否则可能出现Error in routine createkmap (1):
+		"""
+		u=np.array(m.ekpoints)/np.array(m.kpoints)
+		assert np.allclose(np.floor(u+.5),u,rtol=0.01)
 		self.runscf()
 		self.runnscf()
 		self.runepw()
@@ -337,7 +356,7 @@ Emin=-10.0, Emax=10.0, DeltaE=0.1,degauss=0.0025,ngauss=-99
 		m=self.m
 		bp=m.bandpoints
 		bpath=[m.toString(bp[x]) for x in m.bandpath]
-		bs='\t40\n'.join(bpath)
+		bs='\t100\n'.join(bpath)
 		write("""&input
     asr='simple',  
     %s
@@ -411,7 +430,7 @@ band.ps
 		nqs="nq1         = %d\n  nq2         = %d\n  nq3         = %d"%tuple(m.kpoints)
 		nqfs="nqf1         = %d\n  nqf2         = %d\n  nqf3         = %d"%tuple(m.nqf)
 		amass=self.get_amass()
-		q=self.getKlist(dir="phonons/")
+		q=self.getKlist(dir="../phonons/")
 		qs='\n'.join([m.toString(a)+" %f"%(1.0/len(q)) for a in q])
 		s="""--
 &inputepw
@@ -435,6 +454,7 @@ band.ps
   dis_win_max = 12
   dis_froz_max= 7
   proj(1)     = 'random'   
+  wdata(1)    = 'search_shells=50'
 
   iverbosity  = 0
 
