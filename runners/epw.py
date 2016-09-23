@@ -284,7 +284,7 @@ end kpoints
     fldos='diam.dos', 
     %s
  /"""%(amass,nks),"phdos.in")
-		matdyn=self.getx("matdyn")
+		matdyn=self.getx("matdyn",pa=False)
 		shell_exec(matdyn+"< phdos.in >phdos.out")
 		self.drawDos()
 	def readdos(self):
@@ -354,9 +354,11 @@ Emin=-10.0, Emax=10.0, DeltaE=0.1,degauss=0.0025,ngauss=-99
 		
 		amass=self.get_amass()
 		m=self.m
+		rcell=m.atoms.get_reciprocal_cell().T
 		bp=m.bandpoints
-		bpath=[m.toString(bp[x]) for x in m.bandpath]
-		bs='\t100\n'.join(bpath)
+		kp =[rcell.dot(bp[x]) for x in m.bandpath]
+		bpath=[m.toString(x) for x in kp]
+		bs='\t101\n'.join(bpath)
 		write("""&input
     asr='simple',  
     %s

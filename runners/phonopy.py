@@ -104,6 +104,11 @@ PRIMITIVE_AXIS = %s
 		
 	def getVaspRun_vasp(self):
 		m=self.m 
+		npar=1
+		for i in range(1,int(np.sqrt(m.cores))+1):
+			if m.cores%i==0:
+				npar=i
+
 		if m.isym:
 			sym="ISYM = 1"
 		else:
@@ -121,7 +126,7 @@ LWAVE = .FALSE.
 LCHARG = .FALSE.
 NPAR = %d
 %s
-"""%(self.m.ecut,m.ismear,m.nodes,sym)
+"""%(self.m.ecut,m.ismear,npar,sym)
 		write(s,'INCAR')
 		m=self.m
 		m.writePOTCAR()
@@ -133,16 +138,30 @@ Monkhorst-Pack
 	"""%' '.join(map(str,m.ekpoints))
 		write(s,'KPOINTS')
 		if 'jm' in self.__dict__:
-			from aces.jobManager import pbs
-			path=pwd()
-			if m.queue=="q3.4":
-				pb=pbs(queue=m.queue,nodes=12,procs=1,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
+			if not m.th:
+				from aces.jobManager import pbs
+				path=pwd()
+				if m.queue=="q3.4":
+					pb=pbs(queue=m.queue,nodes=12,procs=1,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
+				else:
+					pb=pbs(queue=m.queue,nodes=1,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
 			else:
-				pb=pbs(queue=m.queue,nodes=2,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 24 "+config.vasp+' >log.out')
+				from aces.jobManager import th
+				path=pwd()
+				pb=th(disp=m.pbsname,path=path)
 			self.jm.reg(pb)
+			
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
-	
+	def thcode(self,files,put):
+		s=""
+		for file in files:
+			dir="dirs/dir_"+file
+			s+="cd %s\n"%(dir) 
+			s+="yhbatch -N 1 aces.pbs\n"
+			s+="cd ../../\n"
+		write(s,put+"/runall.sh")
+
 	def getvasprun(self,files):
 		m=self.m
 		maindir=pwd()
@@ -157,6 +176,12 @@ Monkhorst-Pack
 				cd(dir)
 				self.getVaspRun_vasp()
 				cd(maindir)
+			self.jm.run()
+			if m.th:
+				mkdir(m.pbsname)
+				self.thcode(files,m.pbsname)
+				cp("dirs",m.pbsname)
+				passthru("tar zcf %s.tar.gz %s"%(m.pbsname,m.pbsname))			
 			self.jm.check()
 		elif m.engine=="lammps":
 			from multiprocessing.dummy  import Pool

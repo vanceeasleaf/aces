@@ -52,7 +52,23 @@ cd %s
 			r = ssh.read() 
 			debug(r)
 			ssh.close()
-
+class th:
+	def __init__(self,path,disp):
+		self.path=path
+		self.disp=disp
+		self.content=""
+	def writepbs(self,filename='aces.pbs'):
+		self.filename=filename
+		write(self.getPbs(),filename)
+	def submit(self):
+		pass
+	def getPbs(self):
+		s="""#!/bin/bash -x
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib
+yhrun -n 24 -p work /HOME/fudan_xggong_1/soft/vasp.5.2.11/vasp >log.out
+%s
+"""%(self.content)
+		return s
 class jobManager:
 	def __init__(self):
 		self.jobs=[]
@@ -66,7 +82,6 @@ class jobManager:
 		cd(old)
 
 	def check(self):
-		self.run()
 		jobdone=np.array([exists(job.path+"/done") for job in self.jobs ])
 		debug('entering loop waiting for vasp...')
 		while not jobdone.all():

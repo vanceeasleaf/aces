@@ -86,6 +86,7 @@ default=dict(
 	,nkf=[10,10,10]
 	,nqf=[10,10,10]
 	,ismear=0
+	,th=False
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

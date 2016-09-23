@@ -20,7 +20,7 @@ class runner(Runner):
 		mkcd('band')
 		#run vasp
 		cp('../minimize/POSCAR','.')
-		self.m.ismear=-5
+		self.m.ismear=-1
 		self.getVaspRun_vasp()
 		cd('..')
 	def drawdos(self):
