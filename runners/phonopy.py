@@ -23,10 +23,54 @@ class runner(Runner):
 			
 		elif m.engine=="vasp":
 			cp(m.home+'/minimize/CONTCAR','POSCAR')
-	
-		
+	def optimize(self):
+		mkcd('optimize')
+		cp('../minimize/POSCAR','.')
+		from ase import io
+		from aces.f import writevasp
+		atoms=io.read('POSCAR')
+		for i in range(100):
+			dir="%i"%i
+			mkcd(dir)
+			writevasp(atoms)
+			forces,stress,energy=self.energyForce()
+			pos=atoms.get_scaled_positions()
+			pos+=forces*0.01
+	def energyForce(self):
+		self.writeINCAR()
+		m=self.m
+		m.writePOTCAR()
+		s="""A
+0
+Monkhorst-Pack
+%s
+0  0  0
+	"""%' '.join(map(str,m.mekpoints))
+		write(s,'KPOINTS')
+		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+		try:
+			from lxml import etree
+		except ImportError:
+			print "You need to install python-lxml."
+		vasprun = etree.iterparse("vasprun.xml", tag='varray')
+		forces=self.parseVasprun('forces')
+		stress=self.parseVasprun('stress')
+		c=shell_exec("grep TOTEN OUTCAR|tail -1")
+		from aces.scanf import sscanf
+		energe=sscanf(c,"free  energy   TOTEN  =      %f eV")[0]
+		return forces,stress,energy
+	def parseVasprun(self,tag="forces"):
+		forces = []
+		for event, element in vasprun:
+				if element.attrib['name'] == tag:
+		 			for v in element.xpath('./v'):
+		 				forces.append([float(x) for x in v.text.split()])
+		forces=np.array(forces)
+		return forces
 	def force_constant(self,files):
 		cmd=config.phonopy+"-f "
+		if exists("dir_SPOSCAR/vasprun.xml"):
+			cmd=config.phonopy+"--fz dir_SPOSCAR/vasprun.xml "
 		for file in files:
 			dir="dirs/dir_"+file
 			cmd+=dir+'/vasprun.xml '
@@ -35,7 +79,10 @@ class runner(Runner):
 		m=self.m
 		#Create FORCE_CONSTANTS
 		passthru(config.phonopy+"--tolerance=1e-4 --writefc --dim='%s'"%(m.dim))
-
+	def fc2(self):
+		files=shell_exec("ls dirs").split('\n')
+		files=map(lambda x:x.replace('dir_',''),files)
+		self.force_constant(files)
 	def generate_meshconf(self):
 		#generate mesh.conf
 		m=self.m
@@ -100,9 +147,16 @@ PRIMITIVE_AXIS = %s
 
 		passthru(config.phonopy+"--tolerance=1e-4 -d --dim='%s'"%(m.dim))
 
-	
-		
-	def getVaspRun_vasp(self):
+	def writeKPOINTS(self):
+		m=self.m
+		s="""A
+0
+Monkhorst-Pack
+%s
+0  0  0
+	"""%' '.join(map(str,m.ekpoints))
+		write(s,'KPOINTS')
+	def writeINCAR(self):
 		m=self.m 
 		npar=1
 		for i in range(1,int(np.sqrt(m.cores))+1):
@@ -126,17 +180,18 @@ LWAVE = .FALSE.
 LCHARG = .FALSE.
 NPAR = %d
 %s
-"""%(self.m.ecut,m.ismear,npar,sym)
+"""%(self.m.ecut,m.ismear,npar,sym)	
 		write(s,'INCAR')
+	def getVaspRun_vasp(self):
+		
+		self.writeINCAR()
 		m=self.m
 		m.writePOTCAR()
-		s="""A
-0
-Monkhorst-Pack
-%s
-0  0  0
-	"""%' '.join(map(str,m.ekpoints))
-		write(s,'KPOINTS')
+		
+		if(m.kpointspath):
+			cp(m.kpointspath,"KPOINTS")
+		else:
+			self.writeKPOINTS()
 		if 'jm' in self.__dict__:
 			if not m.th:
 				from aces.jobManager import pbs
@@ -190,8 +245,6 @@ Monkhorst-Pack
 			pool.close()
 			pool.join()
 
-
-
 	def runSPOSCAR(self):
 		m=self.m
 		maindir=pwd()
@@ -200,7 +253,7 @@ Monkhorst-Pack
 		mkdir(dir)
 		cp(file,dir+'/POSCAR')
 		cd(dir)		
-		self.getVaspRun_lammps()
+		self.getVaspRun_vasp()
 		cd(maindir)
 	def checkMinimize(self):
 		import yaml

@@ -1,6 +1,7 @@
 #encoding:utf8
 from aces.tools import *
 from aces import config
+import numpy as np
 def minimize(m):
 	if m.engine=="lammps":minimize_lammps(m)
 	elif m.engine=="vasp":minimize_vasp(m)
@@ -10,6 +11,10 @@ def minimize_vasp(m):
 		sym="ISYM = 1"
 	else:
 		sym="ISYM = 0"
+	npar=1
+	for i in range(1,int(np.sqrt(m.cores))+1):
+		if m.cores%i==0:
+			npar=i
 	s="""SYSTEM = - local optimisation
 PREC = high
 ENCUT=%f
@@ -25,7 +30,8 @@ LCHARG = FALSE
 EDIFFG = -0.01
 LREAL=FALSE
 %s
-"""%(m.ecut,sym)
+NPAR = %d
+"""%(m.ecut,sym,npar)
 	write(s,'INCAR')
 	m.structure()
 	m.writePOTCAR()

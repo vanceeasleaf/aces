@@ -193,29 +193,38 @@ class runner(Runner):
 		b[b<-np.pi]+=2.0*np.pi		
 		filter=np.abs(b)<.5*np.pi/180.0
 		return filter
-	def post(self):
-		cd('SHENG')
-		
-		df=pd.read_csv("BTE.kappa_scalar",sep=r"[ \t]+",header=None,names=['step','kappa'],engine='python');
-		ks=np.array(df['kappa'])
-		plot((np.array(df['step']),'Iteration Step'),(ks,'Thermal Conductivity (W/mK)'),'kappa_scalar.png',grid=True,linewidth=2)
-		df=pd.read_csv("BTE.cumulative_kappa_scalar",sep=r"[ \t]+",header=None,names=['l','kappa'],engine='python');
-		ks=np.array(df['kappa'])
-		plot((np.array(df['l']),'Cutoff Mean Free Path for Phonons (Angstrom)'),(ks,'Thermal Conductivity (W/mK)'),'cumulative_kappa_scalar.png',grid=True,linewidth=2,logx=True)
-		
-		omega=np.loadtxt('BTE.omega')/(2.0*np.pi)
-		kappa=np.loadtxt('BTE.kappa')[-1,1:]
-		kappa=np.einsum('jji',kappa.reshape([3,3,-1]))/3.0
-		plot((np.arange(len(omega[0])),'Band'),(kappa,'Thermal Conductivity (W/mK)'),'kappa_band.png',grid=True,linewidth=2)
-		plot((np.arange(len(omega[0])),'Band'),(kappa.cumsum(),'Thermal Conductivity (W/mK)'),'cumulative_kappa_band.png',grid=True,linewidth=2)
+	def postsheng(self):
+		try:
+			df=pd.read_csv("BTE.kappa_scalar",sep=r"[ \t]+",header=None,names=['step','kappa'],engine='python');
+			ks=np.array(df['kappa'])
+			plot((np.array(df['step']),'Iteration Step'),(ks,'Thermal Conductivity (W/mK)'),'kappa_scalar.png',grid=True,linewidth=2)
+		except Exception as e:
+			pass
 
-		w=np.loadtxt('BTE.w_final')
-		w=np.abs(w)
-		w[omega<omega.flatten().max()*0.005]=float('nan')
-		plot((omega.flatten(),'Frequency (THz)'),(w.flatten(),'Scatter Rate (THz)'),'scatter_freq.png',grid=True,scatter=True,logy=True)
-		tao=1.0/w+1e-6
-		plot((omega.flatten(),'Frequency (THz)'),(tao.flatten(),'Relaxation Time (ps)'),'tao_freq.png',grid=True,scatter=True,logy=True)
-		to_txt(['freq','tao'],np.c_[omega.flatten(),tao.flatten()],'tao_freq.txt')
+		try:
+			df=pd.read_csv("BTE.cumulative_kappa_scalar",sep=r"[ \t]+",header=None,names=['l','kappa'],engine='python');
+			ks=np.array(df['kappa'])
+			plot((np.array(df['l']),'Cutoff Mean Free Path for Phonons (Angstrom)'),(ks,'Thermal Conductivity (W/mK)'),'cumulative_kappa_scalar.png',grid=True,linewidth=2,logx=True)	
+		except Exception as e:
+			pass
+		try:
+			omega=np.loadtxt('BTE.omega')/(2.0*np.pi)
+			kappa=np.loadtxt('BTE.kappa')[-1,1:]
+			kappa=np.einsum('jji',kappa.reshape([3,3,-1]))/3.0
+			plot((np.arange(len(omega[0])),'Band'),(kappa,'Thermal Conductivity (W/mK)'),'kappa_band.png',grid=True,linewidth=2)
+			plot((np.arange(len(omega[0])),'Band'),(kappa.cumsum(),'Thermal Conductivity (W/mK)'),'cumulative_kappa_band.png',grid=True,linewidth=2)
+		except Exception as e:
+			pass
+		try:
+			w=np.loadtxt('BTE.w_final')
+			w=np.abs(w)
+			w[omega<omega.flatten().max()*0.005]=float('nan')
+			plot((omega.flatten(),'Frequency (THz)'),(w.flatten(),'Scatter Rate (THz)'),'scatter_freq.png',grid=True,scatter=True,logy=True)
+			tao=1.0/w+1e-6
+			plot((omega.flatten(),'Frequency (THz)'),(tao.flatten(),'Relaxation Time (ps)'),'tao_freq.png',grid=True,scatter=True,logy=True)
+			to_txt(['freq','tao'],np.c_[omega.flatten(),tao.flatten()],'tao_freq.txt')
+		except Exception as e:
+			pass
 		"""
 		if not exists('relaxtime'):mkdir('relaxtime')
 		cd('relaxtime')
@@ -224,27 +233,35 @@ class runner(Runner):
 			plot((om,'Frequency (THz)'),(tao[i],'Relaxation Time (ps)'),'tao_freq_q%d.png'%i,grid=True,scatter=True,logx=True,logy=True)
 		cd('..')
 		"""
-		v=np.loadtxt(open('BTE.v'))
-		n,m=v.shape
-		v=v.reshape([n,3,m/3])
-		v=np.linalg.norm(v,axis=1)
-		plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
-		to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
-		
-		l=v*tao
-		plot((omega.flatten(),'Frequency (THz)'),(l.flatten(),'Mean Free Path (nm)'),'lamda_freq.png',grid=True,scatter=True)
-		to_txt(['freq','mfp'],np.c_[omega.flatten(),l.flatten()],'lamda_freq.txt')
-		q=np.loadtxt(open('BTE.qpoints'))
-		qnorm=np.linalg.norm(q[:,-3:],axis=1)
-		data=[]
-		n,m=w.shape
-		for i in range(m):
-			data.append([qnorm,w[:,i],'b'])
-		series(xlabel='|q| (1/nm)',
-		ylabel='Scatter Rate (THz)',
-		datas=data,
-		filename='branchscatter.png',scatter=True,legend=False,logx=True,logy=True)
-		cd('..')
+
+		try:
+			v=np.loadtxt(open('BTE.v'))
+			n,m=v.shape
+			v=v.reshape([n,3,m/3])
+			v=np.linalg.norm(v,axis=1)
+			plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
+			to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
+		except Exception as e:
+			pass	
+		try:	
+			l=v*tao
+			plot((omega.flatten(),'Frequency (THz)'),(l.flatten(),'Mean Free Path (nm)'),'lamda_freq.png',grid=True,scatter=True)
+			to_txt(['freq','mfp'],np.c_[omega.flatten(),l.flatten()],'lamda_freq.txt')
+		except Exception as e:
+			pass	
+		try:	
+			q=np.loadtxt(open('BTE.qpoints'))
+			qnorm=np.linalg.norm(q[:,-3:],axis=1)
+			data=[]
+			n,m=w.shape
+			for i in range(m):
+				data.append([qnorm,w[:,i],'b'])
+			series(xlabel='|q| (1/nm)',
+			ylabel='Scatter Rate (THz)',
+			datas=data,
+			filename='branchscatter.png',scatter=True,legend=False,logx=True,logy=True)
+		except Exception as e:
+			pass	
 	def generate(self):
 		m=self.m
 		self.minimizePOSCAR()
@@ -272,7 +289,10 @@ class runner(Runner):
 		cp('../secondorder/FORCE_CONSTANTS','FORCE_CONSTANTS_2ND')
 		cp('../thirdorder/FORCE_CONSTANTS_3RD','.')
 		self.getControl()
+		self.runsheng()
+	def runsheng(self):
 		#Thermal conductivity calculation
+		m=self.m
 		print "START SHENGBTE..."
 		passthru(config.mpirun+" %s "%m.cores+config.shengbte)
 		
