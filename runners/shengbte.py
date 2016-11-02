@@ -15,7 +15,8 @@ from aces.f import toString
 from aces.runners.phonopy import runner as Runner
 import pandas as pd
 class runner(Runner):
-			
+	def fc3(self):
+		self.force_constant3();		
 	def force_constant3(self):
 		cmd='find dirs/dir_3RD.* -name vasprun.xml |sort -n|'+config.thirdorder+" reap"+self.getcut()
 		passthru(cmd)
@@ -262,6 +263,13 @@ class runner(Runner):
 			filename='branchscatter.png',scatter=True,legend=False,logx=True,logy=True)
 		except Exception as e:
 			pass	
+	def third(self):
+		mkdir('thirdorder')
+		cd('thirdorder')
+		cp('../POSCAR','.')
+		self.generate_supercells3()
+		
+		
 	def generate(self):
 		m=self.m
 		self.minimizePOSCAR()
@@ -275,25 +283,24 @@ class runner(Runner):
 		self.getvasprun(files)
 		self.force_constant(files)
 		cd('..')
-		mkdir('thirdorder')
-		cd('thirdorder')
-		cp('../POSCAR','.')
-		self.generate_supercells3()
+		self.third()
 		files=shell_exec("ls 3RD.*.*|sort -n").split('\n')
 		assert len(files)>0
 		self.getvasprun(files)
 		self.force_constant3()
 		cd('..')
+		self.pSheng()
+		self.runsheng()
+	def pSheng(self):
 		mkdir('SHENG')
 		cd('SHENG')
 		cp('../secondorder/FORCE_CONSTANTS','FORCE_CONSTANTS_2ND')
 		cp('../thirdorder/FORCE_CONSTANTS_3RD','.')
 		self.getControl()
-		self.runsheng()
 	def runsheng(self):
 		#Thermal conductivity calculation
 		m=self.m
 		print "START SHENGBTE..."
-		passthru(config.mpirun+" %s "%m.cores+config.shengbte)
+		passthru(config.mpirun+" %s "%(m.nodes*m.procs)+config.shengbte)
 		
 

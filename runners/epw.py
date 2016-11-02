@@ -275,7 +275,7 @@ end kpoints
 	def get_dos(self):
 		m=self.m
 		amass=self.get_amass()
-		nks="nk1=%d,nk2= %d,nk3= %d"%tuple(m.kpoints)
+		nks="nk1=%d,nk2= %d,nk3= %d"%tuple(m.nqf)
 		write("""&input
     asr='simple',  
     dos=.true. 

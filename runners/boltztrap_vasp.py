@@ -93,30 +93,30 @@ BOLTZ                     # run mode (only BOLTZ is supported)
 			for t in [T[-1]]:
 				idx=d[:,1]==t
 				pl.plot(d[idx,0],d[idx,4],label="T="+str(t))
-		with fig("kappa.png"):
+		with fig("kappa.png"):#W/mK*1/s
 			pl.xlabel("Energy (eV)")
 			pl.ylabel("Electronic Thermal Conductivity (W/mK)")
 			for t in [T[-1]]:
 				idx=d[:,1]==t
-				pl.plot(d[idx,0],d[idx,7],label="T="+str(t))
+				pl.plot(d[idx,0],d[idx,7]*1e-12,label="T="+str(t))
 		with fig("powerfactor.png"):
 			pl.xlabel("Energy (eV)")
-			pl.ylabel("$S^{2}\sigma/\\tau $")
+			pl.ylabel("$S^{2}\sigma $")
 			for t in [T[-1]]:
 				idx=d[:,1]==t
 				S=d[idx,4]
 				sigma=d[idx,5]
 				pl.plot(d[idx,0],S*S*sigma,label="T="+str(t))
-		with fig("sigma.png"):
+		with fig("sigma.png"):#1/(ohm m)*1/s
 			pl.xlabel("Energy (eV)")
-			pl.ylabel("$sigma/\\tau $")
+			pl.ylabel("$\\sigma (1/\\Omega m) $")
 			for t in [T[-1]]:
 				idx=d[:,1]==t
-				sigma=d[idx,5]
+				sigma=d[idx,5]*1e-12 #sigma/tau*1ps
 				pl.plot(d[idx,0],sigma,label="T="+str(t))
 		with fig("Rh-n.png"):
 			pl.xlabel("Energy (eV)")
-			pl.ylabel("$sigma/\\tau $")
+			pl.ylabel("$\\sigma/\\tau $")
 			for t in [T[-1]]:
 				idx=d[:,1]==t
 				Rh=d[idx,6]

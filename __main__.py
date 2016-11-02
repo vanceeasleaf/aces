@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2016-09-05 19:33:20
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-09-16 22:58:28
+# @Last Modified time: 2016-10-11 11:38:15
 
 from aces.App import App
 from aces.tools import *
@@ -32,7 +32,7 @@ def exe():
 		if sys.argv[2]=="-pbs":
 			from aces.jobManager import pbs
 			m=App().m
-			job=pbs(queue=m.queue,nodes=2,procs=12,disp=m.pbsname,path=pwd(),content=config.python+' '.join(sys.argv).replace('-pbs','')+' >aces.out')
+			job=pbs(queue=m.queue,nodes=m.nodes,procs=m.procs,disp=m.pbsname,path=pwd(),content=config.python+' '.join(sys.argv).replace('-pbs','')+' >aces.out')
 			cd(job.path)
 			job.writepbs()
 			job.submit()

@@ -88,6 +88,7 @@ default=dict(
 	,ismear=0
 	,th=False
 	,kpointspath=""
+	,vdw=False
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

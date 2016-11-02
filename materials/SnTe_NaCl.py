@@ -20,8 +20,8 @@ class structure(material):
 		if self.se:
 			Q='Se'
 		self.elements=['Sn',Q]
-		self.bandpoints=ibz_points['fcc']
-		self.bandpath=['Gamma','K','X','Gamma','L']
+		#self.bandpoints=ibz_points['fcc']
+		#self.bandpath=['Gamma','K','X','Gamma','L']
 		self.premitive/=np.array([self.latx,self.laty,self.latz])
 
 	def lmp_structure(self):

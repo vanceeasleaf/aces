@@ -1,53 +1,45 @@
-from aces.material import material
-from aces.modify import get_unique_atoms
-from ase import Atoms,Atom
-from math import pi,sqrt
-from ase.dft.kpoints import ibz_points
-from aces import config
-import numpy as np
-from aces.tools import *
+from aces.materials.POSCAR import structure as material
 class structure(material):
-	def set_parameters(self):
-		pass#['Gamma','Y','T','X','Gamma']
+	def getPOSCAR(self):
+		self.getMinimized();
+		return """ACES POSCAR
+1.0
+4.27621131928 0.0 0.0
+0.0 4.54139940516 0.0
+0.0 0.0 11.9873875216
+Se Sn
+4 4
+Direct
+0.75 0.485037464537 0.855609685415
+0.25 0.985037464537 0.644390314585
+0.25 0.514962535463 0.144390314585
+0.75 0.0149625354627 0.355609685415
+0.75 0.0962153524605 0.125063179368
+0.25 0.596215352461 0.374936820632
+0.25 0.903784647539 0.874936820632
+0.75 0.403784647539 0.625063179368
+"""
 
-	def setup(self):
-		self.forceThick=False
-		self.elements=['Se','Sn']
+	def csetup(self):
+		from ase.dft.kpoints import ibz_points
 		self.bandpoints=ibz_points['orthorhombic']
 		self.bandpoints['T']=self.bandpoints['S']
-		self.bandpath=["Gamma","X","Z","Gamma","Y","S","R","Gamma"]
-		self.premitive/=np.array([self.latx,self.laty,self.latz])
-
-	def lmp_structure(self):
-		prototype=self.prototype
-		col=prototype(self.latx,self.laty,self.latz)		
-		atoms=get_unique_atoms(col)
-		col.set_pbc([self.xp,self.yp,self.zp])
-		return atoms
-		
-	
-	
-	def prototype(self,latx,laty,latz):
-		atoms=self.unit()
-		col=atoms.repeat((latx,laty,latz))
-		return col
-		
-	def unit(self):
-		pos=np.array([
-				[0.75000000000000,   0.48503746453728,   0.85560968541486],   
-				[0.25000000000000,   0.98503746453728,   0.64439031458514],   
-				[0.25000000000000,   0.51496253546272,   0.14439031458514],   
-				[0.75000000000000,   0.01496253546272,   0.35560968541486],   
-				[0.75000000000000,   0.09621535246053,   0.12506317936786],   
-				[0.25000000000000,   0.59621535246053,   0.37493682063214],   
-				[0.25000000000000,   0.90378464753947,   0.87493682063214],   
-				[0.75000000000000,   0.40378464753947,   0.62506317936786]
-   ])
-		cell=np.diag([4.27621131928033,4.54139940515969,11.98738752160755])
-		atoms=Atoms('Se4Sn4',scaled_positions=pos,cell=cell)
-		#atoms.set_cell(cell)
-		#atoms.center()
-		#atoms.set_cell([4.35,4.02,self.thick])
-		return atoms
-			
-		
+		self.bandpath=["Gamma","Y","T","X","Gamma"]
+	def getMinimized(self):
+		return """ACES POSCAR                             
+   1.00000000000000     
+     4.2016750276879336   -0.0000000000000003    0.0000000000000000
+     0.0000000000000000    4.5635922457776719    0.0000000000000000
+     0.0000000000000000    0.0000000000000000   11.7344091633572880
+   Se   Sn
+     4     4
+Direct
+  0.7500000000000000  0.4774495337464972  0.8550982536090304
+  0.2500000000000000  0.9774495337464975  0.6449017463909696
+  0.2500000000000000  0.5225504662535025  0.1449017463909695
+  0.7500000000000000  0.0225504662532043  0.3550982536090306
+  0.7500000000000000  0.1140008879170425  0.1201105297117838
+  0.2500000000000000  0.6140008879175468  0.3798894702882163
+  0.2500000000000000  0.8859991120824532  0.8798894702882161
+  0.7500000000000000  0.3859991120824530  0.6201105297117839
+		"""

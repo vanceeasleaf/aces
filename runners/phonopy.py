@@ -181,6 +181,16 @@ LCHARG = .FALSE.
 NPAR = %d
 %s
 """%(self.m.ecut,m.ismear,npar,sym)	
+		if m.vdw:
+			s+="""\nIVDW = 1
+VDW_RADIUS = 50
+VDW_S6 = 0.75
+VDW_SR = 1.00
+VDW_SCALING = 0.75
+VDW_D = 20.0
+VDW_C6 = 63.540 31.50
+VDW_R0 = 1.898 1.892
+"""
 		write(s,'INCAR')
 	def getVaspRun_vasp(self):
 		
