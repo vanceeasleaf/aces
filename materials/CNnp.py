@@ -10,6 +10,7 @@ from aces import tools
 from aces.modify import get_unique_atoms
 from aces.env import SRCHOME
 class structure:
+	#姨妈巾结构
 	def __init__(self,opt):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
 		self.set_parameters()

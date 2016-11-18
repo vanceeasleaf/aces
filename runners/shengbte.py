@@ -269,7 +269,11 @@ class runner(Runner):
 		cp('../POSCAR','.')
 		self.generate_supercells3()
 		
-		
+	def vasprun3(self):
+		files=shell_exec("ls 3RD.*.*|sort -n").split('\n')
+		assert len(files)>0
+		self.getvasprun(files)
+	
 	def generate(self):
 		m=self.m
 		self.minimizePOSCAR()
@@ -284,9 +288,7 @@ class runner(Runner):
 		self.force_constant(files)
 		cd('..')
 		self.third()
-		files=shell_exec("ls 3RD.*.*|sort -n").split('\n')
-		assert len(files)>0
-		self.getvasprun(files)
+		self.vasprun3()
 		self.force_constant3()
 		cd('..')
 		self.pSheng()

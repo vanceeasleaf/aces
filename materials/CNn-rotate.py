@@ -4,6 +4,7 @@ from ase import Atoms,Atom
 from math import pi,sqrt,atan
 import numpy as np
 class structure(material):
+	#CN材料随机掺杂
 	def set_parameters(self):
 		self.ratio=0.0
 	def setup(self):

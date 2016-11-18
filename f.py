@@ -1,5 +1,6 @@
 import numpy as np
 from aces.tools import *
+from numpy.linalg  import norm
 def writefc2(fc2,filename='FORCE_CONSTANTS_2ND'):
 	natom=len(fc2)
 	s="%d\n"%natom
@@ -149,31 +150,38 @@ def refinefc3():
 		print >>g,toString(np.around(r2t[i],3))
 		print >>g,toString(idx[i])
 		print >>g,matrix3Format(fc3[i])
-def rotatefc3(t):
-	f=open('FORCE_CONSTANTS_3RD')
-	g=open('fc3new','w')
-	M=rotationMatrix([0,0,1],t*np.pi/180.0)
+def rotatefc2(t,direct=[0,0,1],file1='FORCE_CONSTANTS_2ND',file2='fc2new'):
+	fc2=readfc2(file1)
+	M=rotationMatrix(direct,t*np.pi/180.0)
+	fc=np.einsum('im,klmn->klin',M,fc2)
+	fc=np.einsum('in,klmn->klmi',M,fc)
+	writefc2(fc,file2)
+def rotatefc3(t,direct=[0,0,1],file1='FORCE_CONSTANTS_3RD',file2='fc3new'):
+	f=open(file1)
+	g=open(file2,'w')
+	M=rotationMatrix(direct,t*np.pi/180.0)
 	nblock=int(f.next().split()[0])
 	print >>g,nblock
+	print >>g,""
 	for i in range(nblock):
 		f.next()
-		print >>g,f.next()
+		print >>g,f.next(),
 		r1=np.array(map(float,f.next().split()))
 		r1t=M.dot(r1)
 		print >>g,toString(r1t)
 		r1=np.array(map(float,f.next().split()))
 		r1t=M.dot(r1)
 		print >>g,toString(r1t)
-		print >>g,f.next()
+		print >>g,f.next(),
 		fc=np.zeros([3,3,3])
 		for i in range(3):
 			for j in range(3):
 				for k in range(3):
 					fc[i,j,k]=float(f.next().split()[3])
 
-		fc=np.einsum('ij,jkl',M,fc)
-		fc=np.einsum('ij,kjl',M,fc)
-		fc=np.einsum('ij,klj',M,fc)
+		fc=np.einsum('ij,jkl->ikl',M,fc)
+		fc=np.einsum('ij,kjl->kil',M,fc)
+		fc=np.einsum('ij,klj->kli',M,fc)
 		print >>g,matrix3Format(fc)
 
 try:
@@ -299,3 +307,36 @@ def readfc2(filename='FORCE_CONSTANTS'):
 				for k in range(3):
 					fc[i,j,k]=map(float,f.next().split())
 		return fc
+def hash(pos,positions):
+	for i,pos in enumerate(positions):
+		if(np.allclose(pos,positions[i])):
+			return i
+
+def readfc3(atoms,unit,filename='FORCE_CONSTANTS_3RD'):
+	f=open(filename)
+	nblock=int(f.next().split()[0])
+	n=len(atoms)
+	fc3=np.zeros([n,n,n,3,3,3])
+	for i in range(nblock):
+		f.next() #blank
+		print f.next(), #index
+		r1=np.array(map(float,f.next().split()))
+		x=r1/norm(unit.cell,axis=1)
+		r2=np.array(map(float,f.next().split()))
+		y=r2/norm(unit.cell,axis=1)
+		u=.5*(x-np.abs(x))+.5*(y-np.abs(y))
+		idx=np.array(map(int,f.next().split()))-np.array([1,1,1])
+		print idx
+		pos1=-u.dot(unit.cell)+unit.positions[idx[0]]
+		pos2=(x-u).dot(unit.cell)+unit.positions[idx[1]]
+		pos3=(y-u).dot(unit.cell)+unit.positions[idx[2]]
+		ii=hash(pos1,atoms.positions)
+		jj=hash(pos2,atoms.positions)
+		kk=hash(pos3,atoms.positions)
+		fc=np.zeros([3,3,3])
+		for i in range(3):
+			for j in range(3):
+				for k in range(3):
+					fc[i,j,k]=float(f.next().split()[3])
+		fc3[ii,jj,kk]=fc
+	return fc3
