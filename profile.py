@@ -7,7 +7,7 @@ from aces.fixAveSpace import fixAveSpace
 import pandas as pd
 from aces import tools
 from aces.fixAveTime import fixAveTime
-from aces.env import *
+#from aces.env import *
 from aces.graph import series
 class profile:
 	def __init__(self):
@@ -159,6 +159,7 @@ def run(method,begin,timestep,conti,excRate,swapEnergyRate,upP,deta,tcfactor,fou
 		elif(fourierTc):
 			v=lx*ly*lz;
 			factor=corRate*timestep/(v*kb*T*T)*zfactor*tcfactor;
+			SRCHOME=dirname(__FILE__)
 			kx=os.popen("%s/correlation/corr factor"%SRCHOME).read();#generate a correlation file named jcor.txt
 		else:
 		

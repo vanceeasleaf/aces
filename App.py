@@ -1,4 +1,4 @@
-from aces.env import SRCHOME,PROJHOME,PROJNAME
+#from aces.env import SRCHOME,PROJHOME,PROJNAME
 import json,os.path,time
 from aces.runners.minimize import minimize as minimize_input
 from importlib import import_module as im

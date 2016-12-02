@@ -1,6 +1,20 @@
 import numpy as np
 from aces.tools import *
 from numpy.linalg  import norm
+import time
+from functools import wraps
+  
+def fn_timer(function):
+	@wraps(function)
+	def function_timer(*args, **kwargs):
+		t0 = time.time()
+		result = function(*args, **kwargs)
+		t1 = time.time()
+		print ("Total time running %s: %s seconds" %
+			(function.func_name, str(t1-t0))
+			)
+		return result
+	return function_timer
 def writefc2(fc2,filename='FORCE_CONSTANTS_2ND'):
 	natom=len(fc2)
 	s="%d\n"%natom
@@ -319,14 +333,14 @@ def readfc3(atoms,unit,filename='FORCE_CONSTANTS_3RD'):
 	fc3=np.zeros([n,n,n,3,3,3])
 	for i in range(nblock):
 		f.next() #blank
-		print f.next(), #index
+		f.next(), #index
 		r1=np.array(map(float,f.next().split()))
 		x=r1/norm(unit.cell,axis=1)
 		r2=np.array(map(float,f.next().split()))
 		y=r2/norm(unit.cell,axis=1)
 		u=.5*(x-np.abs(x))+.5*(y-np.abs(y))
 		idx=np.array(map(int,f.next().split()))-np.array([1,1,1])
-		print idx
+		#print idx
 		pos1=-u.dot(unit.cell)+unit.positions[idx[0]]
 		pos2=(x-u).dot(unit.cell)+unit.positions[idx[1]]
 		pos3=(y-u).dot(unit.cell)+unit.positions[idx[2]]

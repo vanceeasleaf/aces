@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2016-09-05 19:33:20
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-10-11 11:38:15
+# @Last Modified time: 2016-12-02 12:40:58
 
 from aces.App import App
 from aces.tools import *
@@ -36,6 +36,13 @@ def exe():
 			cd(job.path)
 			job.writepbs()
 			job.submit()
+			return
+		if sys.argv[2]=='-c':
+			a=sys.argv[1]
+			import aces.script as r
+			if not hasattr(r,a):
+				print a,'method does not exist'
+			else: getattr(r,a)()
 			return
 	run();
 exe()
