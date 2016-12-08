@@ -273,19 +273,20 @@ class runner(Runner):
 		files=shell_exec("ls 3RD.*.*|sort -n").split('\n')
 		assert len(files)>0
 		self.getvasprun(files)
-	
+	def pSecond(self):
+		cp('../POSCAR','.')
+		self.generate_supercells()
+		files=shell_exec("ls *-*").split('\n')
+		assert len(files)>0
+		self.getvasprun(files)
 	def generate(self):
 		m=self.m
 		self.minimizePOSCAR()
 		#cp('minimize/POSCAR','.')
 		mkdir('secondorder')
 		cd('secondorder')
-		cp('../POSCAR','.')
-		self.generate_supercells()
-		files=shell_exec("ls *-*").split('\n')
-		assert len(files)>0
-		self.getvasprun(files)
-		self.force_constant(files)
+		self.pSecond()
+		self.fc2()
 		cd('..')
 		self.third()
 		self.vasprun3()

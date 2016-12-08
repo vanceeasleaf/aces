@@ -13,7 +13,7 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import time
 import numpy as np
-
+from aces.f import readfc2
 class runner(Runner):
 	def minimizePOSCAR(self):
 		m=self.m
@@ -59,7 +59,7 @@ Monkhorst-Pack
 		from aces.scanf import sscanf
 		energe=sscanf(c,"free  energy   TOTEN  =      %f eV")[0]
 		return forces,stress,energy
-	def parseVasprun(self,tag="forces"):
+	def parseVasprun(self,vasprun,tag="forces"):
 		forces = []
 		for event, element in vasprun:
 				if element.attrib['name'] == tag:
@@ -67,6 +67,44 @@ Monkhorst-Pack
 		 				forces.append([float(x) for x in v.text.split()])
 		forces=np.array(forces)
 		return forces
+	def cs(self):
+		from aces.cs import runner
+		runner(NAH=2).run()
+		self.check('csfc2')
+	def check(self,filename='FORCE_CONSTANTS'):
+		try:
+			from lxml import etree
+		except ImportError:
+			print "You need to install python-lxml."
+		vasprun = etree.iterparse("dirs/dir_POSCAR-001/vasprun.xml", tag='varray')
+		forces=self.parseVasprun(vasprun,'forces')
+		from ase import io
+		ref=io.read('SPOSCAR')
+		atoms=io.read('dirs/dir_POSCAR-001/POSCAR')
+		u=atoms.positions-ref.positions
+
+		fc2=readfc2(filename)
+		f=-np.einsum('ijkl,jl',fc2,u)
+		print forces-f
+		assert np.allclose(f,forces,atol=1e-2)
+	def stub(self):
+		files=shell_exec("ls dirs").split('\n')
+		files=map(lambda x:x.replace('dir_',''),files)
+		fc2=readfc2('fc2')
+		for file in files:
+			from ase import io
+			ref=io.read('SPOSCAR')
+			a='dirs/dir_'+str(file)
+			atoms=io.read(a+"/POSCAR")
+			u=atoms.positions-ref.positions
+			f=-np.einsum('ijkl,jl',fc2,u)
+			forces=""
+			for force in f:				
+				forces+="<v>  %f %f %f </v>\n"%tuple(force)
+			vasprun='<root><calculation><varray name="forces" >\n'
+			vasprun+=forces
+			vasprun+='</varray></calculation></root>\n'
+			write(vasprun,a+"/vasprun.xml")
 	def force_constant(self,files):
 		cmd=config.phonopy+"-f "
 		if exists("dir_SPOSCAR/vasprun.xml"):
@@ -79,6 +117,7 @@ Monkhorst-Pack
 		m=self.m
 		#Create FORCE_CONSTANTS
 		passthru(config.phonopy+"--tolerance=1e-4 --writefc --dim='%s'"%(m.dim))
+
 	def fc2(self):
 		files=shell_exec("ls dirs").split('\n')
 		files=map(lambda x:x.replace('dir_',''),files)
@@ -247,6 +286,7 @@ VDW_R0 = 1.898 1.892
 				self.thcode(files,m.pbsname)
 				cp("dirs",m.pbsname)
 				passthru("tar zcf %s.tar.gz %s"%(m.pbsname,m.pbsname))			
+			print 'start check'
 			self.jm.check()
 		elif m.engine=="lammps":
 			from multiprocessing.dummy  import Pool
