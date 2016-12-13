@@ -52,18 +52,17 @@ class runner:
 			from ase import io
 			return io.read(filename,format='vasp')
 
-	def getSupercell(self):
-		atoms=self.getsatoms()
+	def getSupercell(self,atoms):
 		from pyspglib import spglib
 		s=spglib.get_symmetry(atoms)
 		symmetry=[]
-		pos=atoms.positions
 		print "building symmetry"
 		for i,rot in enumerate(s['rotations']):
+			print "symetry :",i
 			trans = s['translations'][i]
 			map0=self.getMap(atoms,rot,trans)
 			symmetry.append([rot,map0])
-		return pos,symmetry
+		return symmetry
 	def getMap(self,atoms,rot,trans):
 		v=atoms.copy()
 		v.positions=v.positions.dot(rot.T)
@@ -81,11 +80,6 @@ class runner:
 		map0=np.argmin(d2min,axis=1)
 		return map0
 	def getTrainSets(self,u):
-		#f=self.db
-		#if not 'Fu' in f:
-		#	f['Fu']=self.getForce()
-		#F,u=f['Fu']
-
 		assert len(u)>0
 		self.L=len(u)
 		n=self.natom=len(u[0])
@@ -97,7 +91,7 @@ class runner:
 		self.rowr=rowr
 		
 	def getMatrix(self,F,u):
-		self.getTrainSets(u)
+		
 		print "getting compressive matrix"
 		rowr=self.rowr
 		A=np.zeros([self.L,rowr[-1]])
@@ -108,46 +102,55 @@ class runner:
 			for i in range(self.NAH):
 				r=range(rowr[i],rowr[i+1])		
 				A[j,r]=-g(u[j].flatten(),i)
-		F=F.reshape([shape[0],shape[1]*shape[2]])
+		F=F.reshape([self.L,3*n])
+		c=3*n
+		F=F.T.flatten().T
+		A=np.kron(np.eye(c),A)
 		return F,A
-	def getMatrix1(self,F,u):
-		assert len(u)>0
-		self.L=len(u)
-		self.natom=len(u[0])
-		print "getting compressive matrix"
-		As=[]
-		for j in range(self.L):
-			v=-1.0
-			c=[]
-			for i in range(self.NAH):
-				v=np.einsum('...,...',v,u[j])
-				c.append(v)
-			As.append(c)
-		for x in As:
-			for y in x:
-				pass
-		return F,A
-	def run(self):
-		pos,symmetry=self.getSupercell()
-		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')
-		if len(files)>100:	files=files[:100]
-		F,u=self.getForce(pos,files)
-		if True:
-			F0=[]
-			u0=[]
-			for i,f in enumerate(F):
-				for rot,map0 in symmetry:
-					newF=f[map0].dot(rot.T)
-					newu=u[i][map0].dot(rot.T)
-					F0.append(newF)
-					u0.append(newu)
-			F=np.r_[F,F0]
-			u=np.r_[u,u0]
-		
+
+	def mulU(self,x,p):
+		if p>0:return np.kron(self.mulU(x,p-1),x)/p
+		else: return 1.0
+	def getCsMat(self,F,u,symmetry):
+		self.getTrainSets(u)
+		Q=[]
+		n=u.shape[1]
+		v=self.rowr[-1]
+		p=3*n
+		step=0
+		for rot,map0 in symmetry:
+			step+=1
+			print "step:",step
+			for i in range(n):
+				print "atom:",i
+				for j in range(n):
+					ii=map0[i]
+					jj=map0[j]
+					for a in range(3):
+						for b in range(3):
+							t=np.zeros(v*p)	
+							for r in range(3):							
+								id=(ii*3+a)*v+1+jj*3+r
+								t[id]+=rot[r,b]
+								id=(i*3+a)*v+1+j*3+b
+								t[id]-=rot[a,r]
+						#phi[ii,jj].dot(rot)=rot.dot(phi[i,j])
+							Q.append(t)	
+		Q=np.array(Q)
+		e,self.R=np.linalg.eig(Q)
 		v=norm(u,axis=2)
 		u0=v.flatten().max()
-
 		F,A=self.getMatrix(F,u/u0)
+
+		return F,A.dot(self.R)
+	def run(self):
+		atoms=self.getsatoms()
+		symmetry=self.getSupercell(atoms)
+		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')
+		if len(files)>100:	files=files[:100]
+		pos=atoms.positions
+		f,u=self.getForce(pos,files)
+		F,A=self.getCsMat(f,u,symmetry)
 		print "start compressive sensing "
 		B=cs(mu=self.mu,split=self.split).run(F,A)
 		print "rebuilding IFCs "
@@ -171,15 +174,9 @@ class runner:
 		satoms=self.getsatoms()
 		writefc3(fc3,atoms,satoms,'csfc3')
 	def rebuild(self,B):
-		#f=self.db
-		#if not 'FA' in f:
-		#	f['FA']=self.getMatrix()
-		#F,A=f['FA']
-		
-		#print B
-		#return B
 		n=self.natom
 		rowr=self.rowr
+		B=self.R.dot(B).T.reshape([-1,3*n]).T
 		phi=[]
 		for i in range(self.NAH):
 			r=range(rowr[i],rowr[i+1])
@@ -195,88 +192,8 @@ class runner:
 
 		
 		return phi
-	
-	def mulU(self,x,p):
-		if p>0:return np.kron(self.mulU(x,p-1),x)/p
-		else: return 1.0
-class sym(runner):
 
-	def run(self):
-		pos,symmetry=self.getSupercell()
-		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')
-		if len(files)>100:	files=files[:100]
-		F,u=self.getForce(pos,files)
-		
-		v=norm(u,axis=2)
-		u0=v.flatten().max()
 
-		F,A=self.getMatrix(F,u/u0,symmetry)
-		print "start compressive sensing "
-		B=cs(mu=self.mu,split=self.split).run(F,A)
-		B=self.restore(B)
-		print "rebuilding IFCs "
-		phi=self.rebuild(B)
-		print "writing IFCs "
-		fc2=np.einsum(phi[1],[1,0,3,2])/u0
-
-		writefc2(fc2,'csfc2')
-		if self.NAH>=3:
-			a=h5py.File('fc3p.hdf5')
-			if 'fc3' in a:del a['fc3']
-			a['fc3']=phi[2]/u0/u0
-			a.close()
-			self.fc3()
-	def getTrainSets(self,u):
-		assert len(u)>0	
-		n=self.natom=len(u[0])
-		self.L=len(u)
-		row=0
-		rowr=[0]
-		for i in range(self.NAH):
-			row+=(n*3)**i
-			rowr.append(row)
-		self.rowr=rowr
-	def getT(self,symmetry):
-		n=self.natom
-		Ts=[]
-		dim=[[0,0]]
-		v=np.array([map0 for rot,map0 in symmetry],dtype=np.intc)
-		r=np.array([rot for rot,map0 in symmetry],dtype=np.float)
-		#build graph
-		from aces.binary.gett import gettnh		
-		for nh in range(2,self.NAH):
-			T0,N=gettnh(n,v,r,nh)
-			dim.append([dim[-1][0]+M,dim[-1][1]+N])
-			Ts.append(T0)
-		T=np.zeros(dim[-1])
-		for nh in range(self.NAH):
-			d1=dim[nh]
-			d2=dim[nh+1]
-			xr=np.arange(d1[0],d2[0])
-			yr=np.arange(d1[1],d2[1])
-			T[xr][:,yr]=Ts[nh]
-		return T.reshape([3*n,-1,dim[-1][1]])
-
-	def getMatrix(self,F,u,symmetry):
-		self.getTrainSets(u)
-		print "getting compressive matrix"
-		T=self.T=self.getT(symmetry)
-		self.nIndependentVariable=T.shape[2]
-		rowr=self.rowr
-		n=self.natom*3
-		A=np.zeros([self.L*n,self.nIndependentVariable])
-		g=self.mulU
-		F=F.reshape([self.L*n,1])
-		for j in range(self.L):
-			a=np.zeros(rowr[-1])
-			for i in range(self.NAH):
-				r=range(rowr[i],rowr[i+1])	
-				a[r]=-g(u[j].flatten(),i)
-			for k in range(n):
-				A[j+n*k,:]=a.dot(T[k])
-		return F,A
-	def restore(self,v):
-		return np.einsum(T,[1,0,2],v,[2])
 
 class cs:
 	def __init__(self,mu=0.7,split=True,lam=0.9):
@@ -412,55 +329,3 @@ class cs:
 			u=u1
 			
 		return u
-class energy(runner):
-	def run(self):
-		pos,symmetry=self.getSupercell()
-		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')	
-		F,u=self.getForce(pos,files)
-		V=(F*u).sum(axis=(1,2))
-		v=norm(u,axis=2)
-		u0=v.flatten().max()
-		F,A=self.getMatrix(V,u/u0)
-		print "start compressive sensing "
-		B=cs(mu=self.mu,split=self.split).run(F,A)
-		print "rebuilding IFCs "
-		phi=self.rebuild(B)
-		print "writing IFCs "
-		fc2=np.einsum(phi[1],[1,0,3,2])/u0
-
-		writefc2(fc2,'csfc2')
-		if self.NAH>=3:
-			a=h5py.File('fc3p.hdf5')
-			if 'fc3' in a:del a['fc3']
-			a['fc3']=phi[2]/u0/u0
-			a.close()
-			self.fc3()
-	def getTrainSets(self,u):
-		#f=self.db
-		#if not 'Fu' in f:
-		#	f['Fu']=self.getForce()
-		#F,u=f['Fu']
-
-		assert len(u)>0
-		self.L=len(u)
-		n=self.natom=len(u[0])
-		row=0
-		rowr=[0]
-		for i in range(self.NAH):
-			row+=(n*3)**(i+1)
-			rowr.append(row)
-		self.rowr=rowr
-		
-	def getMatrix(self,F,u):
-		self.getTrainSets(u)
-		print "getting compressive matrix"
-		rowr=self.rowr
-		A=np.zeros([self.L,rowr[-1]])
-		g=self.mulU
-		shape=F.shape
-		
-		for j in range(self.L):
-			for i in range(self.NAH):
-				r=range(rowr[i],rowr[i+1])		
-				A[j,r]=-g(u[j].flatten(),i+1)
-		return F,A
