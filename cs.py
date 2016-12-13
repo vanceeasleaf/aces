@@ -1,8 +1,7 @@
-from aces.runners import Runner
 import numpy as np
 from aces.tools import *
 import h5py
-from  numpy import linalg as LA
+from  numpy.linalg import norm
 import os
 from ase import io,Atoms
 from scipy import optimize
@@ -145,7 +144,7 @@ class runner:
 			F=np.r_[F,F0]
 			u=np.r_[u,u0]
 		
-		v=LA.norm(u,axis=2)
+		v=norm(u,axis=2)
 		u0=v.flatten().max()
 
 		F,A=self.getMatrix(F,u/u0)
@@ -208,7 +207,7 @@ class sym(runner):
 		if len(files)>100:	files=files[:100]
 		F,u=self.getForce(pos,files)
 		
-		v=LA.norm(u,axis=2)
+		v=norm(u,axis=2)
 		u0=v.flatten().max()
 
 		F,A=self.getMatrix(F,u/u0,symmetry)
@@ -313,9 +312,9 @@ class cs:
 		"""
 		aA=eigsh(A.T.dot(A),k=6)[0].max()#the largest eigenvalue
 		f/=np.sqrt(aA)
-		#print LA.norm(f)
+		#print norm(f)
 		A/=np.sqrt(aA)
-		#print LA.norm(A)
+		#print norm(A)
 		"""
 		aA=np.double(A.shape[0]**A.max().max())#maxeig(A.T.dot(A))
 		f/=np.sqrt(aA)
@@ -325,7 +324,7 @@ class cs:
 		v=np.eye(len(A.T))-A.T.dot(A)
 		for i in range(20):
 			v=v.dot(v)
-			print LA.norm(v)
+			print norm(v)
 		"""
 		if self.split:return self.split_bregman(f,A)
 		else:
@@ -333,12 +332,12 @@ class cs:
 
 	def split_bregman(self,f,A):
 		def cc(u1):
-			print "CG error:",LA.norm(u1-self.bb.flatten())/LA.norm(self.bb)
+			print "CG error:",norm(u1-self.bb.flatten())/norm(self.bb)
 			self.bb=u1
 		def g(u,*args):
 			A,f,lam,d,mu,b=args
 			u=u.reshape(shape)
-			return 1.0/2*LA.norm(np.dot(A,u)-f)**2+lam/2.0*LA.norm(d-mu*u-b)**2
+			return 1.0/2*norm(np.dot(A,u)-f)**2+lam/2.0*norm(d-mu*u-b)**2
 		def dg(u,*args):
 			A,f,lam,d,mu,b=args
 			u=u.reshape(shape)
@@ -358,13 +357,13 @@ class cs:
 		#f*=scale
 		print 'dimmensions:', A.shape,u.shape
 		while erru>deta:			
-			#g=lambda u:1.0/2*LA.norm(dot(A,u.reshape(shape))-f)**2+lam/2.0*LA.norm(d-mu*u.reshape(shape)-b)**2
+			#g=lambda u:1.0/2*norm(dot(A,u.reshape(shape))-f)**2+lam/2.0*norm(d-mu*u.reshape(shape)-b)**2
 			f1=(f*scale-dot(A,u))+(f0+dot(A,u))/2
 			u1=optimize.fmin_cg(g, u,args=(A,f1,lam,d,mu,b),disp=False,fprime=dg,callback=cc,gtol=deta*10).reshape(shape)
 
 			d1=shrink(mu*u1+b,1.0/lam)
 			b1=b+mu*u1-d1
-			erru=LA.norm(u1-u)/LA.norm(u)
+			erru=norm(u1-u)/norm(u)
 			print 'split bregman iteration error:',erru
 			b=b1
 			u=u1
@@ -382,7 +381,7 @@ class cs:
 			f1=f*scale+f0-dot(A,u)
 			u1=self.FCP(f1,A,u)
 			
-			erru=LA.norm(u1-u)/LA.norm(u)
+			erru=norm(u1-u)/norm(u)
 			print 'bregman iteration error:',erru
 			u=u1
 			f0=f1
@@ -407,8 +406,8 @@ class cs:
 			g=np.dot(A.T,p)
 			
 			u1=shrink(u-ta*g,mu*ta)
-			errg=1.0/mu*LA.norm(g,np.inf)-1
-			erru=LA.norm(u1-u)/LA.norm(u)
+			errg=1.0/mu*norm(g,np.inf)-1
+			erru=norm(u1-u)/norm(u)
 			print 'FCP iteration :',erru
 			u=u1
 			
@@ -419,7 +418,7 @@ class energy(runner):
 		files=shell_exec('find dirs/dir_* -name vasprun.xml |sort -n').split('\n')	
 		F,u=self.getForce(pos,files)
 		V=(F*u).sum(axis=(1,2))
-		v=LA.norm(u,axis=2)
+		v=norm(u,axis=2)
 		u0=v.flatten().max()
 		F,A=self.getMatrix(V,u/u0)
 		print "start compressive sensing "

@@ -18,10 +18,12 @@ class structure(material):
 		self.bandpoints=ibz_points['fcc']
 		self.bandpath=['Gamma','K','X','Gamma','L']
 		self.premitive/=np.array([self.latx,self.laty,self.latz])
+		if self.cu:
+			self.premitive=np.array([[0,.5,.5],[.5,0,.5],[.5,.5,0]])
 
 	def lmp_structure(self):
 		pos=np.array([[0,0,0],[.5,.5,.5]])
-		cell=2.8243625205414746*2*np.array([[0,.5,.5],[.5,0,.5],[.5,.5,0]])
+		cell=2.8243625205414746*2*np.array([[0,.5,.5],[.5,0,.5],[.5,.5,0]])*0.85
 		atoms = Atoms('NaCl',scaled_positions=pos, cell=cell)
 		if self.cu:
 			pos=np.array([

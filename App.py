@@ -22,6 +22,7 @@ class App:
 		self.m=m
 		m.home=pwd()
 		assert m.home!=''
+
 		Runner=im('aces.runners.%s'%m.runner)
 		self.runner=Runner.runner(m)
 		

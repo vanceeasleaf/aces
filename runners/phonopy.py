@@ -8,11 +8,13 @@ from aces.runners import Runner
 from aces.UnitCell.unitcell import UnitCell
 from aces.graph import plot,series
 from aces.script.vasprun import exe as lammpsvasprun
+
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import time
 import numpy as np
+
 from aces.f import readfc2
 class runner(Runner):
 	def minimizePOSCAR(self):
@@ -76,17 +78,22 @@ Monkhorst-Pack
 			from lxml import etree
 		except ImportError:
 			print "You need to install python-lxml."
-		vasprun = etree.iterparse("dirs/dir_POSCAR-001/vasprun.xml", tag='varray')
-		forces=self.parseVasprun(vasprun,'forces')
+		
 		from ase import io
 		ref=io.read('SPOSCAR')
-		atoms=io.read('dirs/dir_POSCAR-001/POSCAR')
-		u=atoms.positions-ref.positions
-
+		files=shell_exec("ls dirs").split('\n')
 		fc2=readfc2(filename)
-		f=-np.einsum('ijkl,jl',fc2,u)
-		print forces-f
-		assert np.allclose(f,forces,atol=1e-2)
+		for file in files:
+			print file
+			POSCAR='dirs/%s/POSCAR'%file
+			vasprunxml="dirs/%s/vasprun.xml"%file
+			atoms=io.read(POSCAR)
+			u=atoms.positions-ref.positions
+			f=-np.einsum('ijkl,jl',fc2,u)
+			#print forces-f
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces=self.parseVasprun(vasprun,'forces')
+			assert np.allclose(f,forces,atol=1e-2)
 	def stub(self):
 		files=shell_exec("ls dirs").split('\n')
 		files=map(lambda x:x.replace('dir_',''),files)

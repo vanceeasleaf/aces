@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2016-09-05 19:33:20
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-12-02 12:40:58
+# @Last Modified time: 2016-12-12 21:27:42
 
 from aces.App import App
 from aces.tools import *
@@ -11,7 +11,9 @@ import aces.tools
 import sys
 import json
 def run():
+	
 	r=App().runner
+
 	if len(sys.argv)>1:
 		a=sys.argv[1]
 		if not hasattr(r,a):
@@ -42,7 +44,13 @@ def exe():
 			import aces.script as r
 			if not hasattr(r,a):
 				print a,'method does not exist'
-			else: getattr(r,a)()
+			elif len(sys.argv)==4 and sys.argv[3]=="-pbs":
+				from aces.jobManager import pbs
+				job=pbs(queue='q1.1',nodes=4,procs=12,disp="script",path=pwd(),content=config.mpirun+ " 48 "+config.python+' '.join(sys.argv).replace('-pbs','')+' >aces.out')
+				cd(job.path)
+				job.writepbs()
+				job.submit()
+			else:getattr(r,a)()
 			return
 	run();
 exe()
