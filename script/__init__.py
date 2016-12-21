@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-10-14 20:43:32
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-12-13 14:54:35
+# @Last Modified time: 2016-12-18 23:23:27
 from aces.tools import *
 import numpy as np
 from ase import io
@@ -14,8 +14,8 @@ def parseVasprun(vasprun,tag="forces"):
 	forces = []
 	for event, element in vasprun:
 		if element.attrib['name'] == tag:
- 			for v in element.xpath('./v'):
- 				forces.append([float(x) for x in v.text.split()])
+			for v in element.xpath('./v'):
+				forces.append([float(x) for x in v.text.split()])
 	forces=np.array(forces)
 	return forces
 def vasp2xyz():
@@ -111,6 +111,54 @@ def getstress():
 						s+=-.5*Z[j]*(R[j,a]-R[i,a])*(R[j,b]-R[i,b])/norm(R[j]-R[i])**3	
 					sigma[a,b]=-Z[i]/V*(s+q[a,b])
 			np.save(file,sigma)
+def gettfc():
+	write("""STRUCTURE FILE POSCAR
+./POSCAR_unit
+
+FORCE SETS
+./FORCE_SETS
+
+
+SUPERCELL MATRIX PHONOPY
+3 0 0
+0 2 0
+0 0 2""",'input.ph')
+	passthru("dynaphopy input.ph OUTCAR --save_force_constants file -r 0.0 6.0 2000 -n 4000")
+
+def getjvq():
+	from dynaphopy.interface.phonopy_link import get_force_sets_from_file
+	import dynaphopy.interface.phonopy_link as pho_interface
+	input_parameters = reading.read_parameters_from_input_file("input.ph")
+	if 'structure_file_name_outcar' in input_parameters:
+		structure = reading.read_from_file_structure_outcar(input_parameters['structure_file_name_outcar'])
+		structure_file = input_parameters['structure_file_name_outcar']
+	else:
+		structure = reading.read_from_file_structure_poscar(input_parameters['structure_file_name_poscar'])
+		structure_file = input_parameters['structure_file_name_poscar']
+	if 'force_constants_file_name' in input_parameters:
+		structure.set_force_set(get_force_sets_from_file(file_name=input_parameters['force_constants_file_name']))
+		structure.get_data_from_dict(input_parameters)
+	trajectory_reading_function = reading.check_trajectory_file_type('OUTCAR')
+	trajectory = trajectory_reading_function('OUTCAR',
+											 structure,
+											 None,
+											 initial_cut=1,
+											 end_cut=None)
+	assert not( isinstance(trajectory, list) or isinstance(trajectory, tuple))
+	calculation = controller.Calculation(trajectory, last_steps=4000)
+
+
+	com_points, dynmat2fc, phonon = pho_interface.get_commensurate_points_info(calculation.dynamic.structure)
+	frequencies, eigenvectors = phonon.get_qpoints_phonon()
+	initial_reduced_q_point = calculation.get_reduced_q_vector()
+
+	normalized_frequencies = []
+	for i, reduced_q_point in enumerate(com_points):
+		print ("Qpoint: {0} / {1}".format(i,reduced_q_point))
+		calculation.set_reduced_q_vector(reduced_q_point)
+		calculation.get_power_spectrum_phonon()
+
+	calculation.set_reduced_q_vector(initial_reduced_q_point)
 
 def reducestress():
 	allpos=np.load('allpos.npy')
@@ -143,3 +191,32 @@ def reducestress():
 	jv_haR=np.einsum('ijkl,ijl->ik',sigmas_haR,v)
 	np.save('jv_haR.npy',jv_haR)
 
+def t2c():
+	dir1="/home1/xggong/zhouy/tcscripts/bp/nacl.2/0/secondorder/"
+	dir2="/home1/xggong/zhouy/tcscripts/bp/nacl.3/0/secondorder/"
+	satoms1=io.read(dir1+"SPOSCAR")
+	satoms2=io.read(dir2+"SPOSCAR")
+	forceset2=np.zeros([2,len(satoms2),3])
+	f=open(dir2+"FORCE_SETS")
+	for i in range(5):
+		f.next()
+	for i in range(len(satoms2)):
+		force=map(float,f.next().strip().split())
+		forceset2[0,i]=force
+	for i in range(3):
+		f.next()	
+	for i in range(len(satoms2)):
+		force=map(float,f.next().strip().split())
+		forceset2[1,i]=force
+	from aces.f import rotationMatrix
+	rot=rotationMatrix([1,0,0],-np.pi/4.0)
+	rot=rotationMatrix([0,0,1],-np.pi/2.0).dot(rot)
+	new_s=satoms2.copy()
+	new_s.rotate([1,0,0],-np.pi/4.0,rotate_cell=True)
+	new_s.rotate([0,0,1],-np.pi/2.0,rotate_cell=True)
+	new_s.write(dir2+'SPOSCAR.1',format='vasp')
+def csf():
+	"""use compressive sencing to generate force_constant of T
+	"""
+	from aces.cs1 import runner
+	runner(mu=0.0,lam=4.0).run()

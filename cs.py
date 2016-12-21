@@ -19,11 +19,11 @@ def maxeig(A):
 	lmax=(A.dot(W)/W).average()
 	return lmax
 class runner:
-	def __init__(self,NAH=3,split=True,mu=0.1):
+	def __init__(self,NAH=3,split=True,mu=0.1,lam=0.9):
 		self.NAH=NAH
 		self.split=split
 		self.mu=mu
-
+		self.lam=lam
 		#self.db=h5py.File('force.hdf5')
 	def getForce(self,pos,files):
 		print "reading vasprun.xml and POSCAR"
@@ -57,7 +57,7 @@ class runner:
 		s=spglib.get_symmetry(atoms)
 		symmetry=[]
 		print "building symmetry"
-		for i,rot in enumerate(s['rotations']):
+		for i,rot in enumerate(s['rotations'][:100]):
 			print "symetry :",i
 			trans = s['translations'][i]
 			map0=self.getMap(atoms,rot,trans)
@@ -72,8 +72,8 @@ class runner:
 		posi=atoms.positions
 		d2s=np.empty((27,len(v),len(v)))
 		for j,(ja,jb,jc) in enumerate(itertools.product(xrange(-1,2),
-                                                    xrange(-1,2),
-                                                    xrange(-1,2))):
+													xrange(-1,2),
+													xrange(-1,2))):
 			posj=v.positions+np.dot([ja,jb,jc],v.cell)
 			d2s[j,:,:]=cdist(posi,posj,"sqeuclidean")
 		d2min=d2s.min(axis=0)
@@ -107,17 +107,33 @@ class runner:
 		F=F.T.flatten().T
 		A=np.kron(np.eye(c),A)
 		return F,A
+	def gauss(a):
+		m,n = a.shape
+		for i in range(0,n-1):
+			for j in range(i+1,n):
+				imax=np.abs(a[i:n,i]).maxarg()
+				if imax!=i:
+					a[i],a[imax]=a[imax],a[i]
+				if a[j,i] != 0.0 and a[i,i]!=0.0:
+					lam = float(a[j,i])/a[i,i]
+					a[j] = a[j] - lam*a[i]
+		for k in range(n-1,-1,-1):
+			b[k] = (b[k] - np.dot(a[k,(k+1):],b[(k+1):]))/a[k,k]
+		result = b
+		return result
 
 	def mulU(self,x,p):
 		if p>0:return np.kron(self.mulU(x,p-1),x)/p
 		else: return 1.0
 	def getCsMat(self,F,u,symmetry):
 		self.getTrainSets(u)
-		Q=[]
+		Q=[]# keep to be the constrain of the newest variables
 		n=u.shape[1]
 		v=self.rowr[-1]
 		p=3*n
-		step=0
+		step=0		
+		nval=p*v
+		E=None# the connection between oldest variables and newest variables
 		for rot,map0 in symmetry:
 			step+=1
 			print "step:",step
@@ -128,16 +144,28 @@ class runner:
 					jj=map0[j]
 					for a in range(3):
 						for b in range(3):
-							t=np.zeros(v*p)	
+							t=np.zeros(nval)	
 							for r in range(3):							
 								id=(ii*3+a)*v+1+jj*3+r
-								t[id]+=rot[r,b]
-								id=(i*3+a)*v+1+j*3+b
-								t[id]-=rot[a,r]
+								id1=(i*3+a)*v+1+j*3+b
+								if E is None:
+									t[id]+=rot[r,b]
+									t[id1]-=rot[a,r]
+								else:
+									t[id]+=E[id]*rot[r,b]
+									t[id1]-=E[id1]*rot[a,r]
 						#phi[ii,jj].dot(rot)=rot.dot(phi[i,j])
-							Q.append(t)	
-		Q=np.array(Q)
-		e,self.R=np.linalg.eig(Q)
+							Q.append(t)
+							if(len(Q)==50):
+								e,c=np.linalg.eig(Q)
+								if E is None:
+									E=c
+								else:
+									E=E.dot(c)
+								nval=E.shape[1]
+								print "nval:",nval
+								Q=[]
+		self.R=E
 		v=norm(u,axis=2)
 		u0=v.flatten().max()
 		F,A=self.getMatrix(F,u/u0)
@@ -152,7 +180,7 @@ class runner:
 		f,u=self.getForce(pos,files)
 		F,A=self.getCsMat(f,u,symmetry)
 		print "start compressive sensing "
-		B=cs(mu=self.mu,split=self.split).run(F,A)
+		B=cs(mu=self.mu,split=self.split,lam=self.lam).run(F,A)
 		print "rebuilding IFCs "
 		phi=self.rebuild(B)
 		print "writing IFCs "
@@ -192,8 +220,40 @@ class runner:
 
 		
 		return phi
-
-
+class cssklearn:
+	def __init__(self):
+		pass
+	def initu(self,f,A):
+		dim=list(f.shape)
+		dim[0]=A.shape[1]
+		#so dim is the shape of u
+		return np.ones(dim) 
+	def run(self,f,A):
+		from sklearn import cross_validation 
+		from sklearn import linear_model
+		reg = linear_model.Lasso(alpha = 1e-15, fit_intercept=False,max_iter =10000,tol =1e-5)
+		print reg.fit([[0,0,2],[1,1,2]],[[0,1],[1,1]]).coef_.T
+		print A.shape, f.shape
+		return reg.fit(A,f).coef_.T
+		#k_fold = cross_validation.KFold(n=len(f), n_folds=10)
+		#[svc.fit(X_digits[train], y_digits[train]).score(X_digits[test], y_digits[test]) for train, test in kfold]
+class csfortran:
+	def __init__(self):
+		pass
+	def initu(self,f,A):
+		dim=list(f.shape)
+		dim[0]=A.shape[1]
+		#so dim is the shape of u
+		return np.ones(dim) 
+	def run(self,f,A):
+		u=self.initu(f,A)
+		import sys
+		sys.path.append("/home/xggong/home1/zhouy/soft/bcs-master/wrap")
+		import bcs as p
+		ebars = np.zeros(len(A[0]))
+		sigma2 = std(f)/100.
+		p.bcs.do_wrapped(A, f, sigma2, 1e-8, u, ebars)
+		return u
 
 class cs:
 	def __init__(self,mu=0.7,split=True,lam=0.9):
@@ -250,6 +310,10 @@ class cs:
 	def split_bregman(self,f,A):
 		def cc(u1):
 			print "CG error:",norm(u1-self.bb.flatten())/norm(self.bb)
+			tt1=g(u1,A,f,lam,d,mu,b)
+			print "CG target:",(tt1-self.tt)/self.tt
+			self.tt=tt1
+
 			self.bb=u1
 		def g(u,*args):
 			A,f,lam,d,mu,b=args
@@ -266,6 +330,9 @@ class cs:
 		deta=0.001
 		erru=1.0
 		lam=self.lam
+		t=1.0
+		tt=1.0
+		self.tt=tt
 		mu=self.mu
 		scale=1.0/np.amax(np.abs(f))*1000.0
 		print "scale="+str(scale)
@@ -276,7 +343,7 @@ class cs:
 		while erru>deta:			
 			#g=lambda u:1.0/2*norm(dot(A,u.reshape(shape))-f)**2+lam/2.0*norm(d-mu*u.reshape(shape)-b)**2
 			f1=(f*scale-dot(A,u))+(f0+dot(A,u))/2
-			u1=optimize.fmin_cg(g, u,args=(A,f1,lam,d,mu,b),disp=False,fprime=dg,callback=cc,gtol=deta*10).reshape(shape)
+			u1=optimize.fmin_cg(g, u,args=(A,f1,lam,d,mu,b),disp=True,fprime=dg,callback=cc,gtol=deta*10).reshape(shape)
 
 			d1=shrink(mu*u1+b,1.0/lam)
 			b1=b+mu*u1-d1
@@ -286,6 +353,9 @@ class cs:
 			u=u1
 			d=d1
 			f0=f1
+			t1=norm(d,1)+tt
+			print 'change of target func:',(t1-t)/t
+			t=t1
 		return u/scale
 
 	def bregman(self,f,A):

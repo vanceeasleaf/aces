@@ -23,7 +23,7 @@ class structure(material):
 
 	def lmp_structure(self):
 		pos=np.array([[0,0,0],[.5,.5,.5]])
-		cell=2.8243625205414746*2*np.array([[0,.5,.5],[.5,0,.5],[.5,.5,0]])*0.85
+		cell=2.8243625205414746*2*np.array([[0,.5,.5],[.5,0,.5],[.5,.5,0]])
 		atoms = Atoms('NaCl',scaled_positions=pos, cell=cell)
 		if self.cu:
 			pos=np.array([

@@ -28,9 +28,9 @@ class pbs:
 #PBS -q %s
 #PBS -N %s
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s
-cd %s
+cd $PBS_O_WORKDIR
 %s
-"""%(nodes,procs,queue,disp,ss,path,content)
+"""%(nodes,procs,queue,disp,ss,content)
 		return s
 
 	def ssh_cmd(self,user,ip, cmd): 

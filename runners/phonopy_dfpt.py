@@ -12,6 +12,7 @@ class runner(Runner):
 		
 	def getVaspRun_vasp(self):
 		m=self.m 
+
 		if m.isym:
 			sym="ISYM = 1"
 		else:
@@ -21,14 +22,14 @@ PREC = High
 IBRION = 8
 ENCUT = %f
 EDIFF = 1.0e-8
-ISMEAR = 0; SIGMA = 0.01
+ISMEAR = %d; SIGMA = 0.01
 IALGO = 38
 LREAL = .FALSE.
 ADDGRID = .TRUE.
 LWAVE = .FALSE.
 LCHARG = .FALSE.
 %s
-"""%(self.m.ecut,sym)
+"""%(self.m.ecut,m.ismear,sym)	
 		write(s,'INCAR')
 		m=self.m
 		m.writePOTCAR()
