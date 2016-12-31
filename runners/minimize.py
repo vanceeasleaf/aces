@@ -52,8 +52,9 @@ Monkhorst-Pack
 0  0  0
 	"""%' '.join(map(str,m.mekpoints))
 	write(s,'KPOINTS')
+	vasp=[config.vasp,config.vasp_2d][m.d2]
 	if m.useMini:
-		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+		shell_exec(config.mpirun+" %s "%m.cores+vasp+' >log.out')
 	else:
 		cp('POSCAR','CONTCAR')
 def minimize_lammps(m):

@@ -227,15 +227,16 @@ class runner(Runner):
 			to_txt(['freq','tao'],np.c_[omega.flatten(),tao.flatten()],'tao_freq.txt')
 		except Exception as e:
 			pass
-		try:
-			v=np.loadtxt(open('../BTE.v'))
-			n,m=v.shape
-			v=v.reshape([n,3,m/3])
-			v=np.linalg.norm(v,axis=1)
-			plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
-			to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
-		except Exception as e:
-			pass	
+
+		v=np.loadtxt(open('../BTE.v'))
+		q=np.loadtxt(open('../BTE.qpoints'))
+		n=len(q)
+		v=v.T.reshape([3,-1,n])
+		v=np.einsum('ijk->kji',v)
+		v=np.linalg.norm(v,axis=-1)
+		plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
+		to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
+
 		try:	
 			l=v*tao
 			plot((omega.flatten(),'Frequency (THz)'),(l.flatten(),'Mean Free Path (nm)'),'lamda_freq.png',grid=True,scatter=True)
@@ -362,6 +363,11 @@ class runner(Runner):
 		cp('../secondorder/FORCE_CONSTANTS','FORCE_CONSTANTS_2ND')
 		cp('../thirdorder/FORCE_CONSTANTS_3RD','.')
 		self.getControl()
+	def runold(self):
+		#Thermal conductivity calculation
+		m=self.m
+		print "START SHENGBTE..."
+		passthru(config.mpirun+" %s "%(m.nodes*m.procs)+config.sheng)
 	def runsheng(self):
 		#Thermal conductivity calculation
 		m=self.m

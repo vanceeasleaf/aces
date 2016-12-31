@@ -208,11 +208,14 @@ Monkhorst-Pack
 		for i in range(1,int(np.sqrt(m.cores))+1):
 			if m.cores%i==0:
 				npar=i
-
+		if m.ispin:
+			ispin="ISPIN=2"
+		else:
+			ispin=""
 		if m.isym:
 			sym="ISYM = 1"
 		else:
-			sym="ISYM = 0"
+			sym=""
 		s="""SYSTEM=calculate energy
 PREC = High
 IBRION = -1
@@ -226,7 +229,8 @@ LWAVE = .FALSE.
 LCHARG = .FALSE.
 NPAR = %d
 %s
-"""%(self.m.ecut,m.ismear,npar,sym)	
+%s
+"""%(self.m.ecut,m.ismear,npar,sym,ispin)	
 		if m.vdw:
 			s+="""\nIVDW = 1
 VDW_RADIUS = 50

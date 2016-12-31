@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-10-14 20:43:32
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-12-18 23:23:27
+# @Last Modified time: 2016-12-25 23:13:09
 from aces.tools import *
 import numpy as np
 from ase import io
@@ -121,44 +121,27 @@ FORCE SETS
 
 SUPERCELL MATRIX PHONOPY
 3 0 0
-0 2 0
-0 0 2""",'input.ph')
-	passthru("dynaphopy input.ph OUTCAR --save_force_constants file -r 0.0 6.0 2000 -n 4000")
+0 3 0
+0 0 1""",'input.ph')
+	passthru("dynaphopy input.ph OUTCAR --save_force_constants file -r 0.0 7.0 2000 -n 4000")
 
 def getjvq():
-	from dynaphopy.interface.phonopy_link import get_force_sets_from_file
-	import dynaphopy.interface.phonopy_link as pho_interface
-	input_parameters = reading.read_parameters_from_input_file("input.ph")
-	if 'structure_file_name_outcar' in input_parameters:
-		structure = reading.read_from_file_structure_outcar(input_parameters['structure_file_name_outcar'])
-		structure_file = input_parameters['structure_file_name_outcar']
-	else:
-		structure = reading.read_from_file_structure_poscar(input_parameters['structure_file_name_poscar'])
-		structure_file = input_parameters['structure_file_name_poscar']
-	if 'force_constants_file_name' in input_parameters:
-		structure.set_force_set(get_force_sets_from_file(file_name=input_parameters['force_constants_file_name']))
-		structure.get_data_from_dict(input_parameters)
-	trajectory_reading_function = reading.check_trajectory_file_type('OUTCAR')
-	trajectory = trajectory_reading_function('OUTCAR',
-											 structure,
-											 None,
-											 initial_cut=1,
-											 end_cut=None)
-	assert not( isinstance(trajectory, list) or isinstance(trajectory, tuple))
-	calculation = controller.Calculation(trajectory, last_steps=4000)
+	from np.linalg import norm
+	unit=io.read("POSCAR_unit")
+	atoms=io.read("POSCAR")
+	supercell=map(int,norm(atoms.cell,axis=1)/norm(unit.cell,axis=1)+[.5]*3)
+	c=supercell
+	q=[]
+	u=[int(x/2)*2+1 for x in c]
+	for i in range(u[0]):
+		for j in range(u[1]):
+			for k in range(u[2]):
+				b=np.array([float(i-c[0]/2)/c[0],float(j-c[1]/2)/c[1],float(k-c[2]/2)/c[2]])
+				q.append(b)
+	allpos=np.load('allpos.npy')
+	v=np.gradient(allpos)[0]
+	
 
-
-	com_points, dynmat2fc, phonon = pho_interface.get_commensurate_points_info(calculation.dynamic.structure)
-	frequencies, eigenvectors = phonon.get_qpoints_phonon()
-	initial_reduced_q_point = calculation.get_reduced_q_vector()
-
-	normalized_frequencies = []
-	for i, reduced_q_point in enumerate(com_points):
-		print ("Qpoint: {0} / {1}".format(i,reduced_q_point))
-		calculation.set_reduced_q_vector(reduced_q_point)
-		calculation.get_power_spectrum_phonon()
-
-	calculation.set_reduced_q_vector(initial_reduced_q_point)
 
 def reducestress():
 	allpos=np.load('allpos.npy')
@@ -178,6 +161,13 @@ def reducestress():
 	v=np.gradient(allpos)[0]
 	jv=np.einsum('ijkl,ijl->ik',sigmas,v)
 	np.save('jv.npy',jv)
+	getjvhar()
+
+def getjvhar():
+	allpos=np.load('allpos.npy')
+	atoms=io.read("POSCAR")
+	n=len(atoms)
+	m=len(allpos)
 	from aces.f import readfc2
 	fc2=readfc2()
 	sigmas_haR=np.zeros([m,n,3,3])
@@ -188,9 +178,9 @@ def reducestress():
 	RI=np.einsum('ijk,l',R,np.ones(n))
 	RJ=np.einsum('ilkj',RI)
 	sigmas_haR=.5*np.einsum('ijab,tiaj,tibj->tiab',fc2,dRI-dRJ,RI-RJ)
+	v=np.gradient(allpos)[0]
 	jv_haR=np.einsum('ijkl,ijl->ik',sigmas_haR,v)
 	np.save('jv_haR.npy',jv_haR)
-
 def t2c():
 	dir1="/home1/xggong/zhouy/tcscripts/bp/nacl.2/0/secondorder/"
 	dir2="/home1/xggong/zhouy/tcscripts/bp/nacl.3/0/secondorder/"

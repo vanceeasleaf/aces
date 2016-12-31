@@ -29,10 +29,13 @@ class runner(Runner):
 		dos=doscar.write_dos(doscar.tot_dos)
 		write(dos,'dos.txt')
 		dos=np.loadtxt('dos.txt');
+		f=shell_exec("grep fermi OUTCAR|tail -1")
+		from aces.scanf import sscanf
+		f=sscanf(f,"E-fermi :   %f     XC(G=0):");
 		with fig("dos.png"):
-			pl.xlabel("Energy (eV)")
+			pl.xlabel("Energy-Ef (eV)")
 			pl.ylabel("DOS")
-			pl.plot(dos[:,0],dos[:,1])
+			pl.plot(dos[:,0]-f,dos[:,1])
 	def get_fermi(self):
 		a=shell_exec("grep fermi band/OUTCAR|tail -1");
 		from aces.scanf import sscanf

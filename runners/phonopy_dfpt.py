@@ -17,6 +17,10 @@ class runner(Runner):
 			sym="ISYM = 1"
 		else:
 			sym="ISYM = 0"
+		if m.ispin:
+			spin="ISPIN =2"
+		else:
+			spin=""
 		s="""SYSTEM=calculate energy
 PREC = High
 IBRION = 8
@@ -29,7 +33,8 @@ ADDGRID = .TRUE.
 LWAVE = .FALSE.
 LCHARG = .FALSE.
 %s
-"""%(self.m.ecut,m.ismear,sym)	
+%s
+"""%(self.m.ecut,m.ismear,sym,spin)	
 		write(s,'INCAR')
 		m=self.m
 		m.writePOTCAR()
