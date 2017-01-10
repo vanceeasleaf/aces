@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-10-14 20:43:32
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-12-25 23:13:09
+# @Last Modified time: 2017-01-07 17:46:03
 from aces.tools import *
 import numpy as np
 from ase import io
@@ -48,6 +48,40 @@ def vasp2xyz():
 	np.save('allforce.npy',allforce)
 	np.save('allpos.npy',allpos);
 	passthru("ase-gui a.traj -o a.xyz ")
+def avepos():
+	atoms=io.read('POSCAR')
+	allpos=np.load('allpos.npy')
+	atoms.set_scaled_positions(allpos.mean(axis=0))
+	io.write('AVEPOSCAR',atoms,vasp5=True,direct=True,sort=None)
+def getmsd():
+	allpos=np.load('allpos.npy')
+	r=allpos-allpos[0]
+	r_atom=np.linalg.norm(r,axis=2)
+	r=r_atom.mean(axis=1)
+	f=open("msd.txt",'w')
+	for i,x in enumerate(r):
+		print >>f,"%.3f\t%.3f"%(i*0.25,x)
+	with fig('msd.png'):
+		pl.plot(np.arange(len(r))*.25,r)
+def reducemsd():
+	msd=np.loadtxt('600K/msd.txt')
+	time=msd[:,0]
+	aa=[]
+	aa.append(np.loadtxt('msd.txt')[:500,1])
+	aa.append(np.loadtxt('600K/msd.txt')[:,1])
+	aa.append(np.loadtxt('700K/msd.txt')[:,1])
+	aa.append(np.loadtxt('800K/msd.txt')[:,1])
+	aa.append(np.loadtxt('900K/msd.txt')[:,1])
+	aa=np.array(aa)
+	ll=[300,600,700,800,900]
+	import matplotlib 
+	matplotlib.rcParams['legend.fontsize']=12
+	with fig('msd_T.png',legend=True):
+		for i,x in enumerate(aa):
+			pl.plot(time,x,lw=2,label="%sK"%ll[i])
+
+		pl.xlabel("Time (fs)")
+		pl.ylabel("Mean Square Displacement (Angstrom)")
 def getcharge():
 	atoms=io.read("POSCAR")
 	n=len(atoms)+10;

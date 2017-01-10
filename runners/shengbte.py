@@ -14,6 +14,7 @@ import numpy as np
 from aces.f import toString
 from aces.runners.phonopy import runner as Runner
 import pandas as pd
+from aces.graph import fig,pl
 class runner(Runner):
 	def fc3(self):
 		self.force_constant3();		
@@ -194,6 +195,21 @@ class runner(Runner):
 		b[b<-np.pi]+=2.0*np.pi		
 		filter=np.abs(b)<.5*np.pi/180.0
 		return filter
+	def postT(self):
+		from aces.graph import fig,pl
+		a=np.loadtxt("BTE.KappaTensorVsT_CONV")
+		with fig('T_kappa.png',legend=True):
+			ts=a[:,0]
+			fil=ts<=800
+			k1=a[fil,1]
+			k2=a[fil,5]
+			k3=a[fil,9]
+			ts=a[fil,0]
+			pl.plot(ts,k1,lw=2,label="${\kappa_{xx}}$")
+			pl.plot(ts,k2,lw=2,label="${\kappa_{yy}}$")
+			pl.plot(ts,k3,lw=2,label="${\kappa_{zz}}$")
+			pl.xlabel("Tempeature (K)")
+			pl.ylabel('Thermal Conductivity (W/mK)')
 	def postnew(self):
 		cd('T300K')
 		try:
@@ -201,14 +217,14 @@ class runner(Runner):
 			ks=np.array(df['kappa'])
 			plot((np.array(df['step']),'Iteration Step'),(ks,'Thermal Conductivity (W/mK)'),'kappa_scalar.png',grid=True,linewidth=2)
 		except Exception as e:
-			pass
+			print e
 
 		try:
 			df=pd.read_csv("BTE.cumulative_kappa_scalar",sep=r"[ \t]+",header=None,names=['l','kappa'],engine='python');
 			ks=np.array(df['kappa'])
 			plot((np.array(df['l']),'Cutoff Mean Free Path for Phonons (Angstrom)'),(ks,'Thermal Conductivity (W/mK)'),'cumulative_kappa_scalar.png',grid=True,linewidth=2,logx=True)	
 		except Exception as e:
-			pass
+			print e
 		try:
 			omega=np.loadtxt('../BTE.omega')/(2.0*np.pi)
 			kappa=np.loadtxt('BTE.kappa')[-1,1:]
@@ -216,33 +232,65 @@ class runner(Runner):
 			plot((np.arange(len(omega[0])),'Band'),(kappa,'Thermal Conductivity (W/mK)'),'kappa_band.png',grid=True,linewidth=2)
 			plot((np.arange(len(omega[0])),'Band'),(kappa.cumsum(),'Thermal Conductivity (W/mK)'),'cumulative_kappa_band.png',grid=True,linewidth=2)
 		except Exception as e:
-			pass
+			print e
 		try:
-			w=np.loadtxt('BTE.w_final')
+			w=np.loadtxt('BTE.w_final')[:,1]
 			w=np.abs(w)
+			q=np.loadtxt(open('../BTE.qpoints'))
+			n=len(q)
+			w=w.T.reshape([-1,n])
+			w=np.einsum('jk->kj',w)
+			w.flags.writeable = True
+			print w.shape,omega.shape
 			w[omega<omega.flatten().max()*0.005]=float('nan')
 			plot((omega.flatten(),'Frequency (THz)'),(w.flatten(),'Scatter Rate (THz)'),'scatter_freq.png',grid=True,scatter=True,logy=True)
 			tao=1.0/w+1e-6
 			plot((omega.flatten(),'Frequency (THz)'),(tao.flatten(),'Relaxation Time (ps)'),'tao_freq.png',grid=True,scatter=True,logy=True)
 			to_txt(['freq','tao'],np.c_[omega.flatten(),tao.flatten()],'tao_freq.txt')
 		except Exception as e:
-			pass
-
-		v=np.loadtxt(open('../BTE.v'))
-		q=np.loadtxt(open('../BTE.qpoints'))
-		n=len(q)
-		v=v.T.reshape([3,-1,n])
-		v=np.einsum('ijk->kji',v)
-		v=np.linalg.norm(v,axis=-1)
-		plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
-		to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
-
-		try:	
+			print e
+		try:
+	
+			v=np.loadtxt(open('../BTE.v'))
+			q=np.loadtxt(open('../BTE.qpoints'))
+			n=len(q)
+			v=v.T.reshape([3,-1,n])
+			v=np.einsum('ijk->kji',v)
+			v=np.linalg.norm(v,axis=-1)
+			plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
+			to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
+	
+			
 			l=v*tao
 			plot((omega.flatten(),'Frequency (THz)'),(l.flatten(),'Mean Free Path (nm)'),'lamda_freq.png',grid=True,scatter=True)
 			to_txt(['freq','mfp'],np.c_[omega.flatten(),l.flatten()],'lamda_freq.txt')
 		except Exception as e:
-			pass	
+			print e
+		try:
+			g=np.loadtxt('../BTE.gruneisen')
+			plot((omega.flatten(),'Frequency (THz)'),(g.flatten(),'Gruneisen'),'gruneisen_freq.png',grid=True,scatter=True)
+			with fig('gruneisen_freq.png'):
+				pl.scatter(omega.flatten(),g.flatten(),marker='.',color='r',s =50)
+				pl.xlabel('Frequency (THz)')
+				pl.ylabel('Gruneisen Coeffecient')
+				#pl.grid(True)
+				pl.xlim([0,omega.max()])
+				pl.ylim([-10,5])
+				#pl.tick_params(axis='both', which='major', labelsize=14)
+			to_txt(['freq','gruneisen'],np.c_[omega.flatten(),g.flatten()],'gruneisen_freq.txt')
+			g=np.loadtxt('../BTE.P3')
+
+			with fig('p3_freq.png'):
+				pl.scatter(omega.flatten(),g.flatten()*1e6,marker='.',color='r',s =50)
+				pl.xlabel('Frequency (THz)')
+				pl.ylabel('P3 $(\\times 10^{-6})$')
+				#pl.grid(True)
+				pl.xlim([0,omega.max()])
+				pl.ylim([0,g.max()*1e6])
+
+			to_txt(['freq','p3'],np.c_[omega.flatten(),g.flatten()],'p3_freq.txt')
+		except Exception as e:
+			print e
 		try:	
 			q=np.loadtxt(open('../BTE.qpoints'))
 			qnorm=np.linalg.norm(q[:,-3:],axis=1)
@@ -263,14 +311,14 @@ class runner(Runner):
 			ks=np.array(df['kappa'])
 			plot((np.array(df['step']),'Iteration Step'),(ks,'Thermal Conductivity (W/mK)'),'kappa_scalar.png',grid=True,linewidth=2)
 		except Exception as e:
-			pass
+			print e	
 
 		try:
 			df=pd.read_csv("BTE.cumulative_kappa_scalar",sep=r"[ \t]+",header=None,names=['l','kappa'],engine='python');
 			ks=np.array(df['kappa'])
 			plot((np.array(df['l']),'Cutoff Mean Free Path for Phonons (Angstrom)'),(ks,'Thermal Conductivity (W/mK)'),'cumulative_kappa_scalar.png',grid=True,linewidth=2,logx=True)	
 		except Exception as e:
-			pass
+			print e	
 		try:
 			omega=np.loadtxt('BTE.omega')/(2.0*np.pi)
 			kappa=np.loadtxt('BTE.kappa')[-1,1:]
@@ -278,17 +326,23 @@ class runner(Runner):
 			plot((np.arange(len(omega[0])),'Band'),(kappa,'Thermal Conductivity (W/mK)'),'kappa_band.png',grid=True,linewidth=2)
 			plot((np.arange(len(omega[0])),'Band'),(kappa.cumsum(),'Thermal Conductivity (W/mK)'),'cumulative_kappa_band.png',grid=True,linewidth=2)
 		except Exception as e:
-			pass
+			print e	
 		try:
 			w=np.loadtxt('BTE.w_final')
 			w=np.abs(w)
 			w[omega<omega.flatten().max()*0.005]=float('nan')
 			plot((omega.flatten(),'Frequency (THz)'),(w.flatten(),'Scatter Rate (THz)'),'scatter_freq.png',grid=True,scatter=True,logy=True)
 			tao=1.0/w+1e-6
-			plot((omega.flatten(),'Frequency (THz)'),(tao.flatten(),'Relaxation Time (ps)'),'tao_freq.png',grid=True,scatter=True,logy=True)
+			with fig('tao_freq.png'):
+				pl.semilogy(omega.flatten(),tao.flatten(),linestyle='.',marker='.',color='r',markersize =5)
+				pl.xlabel('Frequency (THz)')
+				pl.ylabel('Relaxation Time (ps)')
+				pl.grid(True)
+				pl.xlim([0,omega.max()])
+				#pl.ylim([0,tao.flatten().max()])
 			to_txt(['freq','tao'],np.c_[omega.flatten(),tao.flatten()],'tao_freq.txt')
 		except Exception as e:
-			pass
+			print e	
 		"""
 		if not exists('relaxtime'):mkdir('relaxtime')
 		cd('relaxtime')
@@ -306,13 +360,14 @@ class runner(Runner):
 			plot((omega.flatten(),'Frequency (THz)'),(v.flatten(),'Group Velocity (nm/ps)'),'v_freq.png',grid=True,scatter=True)
 			to_txt(['freq','vg'],np.c_[omega.flatten(),v.flatten()],'v_freq.txt')
 		except Exception as e:
-			pass	
+			print e	
 		try:	
 			l=v*tao
-			plot((omega.flatten(),'Frequency (THz)'),(l.flatten(),'Mean Free Path (nm)'),'lamda_freq.png',grid=True,scatter=True)
+			l[l<1e-6]=None
+			plot((omega.flatten(),'Frequency (THz)'),(l.flatten(),'Mean Free Path (nm)'),'lamda_freq.png',grid=True,scatter=True,logy=True,logx=True,xmin=0)
 			to_txt(['freq','mfp'],np.c_[omega.flatten(),l.flatten()],'lamda_freq.txt')
 		except Exception as e:
-			pass	
+			print e	
 		try:	
 			q=np.loadtxt(open('BTE.qpoints'))
 			qnorm=np.linalg.norm(q[:,-3:],axis=1)
@@ -325,7 +380,7 @@ class runner(Runner):
 			datas=data,
 			filename='branchscatter.png',scatter=True,legend=False,logx=True,logy=True)
 		except Exception as e:
-			pass	
+			print e	
 	def third(self):
 		mkdir('thirdorder')
 		cd('thirdorder')
@@ -374,4 +429,84 @@ class runner(Runner):
 		print "START SHENGBTE..."
 		passthru(config.mpirun+" %s "%(m.nodes*m.procs)+config.shengbte)
 		
+
+	def kkappa(self):
+		dirs=ls('shengold*')
+		from aces.scanf import sscanf
+		from aces.graph import fig,pl
+		us=[]
+		for d in dirs:
+			f=shell_exec('grep ngrid %s/CONTROL'%d)
+			ks=sscanf(f,"	ngrid(:)=%d %d %d")
+			f=np.loadtxt('%s/BTE.kappa_tensor'%d)
+			print ks
+			if len(f.shape)==2:
+				x=f[-1]
+			else:
+				x=f
+			x=x[1:].reshape([3,3])
+			print x
+			us.append([ks,x])
+		
+		with fig('kkappa_64nn.png',legend=True):
+			p1=filter(lambda u: u[0][0]==64,us)
+			k1=[]
+			k2=[]
+			k3=[]
+			ks=[]
+			for u in p1:
+				ks.append(u[0][1])
+				k1.append(u[1][0,0])
+				k2.append(u[1][1,1])
+				k3.append(u[1][2,2])
+			f=np.argsort(ks)
+			ks=np.array(ks)[f];k1=np.array(k1)[f];k2=np.array(k2)[f];k3=np.array(k3)[f];
+			pl.plot(ks,k1,markersize=30,linestyle='--',markeredgecolor='w', c='b',marker=".",label="${\kappa_{xx}}$")
+			pl.plot(ks,k2,markersize=15,linestyle='--',markeredgecolor='w', c='r',marker="v",label="${\kappa_{yy}}$")
+			pl.plot(ks,k3,markersize=15,linestyle='--',markeredgecolor='w', c='g',marker="^",label="${\kappa_{zz}}$")
+			pl.ylim([0,0.35])
+			pl.xlim([0,np.array(ks).max()+1])
+			pl.xlabel("$Nq_y$ and $Nq_z$")
+			pl.ylabel("Themal Conductivity (W/mK)")
+		with fig('kkappa_n44.png',legend=True):
+			p1=filter(lambda u: u[0][1]==4,us)
+			k1=[]
+			k2=[]
+			k3=[]
+			ks=[]
+			for u in p1:
+				ks.append(u[0][0])
+				k1.append(u[1][0,0])
+				k2.append(u[1][1,1])
+				k3.append(u[1][2,2])
+			f=np.argsort(ks)
+			ks=np.array(ks)[f];k1=np.array(k1)[f];k2=np.array(k2)[f];k3=np.array(k3)[f];
+			pl.plot(ks,k1,markersize=30,linestyle='--',markeredgecolor='w', c='b',marker=".",label="${\kappa_{xx}}$")
+			pl.plot(ks,k2,markersize=15,linestyle='--',markeredgecolor='w', c='r',marker="v",label="${\kappa_{yy}}$")
+			pl.plot(ks,k3,markersize=15,linestyle='--',markeredgecolor='w', c='g',marker="^",label="${\kappa_{zz}}$")
+			pl.ylim([0,0.35])
+			pl.xlim([0,np.array(ks).max()+100])
+			pl.xlabel("$Nq_x$")
+			pl.ylabel("Themal Conductivity (W/mK)")
+	def kmfp(self):
+		dirs=ls('shengold*')
+		from aces.scanf import sscanf
+		from aces.graph import fig,pl
+		us=[]
+		for d in dirs:
+			f=shell_exec('grep ngrid %s/CONTROL'%d)
+			ks=sscanf(f,"	ngrid(:)=%d %d %d")
+			if(ks[1]!=4):continue
+			f=np.loadtxt('%s/BTE.cumulative_kappa_scalar'%d)
+			us.append([ks,f])
+		with fig('reduce_mfp.png',legend=True,ncol=1):
+			for i,u in enumerate(us):
+				if i <3:continue
+				ks,f=u
+				x,y=f[:,0],f[:,1]
+				pl.semilogx(x,y,label="Nx= %d "%ks[0],linewidth=2)
+			pl.xlabel('Cutoff Mean Free Path for Phonons (Angstrom)')
+			pl.ylabel('Thermal Conductivity (W/mK)')
+			pl.grid(True)
+
 

@@ -1,6 +1,14 @@
 # encoding : utf8
 import matplotlib
 matplotlib.use('Agg')
+matplotlib.rcParams['font.size'] = 14
+matplotlib.rcParams['axes.linewidth'] = 2
+matplotlib.rcParams['xtick.major.width'] = 1.5
+matplotlib.rcParams['ytick.major.width'] = 1.5
+matplotlib.rcParams['patch.linewidth']=0
+matplotlib.rcParams['legend.markerscale']=.7
+matplotlib.rcParams['mathtext.default']='regular'
+#matplotlib.rcParams['legend.frameon'] = 'False'
 import numpy as np
 import matplotlib.pyplot as pl	
 def twinx(x,y1,y2,filename):
@@ -15,10 +23,11 @@ def twinx(x,y1,y2,filename):
 	ax1.legend(a+b,[y1[1],y2[1]],loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True)
 	pl.close()
-def plot(x,y,filename,grid=False,linewidth=1,scatter=False,xmax=None,logx=False,logy=False):
-	series(x[1],y[1],[(x[0],y[0],y[1])],filename,legend=False,grid=grid,linewidth=linewidth,scatter=scatter,xmax=xmax,logx=logx,logy=logy)
+def plot(x,y,filename,**args):
+	args['legend']=False
+	series(x[1],y[1],[(x[0],y[0],y[1])],filename,**args)
 	
-def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=None,scatter=False,logx=False,logy=False):
+def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=None,xmin=None,scatter=False,logx=False,logy=False):
 	pl.figure()
 	pl.xlabel(xlabel)
 	pl.ylabel(ylabel)
@@ -39,7 +48,8 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=
 		serie=datas[0]
 		plot(serie[0],serie[1],label=serie[2],linewidth=linewidth,color='r',marker=marker,linestyle=linestyle)
 		if xmax is None:xmax=max(serie[0])
-		pl.xlim([min(serie[0]),xmax])
+		if xmin is None:xmin=min(serie[0])
+		pl.xlim([xmin,xmax])
 	else:
 		min0=100000;max0=-100000
 		for serie in datas:
@@ -47,7 +57,8 @@ def series(xlabel,ylabel,datas,filename,linewidth=1,legend=True,grid=False,xmax=
 			min0=min(min(serie[0]),min0)
 			max0=max(max(serie[0]),max0)
 		if xmax is None:xmax=max0
-		pl.xlim([min0,xmax])
+		if xmin is None:xmin=min0
+		pl.xlim([xmin,xmax])
 	if legend:
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
 	if grid:
@@ -64,14 +75,16 @@ def wfig(filename,f,legend=False):
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
 class fig:
-	def __init__(self,filename,legend=False):
+	def __init__(self,filename,legend=False,ncol=3):
 		self.filename=filename
 		self.legend=legend
+		self.ncol=ncol
 	def __enter__(self):
 		pl.figure()
 	def __exit__(self, type,value, trace):
 		if self.legend:
-			pl.legend(loc='best').get_frame().set_alpha(0.0)
+			frame=pl.legend(loc='best',scatterpoints=1,numpoints=1,ncol=self.ncol,fontsize=12).get_frame()
+			frame.set_linewidth(1.5)
 		pl.savefig(self.filename,bbox_inches='tight',transparent=True) 
 		pl.close() 
 def surf(X, Y, Z,filename):
