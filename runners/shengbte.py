@@ -210,6 +210,27 @@ class runner(Runner):
 			pl.plot(ts,k3,lw=2,label="${\kappa_{zz}}$")
 			pl.xlabel("Tempeature (K)")
 			pl.ylabel('Thermal Conductivity (W/mK)')
+	def oldT(self):
+		from aces.graph import fig,pl
+		import matplotlib as mpl 
+		mpl.rcParams['axes.color_cycle']=['#e24a33','#2A749A','#988ed5']
+		ts=np.arange(200,801,100)
+		a=[]
+		for dir in ts:
+			print dir
+			x=np.loadtxt("12844."+str(dir)+"K/BTE.kappa_tensor")
+			a.append(x)
+		a=np.array(a)
+		with fig('T_kappa.png',legend=True):
+			k1=a[:,1]
+			k2=a[:,5]
+			k3=a[:,9]
+			pl.plot(ts,k1,lw=3,markersize=30,linestyle='--',markeredgecolor='w',marker=".",label="${\kappa_{xx}}$")
+			pl.plot(ts,k2,lw=3,markersize=15,linestyle='--',markeredgecolor='w',marker="v",label="${\kappa_{yy}}$")
+			pl.plot(ts,k3,lw=3,markersize=15,linestyle='--',markeredgecolor='w',marker="^",label="${\kappa_{zz}}$")
+			pl.xlabel("Tempeature (K)")
+			pl.ylabel('Thermal Conductivity (W/mK)')
+			pl.xlim([200,800])
 	def postnew(self):
 		cd('T300K')
 		try:
@@ -434,6 +455,8 @@ class runner(Runner):
 		dirs=ls('shengold*')
 		from aces.scanf import sscanf
 		from aces.graph import fig,pl
+		import matplotlib as mpl 
+		mpl.rcParams['axes.color_cycle']=['#e24a33','#2A749A','#988ed5']
 		us=[]
 		for d in dirs:
 			f=shell_exec('grep ngrid %s/CONTROL'%d)
@@ -461,9 +484,9 @@ class runner(Runner):
 				k3.append(u[1][2,2])
 			f=np.argsort(ks)
 			ks=np.array(ks)[f];k1=np.array(k1)[f];k2=np.array(k2)[f];k3=np.array(k3)[f];
-			pl.plot(ks,k1,markersize=30,linestyle='--',markeredgecolor='w', c='b',marker=".",label="${\kappa_{xx}}$")
-			pl.plot(ks,k2,markersize=15,linestyle='--',markeredgecolor='w', c='r',marker="v",label="${\kappa_{yy}}$")
-			pl.plot(ks,k3,markersize=15,linestyle='--',markeredgecolor='w', c='g',marker="^",label="${\kappa_{zz}}$")
+			pl.plot(ks,k1,markersize=30,linestyle='--',markeredgecolor='w',marker=".",label="${\kappa_{xx}}$")
+			pl.plot(ks,k2,markersize=15,linestyle='--',markeredgecolor='w',marker="v",label="${\kappa_{yy}}$")
+			pl.plot(ks,k3,markersize=15,linestyle='--',markeredgecolor='w',marker="^",label="${\kappa_{zz}}$")
 			pl.ylim([0,0.35])
 			pl.xlim([0,np.array(ks).max()+1])
 			pl.xlabel("$Nq_y$ and $Nq_z$")
@@ -481,9 +504,9 @@ class runner(Runner):
 				k3.append(u[1][2,2])
 			f=np.argsort(ks)
 			ks=np.array(ks)[f];k1=np.array(k1)[f];k2=np.array(k2)[f];k3=np.array(k3)[f];
-			pl.plot(ks,k1,markersize=30,linestyle='--',markeredgecolor='w', c='b',marker=".",label="${\kappa_{xx}}$")
-			pl.plot(ks,k2,markersize=15,linestyle='--',markeredgecolor='w', c='r',marker="v",label="${\kappa_{yy}}$")
-			pl.plot(ks,k3,markersize=15,linestyle='--',markeredgecolor='w', c='g',marker="^",label="${\kappa_{zz}}$")
+			pl.plot(ks,k1,markersize=30,linestyle='--',markeredgecolor='w',marker=".",label="${\kappa_{xx}}$")
+			pl.plot(ks,k2,markersize=15,linestyle='--',markeredgecolor='w',marker="v",label="${\kappa_{yy}}$")
+			pl.plot(ks,k3,markersize=15,linestyle='--',markeredgecolor='w',marker="^",label="${\kappa_{zz}}$")
 			pl.ylim([0,0.35])
 			pl.xlim([0,np.array(ks).max()+100])
 			pl.xlabel("$Nq_x$")

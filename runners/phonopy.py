@@ -212,6 +212,10 @@ Monkhorst-Pack
 			ispin="ISPIN=2"
 		else:
 			ispin=""
+		if m.soc:
+			soc="LSORBIT=T"
+		else:
+			soc=""
 		if m.isym:
 			sym="ISYM = 1"
 		else:
@@ -230,7 +234,8 @@ LCHARG = .FALSE.
 NPAR = %d
 %s
 %s
-"""%(self.m.ecut,m.ismear,npar,sym,ispin)	
+%s
+"""%(self.m.ecut,m.ismear,npar,sym,ispin,soc)	
 		if m.vdw:
 			s+="""\nIVDW = 1
 VDW_RADIUS = 50
