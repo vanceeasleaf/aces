@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/vanceeasleaf/aces.svg?branch=master)](https://travis-ci.org/vanceeasleaf/aces)
 Automatical Computational Experiment System(ACES)
 ========
 
