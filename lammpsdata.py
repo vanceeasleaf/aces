@@ -2,6 +2,7 @@ from aces.pizza.data import data
 from ase import Atoms,Atom
 import numpy as np
 from aces.tools import debug,toString
+from aces.f import merge_vector
 class lammpsdata:
 	def __init__(self,atoms=None,elements=None):
 		if atoms is None:
@@ -43,15 +44,7 @@ class lammpsdata:
 		atoms.set_cell(cell)
 		self.atoms=atoms
 		return atoms
-	def mergeVec(self,x,y):
-		direct=np.cross(x,y)
-		if np.allclose(np.linalg.norm(direct),0):
-			direct=[0,0,1]
-		else:
-			direct=direct/np.linalg.norm(direct)
-		phi=np.arccos(np.dot(x,y)/np.linalg.norm(x)/np.linalg.norm(y))
-		return (direct,phi)
-		
+
 	def getTypes(self):
 		return list(set(self.atoms.get_chemical_symbols()))
 		
@@ -98,11 +91,11 @@ class lammpsdata:
 	def get_rotated_atoms(self):
 		unit=self.atoms.copy()
 		#debug(unit.cell)
-		direct,phi=self.mergeVec(unit.cell[0],[1,0,0])
+		direct,phi=merge_vector(unit.cell[0],[1,0,0])
 		unit.rotate(direct,phi,rotate_cell=True)
 		#debug(unit.cell)
 		yn=[0,unit.cell[1,1],unit.cell[1,2]]
-		direct1,phi1=self.mergeVec(yn,[0,1,0])
+		direct1,phi1=merge_vector(yn,[0,1,0])
 		unit.rotate(direct1,phi1,rotate_cell=True)
 		#debug(unit.cell)
 		return unit,(direct,phi,direct1,phi1)

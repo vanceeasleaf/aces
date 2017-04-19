@@ -7,14 +7,22 @@ def minimize(m):
 	elif m.engine=="vasp":minimize_vasp(m)
 	else: raise Exception('Unknow minimize type!')
 def minimize_vasp(m):
-	if m.isym:
-		sym="ISYM = 1"
-	else:
-		sym="ISYM = 0"
 	npar=1
 	for i in range(1,int(np.sqrt(m.cores))+1):
 		if m.cores%i==0:
 			npar=i
+	if m.ispin:
+		ispin="ISPIN=2"
+	else:
+		ispin=""
+	if m.soc:
+		soc="LSORBIT=T"
+	else:
+		soc=""
+	if m.isym:
+		sym="ISYM = 1"
+	else:
+		sym="ISYM = 0"
 	s="""SYSTEM = - local optimisation
 PREC = high
 ENCUT=%f
@@ -29,9 +37,11 @@ LWAVE = FALSE
 LCHARG = FALSE
 EDIFFG = -0.01
 LREAL=FALSE
-%s
 NPAR = %d
-"""%(m.ecut,sym,npar)
+%s
+%s
+%s
+"""%(m.ecut,npar,sym,ispin,soc)
 	if m.vdw:
 		s+="""\nIVDW = 1
 VDW_RADIUS = 50

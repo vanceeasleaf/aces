@@ -83,6 +83,7 @@ Monkhorst-Pack
 		ref=io.read('SPOSCAR')
 		files=shell_exec("ls dirs").split('\n')
 		fc2=readfc2(filename)
+		np.set_printoptions(precision=2,suppress=True)
 		for file in files:
 			print file
 			POSCAR='dirs/%s/POSCAR'%file
@@ -90,10 +91,12 @@ Monkhorst-Pack
 			atoms=io.read(POSCAR)
 			u=atoms.positions-ref.positions
 			f=-np.einsum('ijkl,jl',fc2,u)
-			#print forces-f
+			
 			vasprun = etree.iterparse(vasprunxml, tag='varray')
 			forces=self.parseVasprun(vasprun,'forces')
-			assert np.allclose(f,forces,atol=1e-2)
+			print np.abs(f),"\n"
+			print np.abs(forces-f)
+			print np.allclose(f,forces,atol=1e-2)
 	def stub(self):
 		files=shell_exec("ls dirs").split('\n')
 		files=map(lambda x:x.replace('dir_',''),files)
@@ -123,7 +126,7 @@ Monkhorst-Pack
 		passthru(cmd)
 		m=self.m
 		#Create FORCE_CONSTANTS
-		passthru(config.phonopy+"--tolerance=1e-4 --writefc --dim='%s'"%(m.dim))
+		passthru(config.phonopy+"--tolerance=1e-4  --writefc --dim='%s'"%(m.dim))
 
 	def fc2(self):
 		files=shell_exec("ls dirs").split('\n')
@@ -191,7 +194,7 @@ PRIMITIVE_AXIS = %s
 		m=self.m
 		#generate supercells
 
-		passthru(config.phonopy+"--tolerance=1e-4 -d --dim='%s'"%(m.dim))
+		passthru(config.phonopy+"--tolerance=1e-4  -d --dim='%s'"%(m.dim))
 
 	def writeKPOINTS(self):
 		m=self.m
@@ -219,7 +222,7 @@ Monkhorst-Pack
 		if m.isym:
 			sym="ISYM = 1"
 		else:
-			sym=""
+			sym="ISYM = 0"
 		s="""SYSTEM=calculate energy
 PREC = High
 IBRION = -1
@@ -379,10 +382,10 @@ VDW_R0 = 1.898 1.892
 		self.getV()
 	def getqpoints(self,q):
 		self.generate_qconf(q)
-		passthru(config.phonopy+"--tolerance=1e-4 q.conf")
+		passthru(config.phonopy+"--tolerance=1e-4  q.conf")
 	def getvqpoints(self,q):
 		self.generate_vqconf(q)
-		passthru(config.phonopy+"--tolerance=1e-4 q.conf")
+		passthru(config.phonopy+"--tolerance=1e-4  q.conf")
 		data =parseyaml('qpoints.yaml')
 		file=open("v.txt",'w')
 		for phonon in data['phonon']:
@@ -397,7 +400,7 @@ VDW_R0 = 1.898 1.892
 		plot((v[:,3],'Frequency (THz)'),(v[:,4],'Group Velocity (Angstrom/ps)'),'v_freq.png',grid=True,scatter=True)
 	def getDos(self):
 		self.generate_meshconf()	
-		passthru(config.phonopy+"--tolerance=1e-4 --dos  mesh.conf")
+		passthru(config.phonopy+"--tolerance=1e-4  --dos  mesh.conf")
 		self.drawDos()
 	def getV(self):
 		if not exists('groupv'):mkdir('groupv')
@@ -406,7 +409,7 @@ VDW_R0 = 1.898 1.892
 		cp('../POSCAR','.')
 		cp('../disp.yaml','.')
 		self.generate_vconf()	
-		passthru(config.phonopy+"--tolerance=1e-4   v.conf")
+		passthru(config.phonopy+"--tolerance=1e-4    v.conf")
 		self.drawV()
 		cd('..')
 	def drawV(self):
@@ -428,7 +431,7 @@ VDW_R0 = 1.898 1.892
 		
 	def getband(self):
 		self.generate_bandconf()
-		passthru(config.phonopy+"--tolerance=1e-4 -s  band.conf")
+		passthru(config.phonopy+"--tolerance=1e-4  -s  band.conf")
 		from aces.bandplot import plotband
 		plotband(labels=' '.join(self.m.bandpath))
 	def getbanddos(self):
@@ -447,7 +450,6 @@ ATOM_NAME = %s
 BAND = %s 
 BAND_POINTS = 101
 FORCE_CONSTANTS = READ
-MESH_SYMMETRY = .FALSE.
 PRIMITIVE_AXIS = %s
 """%(m.dim,' '.join(m.elements),bpath,toString(m.premitive.flatten()))
 		write(band,'band.conf')

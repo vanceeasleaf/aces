@@ -195,6 +195,8 @@ class runner(Runner):
 		b[b<-np.pi]+=2.0*np.pi		
 		filter=np.abs(b)<.5*np.pi/180.0
 		return filter
+
+		
 	def postT(self):
 		from aces.graph import fig,pl
 		a=np.loadtxt("BTE.KappaTensorVsT_CONV")
@@ -231,6 +233,26 @@ class runner(Runner):
 			pl.xlabel("Tempeature (K)")
 			pl.ylabel('Thermal Conductivity (W/mK)')
 			pl.xlim([200,800])
+	def grtao(self):
+		cd('T300K')
+		#画格林艾森系数与驰豫时间的关系
+		w=np.loadtxt('BTE.w_final')[:,1]
+		w=np.abs(w)
+		q=np.loadtxt(open('../BTE.qpoints'))
+		n=len(q)
+		w=w.T.reshape([-1,n])
+		w=np.einsum('jk->kj',w)
+		w.flags.writeable = True
+		omega=np.loadtxt('../BTE.omega')/(2.0*np.pi)
+		w[omega<omega.flatten().max()*0.005]=float('nan')
+		tao=1.0/w+1e-6
+		g=np.loadtxt('../BTE.gruneisen')
+		with fig("gruneisen_tao.png"):
+			pl.semilogy(g.flatten(),tao.flatten(),ls='.',marker='.',color='r',markersize =10)
+			pl.ylabel('Relaxation Time (ps)')
+			pl.xlabel('Gruneisen Coeffecient')
+			pl.xlim([-10,5])
+			pl.ylim([0,1e4])
 	def postnew(self):
 		cd('T300K')
 		try:
@@ -326,6 +348,98 @@ class runner(Runner):
 		except Exception as e:
 			pass
 		cd('..')
+	def vtao(self):
+		#group velocity vs. tao using old version of shengbte
+		w=np.loadtxt('BTE.w_final')
+		w=np.abs(w)
+		omega=np.loadtxt('BTE.omega')/(2.0*np.pi)
+		w[omega<omega.flatten().max()*0.005]=float('nan')
+		tao=1.0/w+1e-6
+		v=np.loadtxt(open('BTE.v'))
+		n,m=v.shape
+		v=v.reshape([n,3,m/3])
+		v=np.linalg.norm(v,axis=1)
+		l=v*tao
+		l[l<1e-6]=None
+		with fig('tao_v.png'):
+			pl.semilogy(v.flatten(),tao.flatten(),linestyle='.',marker='.',color='r',markersize =5)
+			pl.xlabel('Group Velocity (nm/ps)')
+			pl.ylabel('Relaxation Time (ps)')
+			pl.grid(True)
+		with fig('tao_l.png'):
+			pl.loglog(l.flatten(),tao.flatten(),linestyle='.',marker='.',color='r',markersize =5)
+			pl.xlabel('Mean Free Path (nm)')
+			pl.ylabel('Relaxation Time (ps)')
+			pl.grid(True)
+		with fig('v_l.png'):
+			pl.semilogy(v.flatten(),l.flatten(),linestyle='.',marker='.',color='r',markersize =5)
+			pl.xlabel('Group Velocity (nm/ps)')
+			pl.ylabel('Mean Free Path (nm)')
+			pl.grid(True)
+	def getGrid(self):
+		s=shell_exec("grep ngrid CONTROL")
+		from scanf import sscanf
+		grids=sscanf(s,"ngrid(:)=%d %d %d")
+		return grids
+	def getQ(self):
+		from ase import io
+		atoms=io.read('../POSCAR')
+		rcell=atoms.get_reciprocal_cell()
+		grid=self.getGrid()
+		q0=[]
+		for ii in range(grid[0]):
+			for jj in range(grid[1]):
+				for kk in range(grid[2]):
+					k=[float(ii)/grid[0]-.5,float(jj)/grid[1]-.5,float(kk)/grid[2]-.5]
+					#q0.append(np.einsum('ij,i',rcell,k))
+					q0.append(k)
+		return np.array(q0)
+
+	def getQFmap(self):
+		qpoints_full=np.loadtxt('BTE.qpoints_full')
+		qpoints=np.loadtxt('BTE.qpoints')
+		ids=qpoints_full[:,1].astype(np.int)
+		idx=qpoints[:,0].astype(np.int)
+		a={}
+		for i,id in enumerate(idx):
+			a[id]=i
+		u=np.array([a[i] for i in ids])
+		return u
+	def taoth(self):
+		#tao vs. direction in xy plane using old version of shengbte
+		w=np.loadtxt('BTE.w_final')
+		w=np.abs(w)
+		omega=np.loadtxt('BTE.omega')/(2.0*np.pi)
+		w[omega<omega.flatten().max()*0.005]=float('nan')
+		tao=1.0/w+1e-6
+		tao[tao>10000]=0
+		tao=np.nan_to_num(tao)
+		u=self.getQFmap()
+		tao=tao[u]
+		#为了限制q点在BZ,必须自己重新来
+		#qpoints_full=np.loadtxt('BTE.qpoints_full')
+		#q=qpoints_full[:,-3:]
+		q=self.getQ()
+		with fig('tao_th.png'):
+			ax = pl.subplot(111, projection='polar')
+			N=100
+			th=np.linspace(0,1,N)*np.pi*2.0-np.pi
+			r=np.zeros_like(th)
+			r1=np.zeros_like(th)
+			theta=np.arctan2(q[:,1],q[:,0])
+			for i in np.arange(1):
+				for j,tt in enumerate(th):
+					if j==len(th)-1:						
+						fil=(theta>=tt)
+					else:
+						fil=(theta>=tt) *(theta<th[j+1])
+						r[j]=np.nan_to_num(tao[fil].mean())
+						r1[j]=np.nan_to_num(fil.sum())
+				c = pl.plot(th, r,lw=2)
+				#pl.plot(th, r1,lw=2)
+				#c.set_alpha(0.75)
+				#pl.semilogy(q[:,0].flatten(),tao[:,i].flatten(),linestyle='.',marker='.',color='r',markersize =5)
+			pl.grid(True)
 	def postsheng(self):
 		try:
 			df=pd.read_csv("BTE.kappa_scalar",sep=r"[ \t]+",header=None,names=['step','kappa'],engine='python');
@@ -512,6 +626,26 @@ class runner(Runner):
 			pl.xlabel("$Nq_x$")
 			pl.ylabel("Themal Conductivity (W/mK)")
 	def kmfp(self):
+		def ff(p,x):
+			#return p[0]*(1.0-np.exp(-x**p[2]/p[1]))
+			return 1.0/(p[1]/x+1/p[0])-p[2]
+			#return p[0]*p[1]**x
+		
+		def fit(x,z,p0,tt):
+			def errorfunc(p,x,z):
+				return tt(p,x)-z
+			from scipy.optimize import leastsq
+			solp, ier = leastsq(errorfunc, 
+						p0, 
+						args=(x,z),
+						Dfun=None,
+						full_output=False,
+						ftol=1e-9,
+						xtol=1e-9,
+						maxfev=100000,
+						epsfcn=1e-10,
+						factor=0.1)
+			return solp
 		dirs=ls('shengold*')
 		from aces.scanf import sscanf
 		from aces.graph import fig,pl
@@ -528,8 +662,27 @@ class runner(Runner):
 				ks,f=u
 				x,y=f[:,0],f[:,1]
 				pl.semilogx(x,y,label="Nx= %d "%ks[0],linewidth=2)
+			ks,f=us[-1]
+			x,y=f[:,0],f[:,1]
+			#fil=(x>0)
+			#p=fit(x[fil],y[fil],[1,1,1],ff)
+			#y1=ff(p,x)
+			#pl.semilogx(x,y1,label="fit of Nx= %d "%ks[0],linewidth=2)
 			pl.xlabel('Cutoff Mean Free Path for Phonons (Angstrom)')
 			pl.ylabel('Thermal Conductivity (W/mK)')
 			pl.grid(True)
-
+		with fig('kappa_inv_mpf_inv.png',legend=True,ncol=1):
+			ks,f=us[-1]
+			fil=x>.5
+			x,y=f[fil,0],f[fil,1]
+			xx=1/x;yy=1/y
+			pl.plot(xx,yy,linewidth=3,c='red',label="Nx=1024")
+			def ll(p,x):
+				return p[0]*x+p[1]
+			fil=xx>xx.max()/4
+			p=fit(xx[fil],yy[fil],[1,1,1],ll)
+			pl.plot(xx,ll(p,xx),lw=3,ls='dashed',label="Fitted")
+			pl.xlabel('1/L (1/Angstrom)')
+			pl.ylabel('$1/\\kappa_L$ (mK/W)')
+			pl.grid(True)
 

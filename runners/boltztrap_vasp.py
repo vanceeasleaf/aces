@@ -144,10 +144,10 @@ BOLTZ                     # run mode (only BOLTZ is supported)
 		with fig("kappa.png",legend=True):#W/mK*1/s
 			pl.xlabel("$\\mu$ (eV)")
 			pl.ylabel("Electronic Thermal Conductivity (W/mK)")
-			pl.xlim([-1.5,1.5])
 			for t in Tplot:
-				idx=d[:,1]==t
+				idx=(d[:,1]==t) * ( d[:,0]<=1.5) * ( d[:,0]>=-1.5)
 				pl.plot(d[idx,0],d[idx,7]*tao,lw=3,label="T="+str(t)+"K")
+			pl.xlim([-1.5,1.5])
 		with fig("kappa_t.png"):
 			pl.xlabel("Temperature (K)")
 			pl.ylabel("Electronic Thermal Conductivity (W/mK)")
