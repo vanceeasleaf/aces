@@ -1,9 +1,12 @@
 [![Build Status](https://travis-ci.org/vanceeasleaf/aces.svg?branch=master)](https://travis-ci.org/vanceeasleaf/aces)
+
 Automatical Computational Experiment System(ACES)
 ========
 
 @Authour Yang Zhou 
 @Fudan University Computational Condensed Matter Group(CCMG)
+
+Docs at [http://vanceeasleaf.github.io/aces/](http://vanceeasleaf.github.io/aces/)
 
 ## Introduction
 
