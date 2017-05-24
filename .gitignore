@@ -46,4 +46,4 @@ correlation/jcor.txt
 *.txt
 *.pyc
 _gsdata_/
-
+!requirements.txt
