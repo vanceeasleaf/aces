@@ -45,3 +45,5 @@ Temporary Items
 correlation/jcor.txt
 *.txt
 *.pyc
+_gsdata_/
+
