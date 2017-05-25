@@ -2,16 +2,16 @@
 # @Author: YangZhou
 # @Date:   2016-09-05 19:33:20
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-12-12 21:27:42
+# @Last Modified time: 2017-05-25 09:32:10
 
-from aces.App import App
+
 from aces.tools import *
-from aces import config
+
 import aces.tools
 import sys
 import json
 def run():
-	
+	from aces.App import App
 	r=App().runner
 
 	if len(sys.argv)>1:
@@ -20,6 +20,24 @@ def run():
 			print a,'method does not exist'
 		else: getattr(r,a)()
 def exe():
+	if len(sys.argv)>1:
+		a=sys.argv[1]
+		if(a.find("git")>0):
+			mkdir('.project')
+			cd('.project')
+			if(not exists('.git')):
+				shell_exec("git init")
+				write("_gsdata_",".gitignore")
+			d=ls()
+			for x in d:
+				if(x.find(".git")>=0):continue
+				if(x.find("_gsdata_")>=0):continue
+				shell_exec("rm %s -r"%x)
+			cd('..')
+			passthru("find .  -path ./.project  -prune -o -name '*.py' -print| cpio -pdm .project 2>/dev/null ;cd .project;git add .;git commit -am \"%s\""%(sys.argv[2]))
+			return
+	from aces.App import App
+	from aces import config
 	if exists("sub.py"):
 		aces.tools.printCommand=False
 		obj=[json.loads(json_string) for  json_string in open("qloops.txt")]
