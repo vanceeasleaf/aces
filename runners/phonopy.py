@@ -131,6 +131,8 @@ Monkhorst-Pack
 	def fc2(self):
 		files=shell_exec("ls dirs").split('\n')
 		files=map(lambda x:x.replace('dir_',''),files)
+		#when the number of files >1000, the order is wrong ,POSCAR-001, POSCAR-1500 ,POSCAR-159
+		files.sort(lambda x,y:int(x.split('-')[1])-int(y.split('-')[1]))
 		self.force_constant(files)
 	def generate_meshconf(self):
 		#generate mesh.conf
