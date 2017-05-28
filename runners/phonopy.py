@@ -8,7 +8,7 @@ from aces.runners import Runner
 from aces.UnitCell.unitcell import UnitCell
 from aces.graph import plot,series
 from aces.script.vasprun import exe as lammpsvasprun
-
+import aces.script.vasprun as vasprun
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as pl
@@ -278,6 +278,15 @@ VDW_R0 = 1.898 1.892
 			
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+	def getVaspRun_lammps(self):
+		m=self.m
+		if 'jm' in self.__dict__:
+			from aces.jobManager import pbs
+			path=pwd()
+			pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.python+vasprun.__file__+' >log.out')
+			self.jm.reg(pb)
+		else:
+			shell_exec(config.python+vasprun.__file__+' >log.out')
 	def thcode(self,files,put):
 		s=""
 		for file in files:
@@ -309,12 +318,25 @@ VDW_R0 = 1.898 1.892
 				passthru("tar zcf %s.tar.gz %s"%(m.pbsname,m.pbsname))			
 			print 'start check'
 			self.jm.check()
-		elif m.engine=="lammps":
+		elif m.engine=="lammps1":
 			from multiprocessing.dummy  import Pool
 			pool=Pool()
 			pool.map_async(lammpsvasprun,files)
 			pool.close()
 			pool.join()
+		elif m.engine=="lammps":
+			from aces.jobManager import jobManager
+			self.jm=jobManager()
+			for file in files:
+				print file
+				dir="dirs/dir_"+file
+				mkdir(dir)
+				mv(file,dir+'/POSCAR')
+				cd(dir)
+				self.getVaspRun_lammps()
+				cd(maindir)
+			self.jm.run()
+			self.jm.check()
 
 	def runSPOSCAR(self):
 		m=self.m
@@ -375,6 +397,10 @@ VDW_R0 = 1.898 1.892
 		files=map(lambda x:x.replace('dir_',''),files)
 		self.force_constant(files)
 	def postp(self):
+		m=self.m
+		if m.gamma_only:
+			self.getDos()
+			return
 		self.getband()
 		self.getDos()
 		

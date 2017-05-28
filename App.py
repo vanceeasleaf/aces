@@ -15,6 +15,10 @@ class App:
 			opt=loadjson('app.json')
 		elif exists('../app.json'):
 			opt=loadjson('../app.json')
+		elif exists('../../app.json'):
+			opt=loadjson('../../app.json')
+		elif exists('../../../app.json'):
+			opt=loadjson('../../../app.json')
 		else:exit('app.json lost!')
 		species=opt['species']
 		s=im('aces.materials.%s'%species)
