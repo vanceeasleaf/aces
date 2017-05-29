@@ -73,6 +73,33 @@ Monkhorst-Pack
 		from aces.cs import runner
 		runner(NAH=2).run()
 		self.check('csfc2')
+	def check1(self,filename='FORCE_CONSTANTS'):
+		from lxml import etree
+		from ase import io
+		ref=io.read('SPOSCAR')
+		fc2=readfc2(filename)
+		np.set_printoptions(precision=2,suppress=True)
+		files=['dir_POSCAR-001']
+		vasprunxml="dir_SPOSCAR/vasprun.xml"
+		if exists(vasprunxml):
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces0=self.parseVasprun(vasprun,'forces')
+			print forces0.max()
+		else:
+			forces0=0.0
+		for file in files:
+			print file
+			POSCAR='dirs/%s/POSCAR'%file
+			vasprunxml="dirs/%s/vasprun.xml"%file
+			atoms=io.read(POSCAR)
+			u=atoms.positions-ref.positions
+			f=-np.einsum('ijkl,jl',fc2,u)
+			
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces=self.parseVasprun(vasprun,'forces')-forces0
+			print np.abs(f).max(),"\n"
+			print np.abs(forces-f).max()
+			print np.allclose(f,forces,atol=1e-2)
 	def check(self,filename='FORCE_CONSTANTS'):
 		try:
 			from lxml import etree
@@ -84,6 +111,13 @@ Monkhorst-Pack
 		files=shell_exec("ls dirs").split('\n')
 		fc2=readfc2(filename)
 		np.set_printoptions(precision=2,suppress=True)
+		vasprunxml="dir_SPOSCAR/vasprun.xml"
+		if exists(vasprunxml):
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces0=self.parseVasprun(vasprun,'forces')
+			print forces0.max()
+		else:
+			forces0=0.0
 		for file in files:
 			print file
 			POSCAR='dirs/%s/POSCAR'%file
@@ -93,9 +127,9 @@ Monkhorst-Pack
 			f=-np.einsum('ijkl,jl',fc2,u)
 			
 			vasprun = etree.iterparse(vasprunxml, tag='varray')
-			forces=self.parseVasprun(vasprun,'forces')
-			print np.abs(f),"\n"
-			print np.abs(forces-f)
+			forces=self.parseVasprun(vasprun,'forces')-forces0
+			print np.abs(f).max(),"\n"
+			print np.abs(forces-f).max()
 			print np.allclose(f,forces,atol=1e-2)
 	def stub(self):
 		files=shell_exec("ls dirs").split('\n')
@@ -345,8 +379,11 @@ VDW_R0 = 1.898 1.892
 		dir="dir_"+file
 		mkdir(dir)
 		cp(file,dir+'/POSCAR')
-		cd(dir)		
-		self.getVaspRun_vasp()
+		cd(dir)	
+		if m.engine=="vasp":
+			self.getVaspRun_vasp()
+		if m.engine=="lammps":
+			self.getVaspRun_lammps()
 		cd(maindir)
 	def checkMinimize(self):
 		import yaml
