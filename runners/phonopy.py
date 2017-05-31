@@ -424,7 +424,7 @@ VDW_R0 = 1.898 1.892
 		self.getvasprun(files)
 		debug('getvasprun:%f s'%(time.time()-a))
 		a=time.time()
-		self.force_constant(files)
+		self.fc2()
 		debug('force_constant:%f s'%(time.time()-a))
 		
 		if m.phofc:return self
