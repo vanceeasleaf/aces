@@ -1,4 +1,4 @@
-from aces.io.lineManager import  lineManager
+from ..lineManager import  lineManager
 class velocity:
 	def __init__(self,timestep=0.0005):
 		self.timestep=timestep

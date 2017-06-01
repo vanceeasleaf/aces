@@ -1,4 +1,4 @@
-from aces.io.lineManager import  lineManager
+from aces._io.lineManager import  lineManager
 import numpy as np
 class strain:
 	def __init__(self,dumpname):

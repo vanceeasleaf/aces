@@ -1,5 +1,5 @@
 import numpy as np
-from aces.io.lineManager import  lineManager
+from ..lineManager import  lineManager
 class fixAveTime:
 	def __init__(self,filename):
 		lm=lineManager(filename,cache=False)
