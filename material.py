@@ -15,7 +15,7 @@ from aces.Units import Units
 from aces import config
 from ase.dft.kpoints import ibz_points
 from aces.modify import atoms_from_dump as afd
-from aces.lammpsdata import lammpsdata
+from aces.io.lammps.lammpsdata import lammpsdata
 import numpy as np
 from aces.tools import *
 from aces.env import SRCHOME,PROJHOME,PROJNAME

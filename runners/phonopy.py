@@ -1,11 +1,8 @@
 #encoding:utf8
 from aces.tools import *
 import aces.config as config
-from ase.io import read
-from ase.io.vasp import write_vasp
 from aces.binary import pr
 from aces.runners import Runner
-from aces.UnitCell.unitcell import UnitCell
 from aces.graph import plot,series
 from aces.script.vasprun import exe as lammpsvasprun
 import aces.script.vasprun as vasprun
@@ -14,7 +11,7 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import time
 import numpy as np
-
+from aces.io.phonopy.bandplot import plotband
 from aces.f import readfc2
 class runner(Runner):
 	def minimizePOSCAR(self):
@@ -497,11 +494,9 @@ VDW_R0 = 1.898 1.892
 	def getband(self):
 		self.generate_bandconf()
 		passthru(config.phonopy+"--tolerance=1e-4  -s  band.conf")
-		from aces.bandplot import plotband
 		plotband(labels=' '.join(self.m.bandpath))
 	def getbanddos(self):
 		freq,pdos=self.getpdos()
-		from aces.bandplot import plotbanddos
 		plotbanddos(freq=freq,dos=np.sum(pdos,axis=1),labels=' '.join(self.m.bandpath))
 	def generate_bandconf(self):
 		#generate mesh.conf

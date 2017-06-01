@@ -1,4 +1,4 @@
-from aces.lineManager import lineManager
+from aces.io.lineManager import lineManager
 from aces.scanf import sscanf
 import numpy as np
 class lammpsdump:

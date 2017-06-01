@@ -2,11 +2,11 @@
 import numpy as np
 from scipy import stats
 import math,sys,os
-from aces.tempAve import drawTempAve
-from aces.fixAveSpace import fixAveSpace
+from aces.io.lammps.tempAve import drawTempAve
+from aces.io.lammps.fixAveSpace import fixAveSpace
 import pandas as pd
 from aces import tools
-from aces.fixAveTime import fixAveTime
+from aces.io.lammps.fixAveTime import fixAveTime
 #from aces.env import *
 from aces.graph import series
 class profile:
