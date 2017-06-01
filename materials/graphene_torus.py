@@ -1,7 +1,7 @@
 from aces.materials  import Material
 from ase import Atoms,Atom
 from math import pi,sqrt,cos,sin
-from aces.materials s.GNT import structure as GNT
+from aces.materials.GNT import structure as GNT
 import numpy as np
 class structure(Material):
 	def set_parameters(self):

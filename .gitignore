@@ -47,3 +47,5 @@ correlation/jcor.txt
 *.pyc
 _gsdata_/
 !requirements.txt
+*.egg-info
+dist

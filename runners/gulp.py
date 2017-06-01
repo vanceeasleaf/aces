@@ -7,7 +7,6 @@ from aces.binary import pr
 from aces.runners import Runner
 from aces.graph import plot,series
 import numpy as np
-from aces.runners Runner
 from aces.runners.phonopy import Runner as Prunner
 class runner(Runner):
 	def generate(self):
