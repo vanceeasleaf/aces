@@ -7,11 +7,9 @@
   <meta name="description" content="Description">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css" title="vue">
-  <link rel="stylesheet" href="//unpkg.com/docsify/themes/dark.css">
   <style>
   .sidebar li { margin: 6px 0 6px 15px;}
   .search input {background: none;}
-  .sidebar .search,.sidebar .search .matching-post { border-bottom: 1px solid rgba(0, 0, 0, .07);}
   </style>
 
   <body>
@@ -19,11 +17,12 @@
   </body>
   <script>
   window.$docsify = {
-    repo: 'https://coding.net/u/vanceeasleaf/p/paper_knot',
+    repo: 'https://github.com/vanceeasleaf/aces',
     name: 'project knot',
     formatUpdated: '{MM}/{DD}/{YYYY} {HH}:{mm}',
     loadSidebar: true,
     subMaxLevel: 3,
+    coverpage: true,
     plugins: [
       function(hook)
       {
