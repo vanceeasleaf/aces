@@ -1,9 +1,9 @@
-from aces.material import material
+from aces.materials  import Material
 from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.bond=6.059141
 	def setup(self):

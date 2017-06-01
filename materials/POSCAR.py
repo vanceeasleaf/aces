@@ -1,9 +1,9 @@
-from aces.material import material
+from aces.materials  import Material
 from ase import io
 from ase import Atoms,Atom
 import numpy as np
 from aces.tools import *
-class structure(material):
+class structure(Material):
 	def setup(self):
 		self.forceThick=False		
 		self.POSCAR=self.getPOSCAR()

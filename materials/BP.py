@@ -1,10 +1,10 @@
-from aces.material import material
+from aces.materials  import Material
 from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points
 from aces import config
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.gnrtype='armchair'
 		self.ax=4.6059999466

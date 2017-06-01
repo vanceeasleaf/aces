@@ -1,5 +1,5 @@
-from aces.materials.POSCAR import structure as material
-class structure(material):
+from aces.materials.POSCAR import structure as Material
+class structure(Material):
 	def getPOSCAR(self):
 		self.getMinimized();
 		return """ACES POSCAR

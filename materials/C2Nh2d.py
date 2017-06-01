@@ -3,9 +3,9 @@
 from ase import Atoms,Atom
 from math import sqrt,pi
 from aces import tools
-from aces.material import material
+from aces.materials  import Material
 import numpy as np
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.sideLen=1
 		self.cubic=True

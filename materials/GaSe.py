@@ -1,4 +1,4 @@
-from aces.material import material
+from aces.materials  import Material
 from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
@@ -7,7 +7,7 @@ from aces import config
 from ase.lattice import bulk
 import numpy as np
 from aces.tools import *
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		pass
 

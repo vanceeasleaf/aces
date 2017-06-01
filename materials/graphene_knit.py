@@ -1,10 +1,10 @@
-from aces.material import material
+from aces.materials  import Material
 from ase import Atoms,Atom
 from math import pi,sqrt,cos,sin
-from aces.materials.graphene import structure as graphene
+from aces.materials s.graphene import structure as graphene
 import numpy as np
 from aces.tools import *
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.amp=1.7
 	def setup(self):

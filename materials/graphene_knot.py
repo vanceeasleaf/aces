@@ -1,13 +1,13 @@
-from aces.material import material
+from aces.materials  import Material
 from ase import Atoms,Atom,io
 from math import pi,sqrt,sin,cos
-from aces.materials.graphene import structure as graphene
+from aces.materials s.graphene import structure as graphene
 import os
 import numpy as np
 from aces.tools import *
 import aces.config as config
 from aces.runners import Runner
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.scale=5
 		self.strain=8

@@ -1,9 +1,9 @@
-from aces.material import material
+from aces.materials  import Material
 from ase import Atoms,Atom
 from math import pi,sqrt,cos,sin
-from aces.materials.graphene import structure as graphene
+from aces.materials s.graphene import structure as graphene
 import numpy as np
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.type='zigzag'
 		self.phi=2*pi

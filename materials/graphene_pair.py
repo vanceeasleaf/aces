@@ -1,15 +1,15 @@
-from aces.material import material
+from aces.materials  import Material
 from ase import Atoms,Atom
 from math import pi,sqrt,cos,sin
-from aces.materials.graphene import structure as graphene
-from aces.materials.GNT import structure as GNT
+from aces.materials s.graphene import structure as graphene
+from aces.materials s.GNT import structure as GNT
 import numpy as np
 from aces.runners import Runner
 from aces.runners.phonopy import RotateVector
 from aces.tools import *
 import aces.config as config
 import os
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		self.angle=pi/4
 		self.angle1=pi/4

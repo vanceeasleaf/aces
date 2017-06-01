@@ -1,9 +1,9 @@
-from aces.material import material
+from aces.materials  import Material
 from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt,atan
 import numpy as np
-class structure(material):
+class structure(Material):
 	#CN材料随机掺杂
 	def set_parameters(self):
 		self.ratio=0.0

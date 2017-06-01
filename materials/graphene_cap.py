@@ -1,11 +1,11 @@
-from aces.material import material
+from aces.materials  import Material
 from ase import Atoms,Atom
 from math import pi,sqrt,cos,sin
-from aces.materials.GNT import structure as GNT
+from aces.materials s.GNT import structure as GNT
 from ase.data import extra_molecules
 from ase.structure import molecule
 import numpy as np
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		pass
 	def setup(self):

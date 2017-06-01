@@ -2,8 +2,8 @@
 # @Author: YangZhou
 # @Date:   2016-09-06 16:41:54
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2016-09-06 16:20:34
-from aces.material import material
+# @Last Modified time: 2017-06-01 21:40:29
+from aces.materials  import Material
 from aces.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
@@ -12,7 +12,7 @@ from aces import config
 from ase.lattice import bulk
 import numpy as np
 from aces.tools import *
-class structure(material):
+class structure(Material):
 	def set_parameters(self):
 		pass#['Gamma','Y','T','X','Gamma']
 
