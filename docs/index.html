@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <meta name="description" content="Description">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css" title="vue">
+  <link rel="stylesheet" href="//unpkg.com/docsify/themes/dark.css">
+  <style>
+  .sidebar li { margin: 6px 0 6px 15px;}
+  .search input {background: none;}
+  .sidebar .search,.sidebar .search .matching-post { border-bottom: 1px solid rgba(0, 0, 0, .07);}
+  </style>
+
+  <body>
+    <div id="app"></div>
+  </body>
+  <script>
+  window.$docsify = {
+    repo: 'https://coding.net/u/vanceeasleaf/p/paper_knot',
+    name: 'project knot',
+    formatUpdated: '{MM}/{DD}/{YYYY} {HH}:{mm}',
+    loadSidebar: true,
+    subMaxLevel: 3,
+    plugins: [
+      function(hook)
+      {
+        hook.beforeEach(function(html)
+        {
+          return html += '\n> Last modified {docsify-updated}'
+        })
+      }
+    ]
+  }
+  </script>
+  <script src="//unpkg.com/docsify/lib/docsify.min.js" data-router></script>
+  <script src="//unpkg.com/prismjs/components/prism-python.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  <script src="//unpkg.com/docsify/lib/plugins/zoom-image.min.js"></script>
+  <script src="//unpkg.com/docsify/lib/plugins/search.min.js"></script>
+
+</html>

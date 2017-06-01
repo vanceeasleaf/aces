@@ -12,7 +12,7 @@ oneline = "Read, write, manipulate LAMMPS data files"
 
 docstr = """
 d = data("data.poly")            read a LAMMPS data file, can be gzipped
-d = data()			 create an empty data file
+d = data()                       create an empty data file
 
 d.map(1,"id",3,"x")              assign names to atom columns (1-N)
 
@@ -26,13 +26,13 @@ d.reorder("Atoms",1,3,2,4,5)     reorder columns (1-N) in a data file section
 
   1,3,2,4,5 = new order of previous columns, can delete columns this way
 
-d.title = "My LAMMPS data file"	 set title of the data file
+d.title = "My LAMMPS data file"  set title of the data file
 d.headers["atoms"] = 1500        set a header value
 d.sections["Bonds"] = lines      set a section to list of lines (with newlines)
-d.delete("bonds")		 delete a keyword or section of data file
+d.delete("bonds")                delete a keyword or section of data file
 d.delete("Bonds")
-d.replace("Atoms",5,vec)      	 replace Nth column of section with vector
-d.newxyz(dmp,1000)		 replace xyz in Atoms with xyz of snapshot N
+d.replace("Atoms",5,vec)         replace Nth column of section with vector
+d.newxyz(dmp,1000)               replace xyz in Atoms with xyz of snapshot N
 
   newxyz assumes id,x,y,z are defined in both data and dump files
     also replaces ix,iy,iz if they are defined
@@ -109,16 +109,16 @@ class data:
       found = 0
       for keyword in hkeywords:
         if line.find(keyword) >= 0:
-	  found = 1
-	  words = line.split()
-	  if keyword == "xlo xhi" or keyword == "ylo yhi" or \
-	    keyword == "zlo zhi":
-	    headers[keyword] = (float(words[0]),float(words[1]))
-	  elif keyword == "xy xz yz":
-	    headers[keyword] = \
+          found = 1
+          words = line.split()
+          if keyword == "xlo xhi" or keyword == "ylo yhi" or \
+            keyword == "zlo zhi":
+            headers[keyword] = (float(words[0]),float(words[1]))
+          elif keyword == "xy xz yz":
+            headers[keyword] = \
               (float(words[0]),float(words[1]),float(words[2]))
           else:
-	    headers[keyword] = int(words[0])
+            headers[keyword] = int(words[0])
       if not found:
         break
 
@@ -128,11 +128,11 @@ class data:
       for pair in skeywords:
         keyword,length = pair[0],pair[1]
         if keyword == line:
-	  found = 1
+          found = 1
           if not headers.has_key(length):
             raise StandardError, \
                   "data section %s has no matching header value" % line
-	  f.readline()
+          f.readline()
           list = []
           for i in xrange(headers[length]): list.append(f.readline())
           sections[keyword] = list
@@ -254,19 +254,19 @@ class data:
       if self.headers.has_key(keyword):
         if keyword == "xlo xhi" or keyword == "ylo yhi" or \
                keyword == "zlo zhi":
-	  pair = self.headers[keyword]
-	  print >>f,pair[0],pair[1],keyword
+          pair = self.headers[keyword]
+          print >>f,pair[0],pair[1],keyword
         elif keyword == "xy xz yz":
-	  triple = self.headers[keyword]
-	  print >>f,triple[0],triple[1],triple[2],keyword
+          triple = self.headers[keyword]
+          print >>f,triple[0],triple[1],triple[2],keyword
         else:
-	  print >>f,self.headers[keyword],keyword
+          print >>f,self.headers[keyword],keyword
     for pair in skeywords:
       keyword = pair[0]
       if self.sections.has_key(keyword):
         print >>f,"\n%s\n" % keyword
         for line in self.sections[keyword]:
-	  print >>f,line,
+          print >>f,line,
     f.close()
 
   # --------------------------------------------------------------------
@@ -330,7 +330,7 @@ class data:
                       float(atom1words[z]),
                       float(atom2words[x]),float(atom2words[y]),
                       float(atom2words[z]),
-		      float(atom1words[type]),float(atom2words[type])])
+                      float(atom1words[type]),float(atom2words[type])])
       
     tris = []
     lines = []
@@ -356,19 +356,19 @@ class data:
 
 hkeywords = ["atoms","ellipsoids","lines","triangles","bodies",
              "bonds","angles","dihedrals","impropers",
-	     "atom types","bond types","angle types","dihedral types",
-	     "improper types","xlo xhi","ylo yhi","zlo zhi","xy xz yz"]
+             "atom types","bond types","angle types","dihedral types",
+             "improper types","xlo xhi","ylo yhi","zlo zhi","xy xz yz"]
 
 skeywords = [["Masses","atom types"],
              ["Atoms","atoms"],["Ellipsoids","ellipsoids"],
              ["Lines","lines"],["Triangles","triangles"],["Bodies","bodies"],
              ["Bonds","bonds"],
-	     ["Angles","angles"],["Dihedrals","dihedrals"],
-	     ["Impropers","impropers"],["Velocities","atoms"],
+             ["Angles","angles"],["Dihedrals","dihedrals"],
+             ["Impropers","impropers"],["Velocities","atoms"],
              ["Pair Coeffs","atom types"],
-	     ["Bond Coeffs","bond types"],["Angle Coeffs","angle types"],
-	     ["Dihedral Coeffs","dihedral types"],
-	     ["Improper Coeffs","improper types"],
+             ["Bond Coeffs","bond types"],["Angle Coeffs","angle types"],
+             ["Dihedral Coeffs","dihedral types"],
+             ["Improper Coeffs","improper types"],
              ["BondBond Coeffs","angle types"],
              ["BondAngle Coeffs","angle types"],
              ["MiddleBondTorsion Coeffs","dihedral types"],

@@ -8,7 +8,7 @@ from aces.runners import Runner
 from aces.UnitCell.unitcell import UnitCell
 from aces.graph import plot,series
 from aces.script.vasprun import exe as lammpsvasprun
-
+import aces.script.vasprun as vasprun
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as pl
@@ -73,6 +73,33 @@ Monkhorst-Pack
 		from aces.cs import runner
 		runner(NAH=2).run()
 		self.check('csfc2')
+	def check1(self,filename='FORCE_CONSTANTS'):
+		from lxml import etree
+		from ase import io
+		ref=io.read('SPOSCAR')
+		fc2=readfc2(filename)
+		np.set_printoptions(precision=2,suppress=True)
+		files=['dir_POSCAR-001']
+		vasprunxml="dir_SPOSCAR/vasprun.xml"
+		if exists(vasprunxml):
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces0=self.parseVasprun(vasprun,'forces')
+			print forces0.max()
+		else:
+			forces0=0.0
+		for file in files:
+			print file
+			POSCAR='dirs/%s/POSCAR'%file
+			vasprunxml="dirs/%s/vasprun.xml"%file
+			atoms=io.read(POSCAR)
+			u=atoms.positions-ref.positions
+			f=-np.einsum('ijkl,jl',fc2,u)
+			
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces=self.parseVasprun(vasprun,'forces')-forces0
+			print np.abs(f).max(),"\n"
+			print np.abs(forces-f).max()
+			print np.allclose(f,forces,atol=1e-2)
 	def check(self,filename='FORCE_CONSTANTS'):
 		try:
 			from lxml import etree
@@ -84,6 +111,13 @@ Monkhorst-Pack
 		files=shell_exec("ls dirs").split('\n')
 		fc2=readfc2(filename)
 		np.set_printoptions(precision=2,suppress=True)
+		vasprunxml="dir_SPOSCAR/vasprun.xml"
+		if exists(vasprunxml):
+			vasprun = etree.iterparse(vasprunxml, tag='varray')
+			forces0=self.parseVasprun(vasprun,'forces')
+			print forces0.max()
+		else:
+			forces0=0.0
 		for file in files:
 			print file
 			POSCAR='dirs/%s/POSCAR'%file
@@ -93,9 +127,9 @@ Monkhorst-Pack
 			f=-np.einsum('ijkl,jl',fc2,u)
 			
 			vasprun = etree.iterparse(vasprunxml, tag='varray')
-			forces=self.parseVasprun(vasprun,'forces')
-			print np.abs(f),"\n"
-			print np.abs(forces-f)
+			forces=self.parseVasprun(vasprun,'forces')-forces0
+			print np.abs(f).max(),"\n"
+			print np.abs(forces-f).max()
 			print np.allclose(f,forces,atol=1e-2)
 	def stub(self):
 		files=shell_exec("ls dirs").split('\n')
@@ -131,6 +165,8 @@ Monkhorst-Pack
 	def fc2(self):
 		files=shell_exec("ls dirs").split('\n')
 		files=map(lambda x:x.replace('dir_',''),files)
+		#when the number of files >1000, the order is wrong ,POSCAR-001, POSCAR-1500 ,POSCAR-159
+		files.sort(lambda x,y:int(x.split('-')[1])-int(y.split('-')[1]))
 		self.force_constant(files)
 	def generate_meshconf(self):
 		#generate mesh.conf
@@ -276,6 +312,15 @@ VDW_R0 = 1.898 1.892
 			
 		else:
 			shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+	def getVaspRun_lammps(self):
+		m=self.m
+		if 'jm' in self.__dict__:
+			from aces.jobManager import pbs
+			path=pwd()
+			pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.python+vasprun.__file__+' >log.out')
+			self.jm.reg(pb)
+		else:
+			shell_exec(config.python+vasprun.__file__+' >log.out')
 	def thcode(self,files,put):
 		s=""
 		for file in files:
@@ -307,12 +352,25 @@ VDW_R0 = 1.898 1.892
 				passthru("tar zcf %s.tar.gz %s"%(m.pbsname,m.pbsname))			
 			print 'start check'
 			self.jm.check()
-		elif m.engine=="lammps":
+		elif m.engine=="lammps1":
 			from multiprocessing.dummy  import Pool
 			pool=Pool()
 			pool.map_async(lammpsvasprun,files)
 			pool.close()
 			pool.join()
+		elif m.engine=="lammps":
+			from aces.jobManager import jobManager
+			self.jm=jobManager()
+			for file in files:
+				print file
+				dir="dirs/dir_"+file
+				mkdir(dir)
+				mv(file,dir+'/POSCAR')
+				cd(dir)
+				self.getVaspRun_lammps()
+				cd(maindir)
+			self.jm.run()
+			self.jm.check()
 
 	def runSPOSCAR(self):
 		m=self.m
@@ -321,8 +379,11 @@ VDW_R0 = 1.898 1.892
 		dir="dir_"+file
 		mkdir(dir)
 		cp(file,dir+'/POSCAR')
-		cd(dir)		
-		self.getVaspRun_vasp()
+		cd(dir)	
+		if m.engine=="vasp":
+			self.getVaspRun_vasp()
+		if m.engine=="lammps":
+			self.getVaspRun_lammps()
 		cd(maindir)
 	def checkMinimize(self):
 		import yaml
@@ -363,7 +424,7 @@ VDW_R0 = 1.898 1.892
 		self.getvasprun(files)
 		debug('getvasprun:%f s'%(time.time()-a))
 		a=time.time()
-		self.force_constant(files)
+		self.fc2()
 		debug('force_constant:%f s'%(time.time()-a))
 		
 		if m.phofc:return self
@@ -373,6 +434,10 @@ VDW_R0 = 1.898 1.892
 		files=map(lambda x:x.replace('dir_',''),files)
 		self.force_constant(files)
 	def postp(self):
+		m=self.m
+		if m.gamma_only:
+			self.getDos()
+			return
 		self.getband()
 		self.getDos()
 		

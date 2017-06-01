@@ -88,11 +88,12 @@ def minimize_lammps(m):
 	if metropolis:
 		print >>f,"min_style metropolis"
 		print >>f,"minimize 1e-12 1e-12 1000000 1000000"
-	if useMini:
-		if m.enforceThick:
-			print >>f,"fix 1 all box/relax x 0.0 y 0.0 nreset 1"
-		else:
-			print >>f,"fix 1 all box/relax iso 0.0 nreset 1"
+	if m.useMini:
+		if m.boxOpt:
+			if m.enforceThick:
+				print >>f,"fix 1 all box/relax x 0.0 y 0.0 nreset 1"
+			else:
+				print >>f,"fix 1 all box/relax iso 0.0 nreset 1"
 		print >>f,"min_style cg"
 		print >>f,"minimize 1e-12 1e-12 1000000 1000000"
 	print >>f,"write_restart restart.minimize"

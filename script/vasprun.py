@@ -19,8 +19,8 @@ dimension       3
 read_data       structure
 %s
 %s 
-#neighbor        14 bin
-#neigh_modify    every 1 delay 1 check yes
+neighbor        2 nsq
+neigh_modify    every 1 delay 1 check yes
 dump 1 all custom 1 dump.force id  fx fy fz xs ys zs
 dump_modify 1 format "%%d %%f %%f %%f %%f %%f %%f"
 dump_modify  1 sort id
@@ -57,25 +57,15 @@ def getVaspRun_lammps(m):
 	vasprun+='</varray></structure></calculation></root>\n'
 	write(vasprun,'vasprun.xml')
 	f.close()
-def run(file):
-	
+def run():
 	a=time.time()
-	print file
-	if not exists(file):
-		exit("File not exist!")
-	dir="dirs/dir_"+file
 	m=App().m #before cd
-
-	if not exists(dir):mkdir(dir)
-	mv(file,dir+'/POSCAR')
-	#debug(time.strftime('%Y-%m-%d %H:%M:%S'))
-	cd(dir)		
 	debug('one vasprun mv etc.:%f s'%(time.time()-a))
 	a=time.time()
 	getVaspRun_lammps(m)
 	debug('one vasprun lmp:%f s'%(time.time()-a))
-def exe(file):
+def exe():
 
-	passthru(config.python+__file__+" "+file)
+	passthru(config.python+__file__)
 if __name__=="__main__":
-	run(sys.argv[1])
+	run()

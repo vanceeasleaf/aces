@@ -74,17 +74,20 @@ def wfig(filename,f,legend=False):
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
+def setLegend(pl,ncol=1):
+	frame=pl.legend(loc='best',scatterpoints=1,numpoints=1,ncol=ncol,fontsize=12).get_frame()
+	frame.set_linewidth(1.5)
 class fig:
-	def __init__(self,filename,legend=False,ncol=3):
+	def __init__(self,filename,legend=False,ncol=3,figsize=None):
 		self.filename=filename
 		self.legend=legend
 		self.ncol=ncol
+		self.figsize=figsize
 	def __enter__(self):
-		pl.figure()
+		pl.figure(figsize=self.figsize)
 	def __exit__(self, type,value, trace):
 		if self.legend:
-			frame=pl.legend(loc='best',scatterpoints=1,numpoints=1,ncol=self.ncol,fontsize=12).get_frame()
-			frame.set_linewidth(1.5)
+			setLegend(pl,ncol=self.ncol)
 		pl.savefig(self.filename,bbox_inches='tight',transparent=True) 
 		pl.close() 
 def surf(X, Y, Z,filename):
