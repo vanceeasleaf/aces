@@ -8,14 +8,13 @@ if sys.argv[-1] == 'publish':
     print("  git push --tags")
     sys.exit()
 setup(
-      name="mytest",
-      version="0.10",
+      name="aces",
+      version="0.11",
       description="A python framework for computational physics numerical experiments.",
       author="Yang Zhou",
       author_email="404422239@qq.com",
       url="https://github.com/vanceeasleaf/aces",
       license="GPL2.0",
       packages= find_packages(),
-      scripts=["script/ae"],
-      py_modules=["App","config","default","env","f","__main__","__init__"]
+      scripts=["scripts/ae"],
       )

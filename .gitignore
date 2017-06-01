@@ -49,3 +49,4 @@ _gsdata_/
 !requirements.txt
 *.egg-info
 dist
+build
