@@ -28,7 +28,7 @@ class NormalStrategy:
 		self.procs=procs
 		self.heaters=[]
 		
-	def prepare(self,apps)
+	def prepare(self,apps):
 		self.apps=apps
 		for app in apps:
 			#mkdir of it
@@ -43,11 +43,11 @@ class NormalStrategy:
 # so we group them into 3, and each group has 4*7=28 cores, 
 # every group uses queue q1.2 's 12 nodes * 2 cores ,per app need 4 cores	
 class UniverseStrategy:		
-	def __init__(self,procs=('q1.2',12,2,4))		
+	def __init__(self,procs=('q1.2',12,2,4)):	
 		self.procs=procs
 		self.heaters=[]
 		
-	def prepare(self,apps)
+	def prepare(self,apps):
 		self.apps=apps
 		queue,nodes,cores,appCores=self.procs
 		appsPerGroup=nodes*cores/appCores
@@ -64,11 +64,11 @@ class UniverseStrategy:
 # 3、all the apps are in a same group , for example , they run in a single computer.
 # using the single computer's 4 cores
 class SingleStrategy:
-	def __init__(self,procs=(4))
+	def __init__(self,procs=(4)):
 		self.procs=procs
 
 class VariableStrategy:
-	def __init__(self,procs=(84,'q1.2'),target='natom')
+	def __init__(self,procs=(84,'q1.2'),target='natom'):
 		self.procs=procs			
 				
 class Aces:
@@ -82,7 +82,7 @@ class Aces:
 	# from the json rebuild the whole structure
 	def rebuild(self):
 		filename='qloop.txt'
-		if !os.path.exists(filename):
+		if not os.path.exists(filename):
 			print 'rebuild failed!'
 			sys.exit()
 		f=open(filename)

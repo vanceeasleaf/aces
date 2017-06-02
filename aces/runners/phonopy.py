@@ -516,7 +516,7 @@ PRIMITIVE_AXIS = %s
 			x,y=map(float,line.split())
 			xs.append(x);ys.append(y)
 		write("%s"%(sum(ys)/len(ys)),"ave_pr.txt")
-			with fig('Paticipation_ratio.png'):
+		with fig('Paticipation_ratio.png'):
 			pl.plot(xs,ys,'.',color='red')
 			pl.ylim([0.0,1.0])
 			pl.xlabel('Frequency (THz)')
