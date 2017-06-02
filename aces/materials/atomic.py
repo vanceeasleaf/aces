@@ -5,7 +5,7 @@ import numpy as np
 def swap(atoms,fix=1):
 	direct=[1,1,1]
 	direct[fix]=0
-	atoms.rotate(direct,pi,rotate_cell=True)
+	atoms.rotate(direct,np.pi,rotate_cell=True)
 	order=[[0,2,1],[2,1,0],[1,0,2]][fix]
 	cell=atoms.cell[order]
 	cell[fix]*=-1

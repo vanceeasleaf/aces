@@ -1,13 +1,12 @@
 #encoding:utf8
 from aces.runners import Runner
-from ase.io.vasp import write_vasp
 from ase import io
 from aces.tools import *
 import numpy as np
 from  aces import config
 from aces.runners.phonopy import runner as Runner
 from aces.f import read_forces,matrixFormat
-import vasp2boltz
+import  libs.vasp2boltz
 from ase.lattice.spacegroup import Spacegroup
 from aces.graph import fig,pl
 class runner(Runner):

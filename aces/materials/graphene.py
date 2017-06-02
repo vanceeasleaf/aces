@@ -1,5 +1,5 @@
 from aces.materials  import Material
-from aces.algorithm.modify import get_unique_atoms
+from .atomic import get_unique_atoms,swap
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points
@@ -34,7 +34,7 @@ class structure(Material):
 			cell[2]*=-1
 			col.set_cell(cell)	
 			"""
-			self.swap(col,2)
+			swap(col,2)
 		else: raise Exception('Unkown gnr type!')		
 		atoms=get_unique_atoms(col)
 		col.set_pbc([self.xp,self.yp,self.zp])

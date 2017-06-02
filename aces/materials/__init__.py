@@ -39,7 +39,7 @@ class Material:
 		self.bandpoints['Y']=[0,0.5,0]
 		self.bandpath=['Gamma','X','Y','Gamma']
 		self.premitive=np.eye(3)
-		self.dim=self.toString(self.supercell)
+		self.dim=toString(self.supercell)
 		if not self.useS3:
 			self.supercell3=self.supercell
 		self.setup()
