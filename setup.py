@@ -7,9 +7,12 @@ if sys.argv[-1] == 'publish':
     print("  git tag -a %s -m 'version %s'" % (version, version))
     print("  git push --tags")
     sys.exit()
+if sys.argv[-1]=='zip':
+    os.system("python setup.py sdist --formats=zip")
+    sys.exit()
 setup(
       name="aces",
-      version="0.11",
+      version="0.12",
       description="A python framework for computational physics numerical experiments.",
       author="Yang Zhou",
       author_email="404422239@qq.com",
