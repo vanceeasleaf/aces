@@ -325,42 +325,30 @@ VDW_R0 = 1.898 1.892
 	def getvasprun(self,files):
 		m=self.m
 		maindir=pwd()
-		if m.engine=="vasp":
-			self.jm=jobManager()
-			for file in files:
-				print file
-				dir="dirs/dir_"+file
-				mkdir(dir)
-				mv(file,dir+'/POSCAR')
-				cd(dir)
-				self.getVaspRun_vasp()
-				cd(maindir)
-			self.jm.run()
-			if m.th:
-				mkdir(m.pbsname)
-				self.thcode(files,m.pbsname)
-				cp("dirs",m.pbsname)
-				passthru("tar zcf %s.tar.gz %s"%(m.pbsname,m.pbsname))			
-			print 'start check'
-			self.jm.check()
-		elif m.engine=="lammps1":
+		calculator=self.getVaspRun_vasp
+		self.jm=jobManager()
+		for file in files:
+			print file
+			dir="dirs/dir_"+file
+			mkdir(dir)
+			mv(file,dir+'/POSCAR')
+			cd(dir)
+			calculator()
+			cd(maindir)
+		self.jm.run()
+		if m.th:
+			mkdir(m.pbsname)
+			self.thcode(files,m.pbsname)
+			cp("dirs",m.pbsname)
+			passthru("tar zcf %s.tar.gz %s"%(m.pbsname,m.pbsname))			
+		print 'start check'
+		self.jm.check()
+		if m.engine=="lammps1":
 			from multiprocessing.dummy  import Pool
 			pool=Pool()
 			pool.map_async(lammpsvasprun,files)
 			pool.close()
 			pool.join()
-		elif m.engine=="lammps":
-			self.jm=jobManager()
-			for file in files:
-				print file
-				dir="dirs/dir_"+file
-				mkdir(dir)
-				mv(file,dir+'/POSCAR')
-				cd(dir)
-				self.getVaspRun_lammps()
-				cd(maindir)
-			self.jm.run()
-			self.jm.check()
 
 	def runSPOSCAR(self):
 		m=self.m
