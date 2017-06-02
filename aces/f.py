@@ -3,7 +3,7 @@ from aces.tools import *
 from numpy.linalg  import norm
 import time
 from functools import wraps
-from  aces.io.fc import *
+from  aces.io.phonopy.fc import *
 np.set_printoptions(precision=3,suppress=True)
 def fn_timer(function):
 	@wraps(function)

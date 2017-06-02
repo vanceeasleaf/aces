@@ -1,5 +1,5 @@
 from aces.materials  import Material
-from aces.modify import get_unique_atoms
+from aces.algorithm.modify import get_unique_atoms
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points

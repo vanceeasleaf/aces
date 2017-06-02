@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-01 21:53:01
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-01 21:57:40
+# @Last Modified time: 2017-06-02 11:40:21
 from aces.f import *
 def writefc2(fc2,filename='FORCE_CONSTANTS_2ND'):
 	natom=len(fc2)
@@ -172,30 +172,30 @@ def rotatefc3(t,direct=[0,0,1],file1='FORCE_CONSTANTS_3RD',file2='fc3new'):
 		print >>g,matrix3Format(fc)
 def read_forces(filename):
 	try:
-	    from lxml import etree as ElementTree
-	    xmllib="lxml.etree"
+		from lxml import etree as ElementTree
+		xmllib="lxml.etree"
 	except ImportError:
-	    try:
-	        import xml.etree.cElementTree as ElementTree
-	        xmllib="cElementTree"
-	    except ImportError:
-	        import xml.etree.ElementTree as ElementTree
-	        xmllib="ElementTree"
+		try:
+			import xml.etree.cElementTree as ElementTree
+			xmllib="cElementTree"
+		except ImportError:
+			import xml.etree.ElementTree as ElementTree
+			xmllib="ElementTree"
 
-    """
-    Read a set of forces on atoms from filename, presumably in
-    vasprun.xml format.
-    """
-    calculation=ElementTree.parse(filename
-                                  ).getroot().find("calculation")
-    for a in calculation.findall("varray"):
-        if a.attrib["name"]=="forces":
-            break
-    nruter=[]
-    for i in a.getchildren():
-        nruter.append([float(j) for j in i.text.split()])
-    nruter=np.array(nruter,dtype=np.double)
-    return nruter
+	"""
+	Read a set of forces on atoms from filename, presumably in
+	vasprun.xml format.
+	"""
+	calculation=ElementTree.parse(filename
+								  ).getroot().find("calculation")
+	for a in calculation.findall("varray"):
+		if a.attrib["name"]=="forces":
+			break
+	nruter=[]
+	for i in a.getchildren():
+		nruter.append([float(j) for j in i.text.split()])
+	nruter=np.array(nruter,dtype=np.double)
+	return nruter
 def readfc2(filename='FORCE_CONSTANTS'):
 	f=open(filename)
 	line=f.next()

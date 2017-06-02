@@ -1,4 +1,4 @@
-from aces.pizza.data import data
+from aces.libs.pizza.data import data
 from ase import Atoms,Atom
 import numpy as np
 from aces.tools import debug,toString

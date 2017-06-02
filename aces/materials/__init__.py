@@ -1,23 +1,22 @@
 # encoding:utf8
 # C2N hollow 2D structure
+
+from aces.tools import *
 from ase import Atoms,Atom
 from math import sqrt,pi
 from aces import default
 #from ase.io.vasp import write_vasp
-from aces.f import writevasp
-from ase.io import read
+from aces.io.vasp import writevasp
 from ase import io
-from aces.UnitCell.unitcell import UnitCell
 from ase.data import atomic_masses,atomic_numbers
 from aces import tools
-from aces.modify import get_unique_atoms
-from aces.Units import Units
+from aces.algorithm.modify import get_unique_atoms
+from aces.algorithm.modify import atoms_from_dump as afd
+from aces.tools.Units import Units
 from aces import config
 from ase.dft.kpoints import ibz_points
-from aces.modify import atoms_from_dump as afd
 from aces.io.lammps.lammpsdata import lammpsdata
 import numpy as np
-from aces.tools import *
 from aces.env import SRCHOME,PROJHOME,PROJNAME
 class Material:
 	def __init__(self,opt={}):
@@ -167,14 +166,7 @@ class Material:
 			a="atom_style bond\natom_modify sort 0 1.\ncomm_modify  cutoff 2.0 "
 		return a
 	def POSCAR2data(self):
-		"""
-		poscar = open("POSCAR")
-		unit_cell = UnitCell(poscar)
-		unit_cell.num_atom_types=len(self.elements)
-		tools.write(unit_cell.output_lammps(),"structure")
-		"""
-		from  ase.io import read
-		atoms=read('POSCAR')
+		atoms=io.read('POSCAR')
 		m=self
 		atoms.set_pbc([m.xp,m.yp,m.zp])
 		#debug(atoms.cell)

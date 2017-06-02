@@ -2,7 +2,7 @@
 import json,os.path,time
 from aces.runners.minimize import minimize as minimize_input
 from importlib import import_module as im
-from aces import profile,config
+#from aces import profile,config
 from aces.tools import *
 class App:
 	def __init__(self):
@@ -54,12 +54,12 @@ class App:
 
 		
 	
-	def result(self):
-		m=self.m
-		cd('minimize')
-		m.postMini()
-		cd('..')
-		profile.run(**m.__dict__)
+	#def result(self):
+	#	m=self.m
+	#	cd('minimize')
+	#	m.postMini()
+	#	cd('..')
+	#	profile.run(**m.__dict__)
 
 class Apps:
 	def __init__():

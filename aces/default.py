@@ -1,7 +1,5 @@
 #encoding:utf8
 import sys,os
-from aces.Units import Units
-units=Units('metal')
 default=dict(
 	units="metal",
 	method="nvt",
@@ -14,14 +12,14 @@ default=dict(
 	fixud=0,
 	usinglat=True,
 	latx=1,laty=1,latz=1,
-	ylen=units.metal.L(20),
-	thick=units.metal.L(3.35),
-	deta=units.metal.L(3),
-	T=units.metal.T(300),
-	dT=units.metal.T(10),
+	ylen=(20),
+	thick=(3.35),
+	deta=(3),
+	T=(300),
+	dT=(10),
 	metropolis=False,
 	write_structure=False,
-	timestep=units.metal.t(.5e-3),
+	timestep=(.5e-3),
 	equTime=500000,
 	langevin=0,
 	nvt=True,jprofile=0,computeTc=1,fourierTc=0,gstart=20000,jcf=0,
@@ -38,13 +36,13 @@ default=dict(
 	swapEnergy=5e-4,
 	wfix=3,#fix width
 	Nbins=500,
-	bond=units.metal.L(1.42),
+	bond=(1.42),
 	begin=10,
 	masses='',
 	potential='',
 	dumpxyz=1,
 	dumpv=0,
-	hdeta=units.metal.L(3),
+	hdeta=(3),
 	runner='mdTc'
 	
 	,Cinterval=5
