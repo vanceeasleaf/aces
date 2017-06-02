@@ -53,10 +53,27 @@ We recommand you to install Anaconda-2.4.sh to prepare a python2.7 environment.
 
 requrements list:
 
-- python-ase==3.8.1.3440
-- pexpect==4.0.dev
-- scanf==1.2
-- spglib==1.6.0
+- ase==3.13.0
+- numpy==1.12.1
+- Cython==0.25.2
+- Image==1.5.5
+- Numeric==24.2
+- PyOpenGL==3.1.1a1
+- Pmw==2.0.1
+- h5py==2.7.0
+- lxml==3.7.3
+- matplotlib==2.0.2
+- mpi4py==2.0.0
+- np==0.2.0
+- pandas==0.20.1
+- pexpect==4.2.1
+- pyspglib==1.8.3.1
+- scanf==1.4.1
+- scipy==0.19.0
+- scikit_learn==0.18.1
+- atlas==0.27.0
+- vapory==0.1.01
+- PyYAML==3.12
 
 
 ## Install 
