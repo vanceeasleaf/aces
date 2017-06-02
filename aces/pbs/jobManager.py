@@ -86,7 +86,7 @@ class jobManager:
 		debug('entering loop waiting for vasp...')
 		while not jobdone.all():
 			
-			time.sleep( 5 )
+			time.sleep(3)
 			jobdone=np.array([exists(job.path+"/done") for job in self.jobs ])
 			#debug(paths[jobdone])
 		debug('done')

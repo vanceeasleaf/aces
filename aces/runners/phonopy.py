@@ -11,6 +11,7 @@ import numpy as np
 from aces.io.phonopy.bandplot import plotband,plotbanddos
 from aces.f import readfc2
 from aces.pbs.jobManager import jobManager,th,pbs
+from aces.io.vasp import writePOTCAR
 class runner(Runner):
 	def minimizePOSCAR(self):
 		m=self.m
@@ -24,7 +25,7 @@ class runner(Runner):
 		mkcd('optimize')
 		cp('../minimize/POSCAR','.')
 		from ase import io
-		from aces.f import writevasp
+		from aces.io.vasp import writevasp
 		atoms=io.read('POSCAR')
 		for i in range(100):
 			dir="%i"%i
@@ -34,36 +35,20 @@ class runner(Runner):
 			pos=atoms.get_scaled_positions()
 			pos+=forces*0.01
 	def energyForce(self):
-		self.writeINCAR()
-		m=self.m
-		m.writePOTCAR()
-		s="""A
-0
-Monkhorst-Pack
-%s
-0  0  0
-	"""%' '.join(map(str,m.mekpoints))
-		write(s,'KPOINTS')
-		shell_exec(config.mpirun+" %s "%m.cores+config.vasp+' >log.out')
+		self.getVaspRun_vasp()
+		from aces.io.vasp import parseVasprun
 		try:
 			from lxml import etree
 		except ImportError:
 			print "You need to install python-lxml."
 		vasprun = etree.iterparse("vasprun.xml", tag='varray')
-		forces=self.parseVasprun('forces')
-		stress=self.parseVasprun('stress')
+		forces=parseVasprun('forces')
+		stress=parseVasprun('stress')
 		c=shell_exec("grep TOTEN OUTCAR|tail -1")
 		from scanf import sscanf
 		energe=sscanf(c,"free  energy   TOTEN  =      %f eV")[0]
 		return forces,stress,energy
-	def parseVasprun(self,vasprun,tag="forces"):
-		forces = []
-		for event, element in vasprun:
-				if element.attrib['name'] == tag:
-		 			for v in element.xpath('./v'):
-		 				forces.append([float(x) for x in v.text.split()])
-		forces=np.array(forces)
-		return forces
+	
 	def cs(self):
 		from aces.cs import runner
 		runner(NAH=2).run()
@@ -227,15 +212,7 @@ PRIMITIVE_AXIS = %s
 
 		passthru(config.phonopy+"--tolerance=1e-4  -d --dim='%s'"%(m.dim))
 
-	def writeKPOINTS(self):
-		m=self.m
-		s="""A
-0
-Monkhorst-Pack
-%s
-0  0  0
-	"""%' '.join(map(str,m.ekpoints))
-		write(s,'KPOINTS')
+
 	def writeINCAR(self):
 		m=self.m 
 		npar=1
@@ -285,12 +262,13 @@ VDW_R0 = 1.898 1.892
 		
 		self.writeINCAR()
 		m=self.m
-		m.writePOTCAR()
+		writePOTCAR(m,m.elements)
 		
 		if(m.kpointspath):
 			cp(m.kpointspath,"KPOINTS")
 		else:
-			self.writeKPOINTS()
+			from aces.io.vasp import writeKPOINTS
+			writeKPOINTS(m.ekpoints)
 		if 'jm' in self.__dict__:
 			if not m.th:
 				path=pwd()
@@ -325,7 +303,10 @@ VDW_R0 = 1.898 1.892
 	def getvasprun(self,files):
 		m=self.m
 		maindir=pwd()
-		calculator=self.getVaspRun_vasp
+		if m.engine=="vasp":
+			calculator=self.getVaspRun_vasp
+		elif m.engine=="lammps":
+			calculator=self.getVaspRun_lammps
 		self.jm=jobManager()
 		for file in files:
 			print file

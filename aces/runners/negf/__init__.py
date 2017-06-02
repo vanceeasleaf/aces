@@ -50,8 +50,8 @@ class runner(Runner):
 	def collect(self):		
 		leadm=self.preLead()
 		centerm=self.preCenter()
-		fclead=self.fc('lead',leadm)
-		fccenter=self.fc('center',centerm)
+		fclead=self.fc('lead')
+		fccenter=self.fc('center')
 		#write(np.around(fc[:,:,0,0],3),'orig_forces')
 		n=leadm.hatom
 		fccenter[:n,-n:]=0
@@ -61,13 +61,7 @@ class runner(Runner):
 		fccenter=self.reshape(fccenter)
 		fclead=self.reshape(fclead)	
 		return fccenter,fclead
-	def generate(self):
-		self.m.xp=1
-		leadm=self.preLead()
-		self.phonopy('lead',leadm)
-		centerm=self.preCenter()
-		self.phonopy('center',centerm)
-
+	def gettrans(self):
 		fccenter,fclead=self.collect()
 		dm=.5
 		omega=np.arange(dm,60,dm)#THz
@@ -78,7 +72,15 @@ class runner(Runner):
 		trans=tcalc.get_transmission()
 		print 'Calculate Dos'
 		dos=tcalc.get_dos()*omega
+		to_txt(['omega','trans','dos'],np.c_[omega,trans,dos],'result.txt')
 		print 'Calculate Thermal Conductance'
+	def generate(self):
+		self.m.xp=1
+		leadm=self.preLead()
+		self.phonopy('lead',leadm)
+		centerm=self.preCenter()
+		self.phonopy('center',centerm)
+		self.gettrans()
 		self.post()
 	def post(self):
 		#1eV = 8049 cm^(-1) => 1000emV=8049 cm-1 => cm-1/meV=1000/8049
@@ -86,8 +88,8 @@ class runner(Runner):
 		#a cm^-1=b THz =>a=b *1e12 Hz*cm
 		#a meV = b cm^-1 => a = b cm-1/meV
 		#omcm=omega*521.471？
-		result=np.loadtxt("result.txt")
-		omeage=result[:,0]
+		result=np.loadtxt("result.txt",skiprows=1)
+		omega=result[:,0]
 		trans =result[:,1]
 		dos   =result[:,2]
 		omcm=omega*1e12*1/3e10
@@ -119,10 +121,10 @@ class runner(Runner):
 		n,m=fc.shape[:2]
 		fc=np.einsum('ikjl',fc).reshape([n*3,m*3])
 		return fc
-	def fc(self,dir,mm):
+	def fc(self,dir):
 		fc=readfc2(dir+'/FORCE_CONSTANTS')
 		atoms=read(dir+'/POSCAR')
-		fc=self.nomalizeFC(fc,mm,atoms)		
+		fc=self.nomalizeFC(fc,atoms)		
 		
 		fc=self.rearangefc(fc,atoms,dir)
 
@@ -137,12 +139,12 @@ class runner(Runner):
 		
 	def preCenter(self):
 		m=self.m
-		s=im('aces.device')
+		import device.device as s
 		leadm=self.preLead()
-		centerm=self.preCenter()
-		mm=s.Device(m,leadm,leadm)
-		mm.cores=m.cores
-		return mm
+		u=s.Device(m,leadm,leadm)
+		u.cores=m.cores
+		u.__dict__=dict(m.__dict__,**u.__dict__)
+		return u
 
 	def preLead(self):
 		m=self.m
@@ -150,9 +152,10 @@ class runner(Runner):
 		lat=m.leadlat
 		mm=s.structure(dict(latx=lat[0],laty=lat[1],latz=lat[2],xp=1,yp=1,zp=1))
 		mm.dimension=m.dimension
-		s=im('aces.lead')
+		import device.lead as s
 		u=s.Lead(mm)
-		u.cores=m.cores
+		#u.cores=m.cores
+		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
 	def rearangefc(self,fc,atoms,dir):
 		#from aces.f import mapatoms,writefc2
@@ -163,10 +166,11 @@ class runner(Runner):
 		#writefc2(fc[order][:,order],'fc')
 		return fc[order][:,order]
 
-	def nomalizeFC(self,fc,m,atoms):
+	def nomalizeFC(self,fc,atoms):
+		from aces.materials import getMassFromLabel
 		natom=len(atoms)
 		newfc=np.zeros([natom,natom,3,3])
-		masses=m.getMassFromLabel(atoms.get_chemical_symbols())
+		masses=getMassFromLabel(atoms.get_chemical_symbols())
 		for i in range(natom):
 			for j in range(natom):
 				m1=masses[i]

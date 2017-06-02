@@ -18,6 +18,10 @@ from ase.dft.kpoints import ibz_points
 from aces.io.lammps.lammpsdata import lammpsdata
 import numpy as np
 from aces.env import SRCHOME,PROJHOME,PROJNAME
+def getMassFromLabel(labels):
+		nums=[atomic_numbers[label] for label in labels]
+		masses=[atomic_masses[num] for num in nums]
+		return masses
 class Material:
 	def __init__(self,opt={}):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
@@ -63,7 +67,7 @@ class Material:
 	def prepare_lammps(self):
 		self.potential='pair_style	tersoff\npair_coeff	* * %s/BNC.tersoff  %s'%(config.lammpspot,' '.join(self.elements))
 		self.dump="dump_modify dump1 element %s"%(' '.join(self.elements))
-		masses=self.getMassFromLabel(self.elements)
+		masses=getMassFromLabel(self.elements)
 		self.masses='\n'.join(["mass %d %f"%(i+1,mass) for i,mass in enumerate(masses)])
 		m=self
 		units=self.units
@@ -76,13 +80,10 @@ class Material:
 		m.swapEnergyRate=m.swapEnergy/(m.excRate*m.timestep);
 		
 	def prepare_phonts(self):
-		masses=self.getMassFromLabel(self.elements)
+		masses=getMassFromLabel(self.elements)
 		self.phontsmasses='\n'.join(["%s %f 0.0"%(label,mass) for label,mass in zip(self.elements,masses)])
 		
-	def getMassFromLabel(self,labels):
-		nums=[atomic_numbers[label] for label in labels]
-		masses=[atomic_masses[num] for num in nums]
-		return masses
+	
 	def toString(self,vec):
 		return ' '.join(map(str,vec))
 	def extent(self,atoms):
@@ -112,40 +113,6 @@ class Material:
 		offset=np.sum(atoms.cell,axis=0)/2
 		atoms.translate(-offset)
 
-	def writePOTCAR(self):
-		dir='pot'#LDA
-		#paw：PAW-LDA
-		#paw_gga：PAW-GGA-PW91
-		#paw_pbe：PAW-GGA-PBE
-		#pot：USPP-LDA
-		#pot_GGA：USPP-GGA
-		if not self.paw:
-			if self.gga:
-				dir='pot_GGA'
-			else:dir='pot'
-		else:
-			if not self.gga:
-				dir='paw'
-			else:
-				if self.pbe:
-					dir='paw_pbe'
-				else:
-					dir='paw_gga'
-		passthru('cat "" >POTCAR')
-		for ele in self.elements:
-			file=config.vasppot+"/%s/%s/POTCAR"%(dir,ele)
-			z=False
-			if not exists(file):
-				file+='.Z'
-				z=True
-			assert exists(file)
-			if z:
-				passthru('zcat %s >> POTCAR'%file)
-			else:
-				passthru('cat %s >> POTCAR'%file)
-		#s=''.join([tools.read(config.vasppot+"/%s/%s/POTCAR.Z"%(dir,ele)) for ele in self.elements])
-		#tools.write(s,'POTCAR')
-			
 
 	def write(self):
 		self.watoms(self.atoms)

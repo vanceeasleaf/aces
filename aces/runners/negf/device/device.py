@@ -1,7 +1,7 @@
-from aces.material import material
+from aces.materials import Material
 from aces import default
 from ase import Atoms,Atom
-class Device(material):
+class Device(Material):
 	def __init__(self,m,m1,m2):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
 		self.m=m
