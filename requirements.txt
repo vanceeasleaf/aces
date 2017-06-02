@@ -1,10 +1,7 @@
 ase==3.13.0
 numpy==1.12.1
 Cython==0.25.2
-Image==1.5.5
-PyOpenGL==3.1.1a1
 Pmw==2.0.1
-h5py==2.7.0
 lxml==3.7.3
 matplotlib==2.0.2
 mpi4py==2.0.0
