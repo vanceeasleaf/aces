@@ -23,7 +23,7 @@ class Aces:
 		self.single=''
 	def run(self):
 
-		from aces.nemd.query import clean,stop,query
+		from aces.pbs.query import clean,stop
 		single=self.single
 
 		universe=''
@@ -31,8 +31,6 @@ class Aces:
 			clean(single)
 			self.submit()
 			sys.exit();
-		elif(sys.argv[1]=="q"):
-			query(universe)
 		elif(sys.argv[1]=="clean"):
 			clean(single)
 		elif(sys.argv[1]=="stop"):
