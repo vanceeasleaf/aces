@@ -1,6 +1,8 @@
 [![Build Status](https://travis-ci.org/vanceeasleaf/aces.svg?branch=master)](https://travis-ci.org/vanceeasleaf/aces)
-[![PyPi version](https://pypip.in/v/$REPO/badge.png)](https://crate.io/packages/$REPO/)
-[![PyPi downloads](https://pypip.in/d/$REPO/badge.png)](https://crate.io/packages/$REPO/)
+[![PyPi version](https://img.shields.io/pypi/v/aces.svg)](https://pypi.python.org/pypi/aces)
+[![PyPi license](https://img.shields.io/pypi/l/aces.svg)](https://pypi.python.org/pypi/aces)
+[![PyPi downloads](https://img.shields.io/pypi/downloads/aces.svg)](https://pypi.python.org/pypi/aces)
+[![Python version](https://img.shields.io/pypi/pyversions/aces.svg)](https://pypi.python.org/pypi/aces)
 
 # Automatical Computational Experiment System(ACES)
 
