@@ -121,7 +121,7 @@ to install it to the %python%/site-packages/aces folder.
 
 run 
 ``` bash
-python -c ' import aces '
+python -c 'import aces'
 ``` 
 to check if the installation is successful.
 
