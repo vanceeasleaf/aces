@@ -1,7 +1,6 @@
 #encoding:utf8
 import sys
-from aces.runners.devices import nvtDevice,mpDevice,ijDevice,gkDevice
-from aces.Units import Units
+from devices import nvtDevice,mpDevice,ijDevice,gkDevice
 from aces.tools import *
 import aces.config as config
 from ase.io import read
@@ -132,7 +131,24 @@ class runner(Runner):
 		x=range(len(jj0))
 		plot([x,'Correlation Time (ps)'],[jj0,'Heat Flut Correlation Function'],'acf.png')
 		plot([x,'Correlation Time (ps)'],[jj0.cumsum()*factor,'Thermal Conductivity (W/mK)'],'kappa.png')
-
+	def profile(self):
+		m=self.m
+		cd('minimize')
+		m.postMini()
+		cd('..')
+		import profile
+		profile.run(**m.__dict__)
+	def q(self):
+		self.profile()
+		self.cal()
+	def cal(self):
+		import query as qu
+		r={}
+		r['kappa']=qu.kappa()
+		r['nAtom']=qu.nAtom()
+		qu.drawStructure()
+		r['ineq']=qu.ineq(self.m)
+		print(r)
 	def reduce(self,n=1,name0=500000):
 		name='ac'+str(name0)+'.dat'
 		m=self.m

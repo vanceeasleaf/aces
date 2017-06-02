@@ -70,7 +70,7 @@ def process_pbs():
 	cd(job.path)
 	job.writepbs()
 	job.submit()
-def process_reduce():
+def process_reduce(a):
 	if not exists("qloops.txt"):
 		print("ERROR: qloops.txt not found!")
 		return
@@ -80,7 +80,7 @@ def process_reduce():
 	for i in range(len(obj)):
 		l=str(i)
 		cd(l)
-		run()
+		run(a)
 		cd('..')
 	aces.tools.printCommand=True
 def exe():
@@ -99,7 +99,7 @@ def exe():
 		process_pbs()
 		sys.exit()
 	if options.reduce_project:
-		process_reduce()
+		process_reduce(a)
 		sys.exit()
 	if run_script(a):
 		sys.exit()
