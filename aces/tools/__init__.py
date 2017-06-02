@@ -10,7 +10,7 @@ def loadjson(file):
 def shell_exec(cmd):
 	if printCommand:
 		print "[Command]"+cmd
-	sys.stdout.flush()
+		sys.stdout.flush()
 	c=os.popen(cmd).read()
 	return c.strip()
 def toString(m,sep=' '):

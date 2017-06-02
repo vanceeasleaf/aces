@@ -2,26 +2,18 @@
 # C2N hollow 2D structure
 
 from aces.tools import *
-from ase import Atoms,Atom
-from math import sqrt,pi
+from ase import Atoms
 from aces import default
-#from ase.io.vasp import write_vasp
 from aces.io.vasp import writevasp
 from ase import io
-from ase.data import atomic_masses,atomic_numbers
-from aces import tools
-from aces.algorithm.modify import get_unique_atoms
-from aces.algorithm.modify import atoms_from_dump as afd
 from aces.tools.Units import Units
 from aces import config
 from ase.dft.kpoints import ibz_points
 from aces.io.lammps.lammpsdata import lammpsdata
 import numpy as np
 from aces.env import SRCHOME,PROJHOME,PROJNAME
-def getMassFromLabel(labels):
-		nums=[atomic_numbers[label] for label in labels]
-		masses=[atomic_masses[num] for num in nums]
-		return masses
+from atomic import *
+
 class Material:
 	def __init__(self,opt={}):
 		self.__dict__=dict(self.__dict__,**default.default)# all the values needed
@@ -84,11 +76,7 @@ class Material:
 		self.phontsmasses='\n'.join(["%s %f 0.0"%(label,mass) for label,mass in zip(self.elements,masses)])
 		
 	
-	def toString(self,vec):
-		return ' '.join(map(str,vec))
-	def extent(self,atoms):
-		return atoms.positions.max(axis=0)-atoms.positions.min(axis=0)
-		
+	
 		
 	def structure(self):
 		
@@ -99,19 +87,7 @@ class Material:
 		atoms=Atoms()
 		return atoms
 
-	# rotate atoms to swap the x z axis for fix=1 and so on, keep the axis right hand
-	def swap(self,atoms,fix=1):
-		direct=[1,1,1]
-		direct[fix]=0
-		atoms.rotate(direct,pi,rotate_cell=True)
-		order=[[0,2,1],[2,1,0],[1,0,2]][fix]
-		cell=atoms.cell[order]
-		cell[fix]*=-1
-		atoms.set_cell(cell)	
-		
-	def center_box(self,atoms):
-		offset=np.sum(atoms.cell,axis=0)/2
-		atoms.translate(-offset)
+
 
 
 	def write(self):
@@ -145,6 +121,7 @@ class Material:
 		return rot
 
 	def atoms_from_dump(self,filename):
+		from atomic import atoms_from_dump as afd
 		atoms=afd(filename=filename,elements=self.elements)
 		m=self
 		atoms.set_pbc([m.xp,m.yp,m.zp])
