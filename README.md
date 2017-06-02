@@ -116,8 +116,8 @@ Let's calculate the phonon dispertion, thermal conductivity and so on of black p
 in your workspace 
 
 ``` bash 
-mkdir graphene.project 
-cd graphene.project 
+mkdir BP.project 
+cd BP.project 
 touch sub.py
 ```
 

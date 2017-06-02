@@ -3,12 +3,9 @@ from aces.tools import *
 import aces.config as config
 from aces.binary import pr
 from aces.runners import Runner
-from aces.graph import plot,series
+from aces.graph import plot,series,pl,fig
 from aces.script.vasprun import exe as lammpsvasprun
 import aces.script.vasprun as vasprun
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as pl
 import time
 import numpy as np
 from aces.io.phonopy.bandplot import plotband,plotbanddos
@@ -56,7 +53,7 @@ Monkhorst-Pack
 		forces=self.parseVasprun('forces')
 		stress=self.parseVasprun('stress')
 		c=shell_exec("grep TOTEN OUTCAR|tail -1")
-		from aces.scanf import sscanf
+		from scanf import sscanf
 		energe=sscanf(c,"free  energy   TOTEN  =      %f eV")[0]
 		return forces,stress,energy
 	def parseVasprun(self,vasprun,tag="forces"):
@@ -531,10 +528,8 @@ PRIMITIVE_AXIS = %s
 			x,y=map(float,line.split())
 			xs.append(x);ys.append(y)
 		write("%s"%(sum(ys)/len(ys)),"ave_pr.txt")
-		pl.figure()
-		pl.plot(xs,ys,'.',color='red')
-		pl.ylim([0.0,1.0])
-		pl.xlabel('Frequency (THz)')
-		pl.ylabel('Paticipation Ratio')
-		pl.savefig('Paticipation_ratio.png',bbox_inches='tight',transparent=True) 
-		pl.close()
+			with fig('Paticipation_ratio.png'):
+			pl.plot(xs,ys,'.',color='red')
+			pl.ylim([0.0,1.0])
+			pl.xlabel('Frequency (THz)')
+			pl.ylabel('Paticipation Ratio')
