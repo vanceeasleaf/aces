@@ -12,7 +12,7 @@ if sys.argv[-1]=='zip':
     sys.exit()
 setup(
       name="aces",
-      version="0.14",
+      version="0.15",
       description="A python framework for computational physics numerical experiments.",
       author="Yang Zhou",
       author_email="404422239@qq.com",
@@ -20,4 +20,5 @@ setup(
       license="GPL2.0",
       packages= find_packages(),
       scripts=["scripts/ae"],
+	long_description=open('README.md').read()
       )
