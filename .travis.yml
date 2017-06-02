@@ -1,3 +1,3 @@
 language: python
 script: echo 'hello'
-install:echo 'hello'
+install: echo 'hello'
