@@ -6,69 +6,99 @@
 
 
 from aces.tools import *
+from optparse import OptionParser
 
-import aces.tools
 import sys
 import json
-def run():
+parser = OptionParser()
+parser.set_defaults(
+    use_pbs=False,use_script=False,reduce_project=False)
+parser.add_option("-p","--pbs", dest="use_pbs",
+                  action="store_true", help="Use PBS to run this script")
+parser.add_option("-c", dest="use_script",
+                  action="store_true", help="Use ACES script rather than project method")
+parser.add_option("-r", dest="reduce_project",
+                  action="store_true", help="Reduce the folders in this project")
+(options, args) = parser.parse_args()
+
+def run(a):
 	from aces.App import App
 	r=App().runner
-
-	if len(sys.argv)>1:
-		a=sys.argv[1]
-		if not hasattr(r,a):
-			print a,'method does not exist'
-		else: getattr(r,a)()
-def exe():
-	if len(sys.argv)>1:
-		a=sys.argv[1]
-		if(a.find("git")>0):
-			mkdir('.project')
-			cd('.project')
-			if(not exists('.git')):
-				shell_exec("git init")
-				write("_gsdata_",".gitignore")
-			d=ls()
-			for x in d:
-				if(x.find(".git")>=0):continue
-				if(x.find("_gsdata_")>=0):continue
-				shell_exec("rm %s -r"%x)
-			cd('..')
-			passthru("find .  -path ./.project  -prune -o -name '*.py' -print| cpio -pdm .project 2>/dev/null ;cd .project;git add .;git commit -am \"%s\""%(sys.argv[2]))
-			return
+	m=App().m
+	print("Searching in aces.runners.%s..."%m.runner)
+	if not hasattr(r,a):
+		print('Method %s does not exist in aces.runners.%s'%(a,m.runner))
+		return False
+	getattr(r,a)()
+	return True
+def run_script(a):
+	import aces.script as r
+	print("Searching in aces.script...")
+	if not hasattr(r,a):
+		print('Method %s does not exist in aces.script'%a)
+		return False
+	getattr(r,a)()
+	return True
+def process_git():
+	mkdir('.project')
+	cd('.project')
+	if(not exists('.git')):
+		shell_exec("git init")
+		write("_gsdata_",".gitignore")
+	d=ls()
+	for x in d:
+		if(x.find(".git")>=0):continue
+		if(x.find("_gsdata_")>=0):continue
+		shell_exec("rm %s -r"%x)
+	cd('..')
+	passthru("find .  -path ./.project  -prune -o -name '*.py' -print| cpio -pdm .project 2>/dev/null ;cd .project;git add .;git commit -am \"%s\""%(sys.argv[2]))
+	
+def process_pbs():
+	from aces.pbs.jobManager import pbs
 	from aces.App import App
 	from aces import config
-	if exists("sub.py"):
-		aces.tools.printCommand=False
-		obj=[json.loads(json_string) for  json_string in open("qloops.txt")]
-		for i in range(len(obj)):
-			l=str(i)
-			cd(l)
-			run()
-			cd('..')
-		aces.tools.printCommand=True
+	m=App().m
+	nodes=m.nodes
+	procs=m.procs
+	job=pbs(queue=m.queue,
+		nodes=nodes,
+		procs=procs,
+		disp=m.pbsname,
+		path=pwd(),
+		content='ae '+' '.join(args)+' >aces.out')
+	cd(job.path)
+	job.writepbs()
+	job.submit()
+def process_reduce():
+	if not exists("qloops.txt"):
+		print("ERROR: qloops.txt not found!")
 		return
-	if len(sys.argv)>2:
-		if sys.argv[2]=="-pbs":
-			from aces.jobManager import pbs
-			m=App().m
-			job=pbs(queue=m.queue,nodes=m.nodes,procs=m.procs,disp=m.pbsname,path=pwd(),content=config.python+' '.join(sys.argv).replace('-pbs','')+' >aces.out')
-			cd(job.path)
-			job.writepbs()
-			job.submit()
-			return
-		if sys.argv[2]=='-c':
-			a=sys.argv[1]
-			import aces.script as r
-			if not hasattr(r,a):
-				print a,'method does not exist'
-			elif len(sys.argv)==4 and sys.argv[3]=="-pbs":
-				from aces.jobManager import pbs
-				job=pbs(queue='q1.1',nodes=4,procs=12,disp="script",path=pwd(),content=config.mpirun+ " 48 "+config.python+' '.join(sys.argv).replace('-pbs','')+' >aces.out')
-				cd(job.path)
-				job.writepbs()
-				job.submit()
-			else:getattr(r,a)()
-			return
-	run();
-exe()
+	import aces.tools
+	aces.tools.printCommand=False
+	obj=[json.loads(json_string) for  json_string in open("qloops.txt")]
+	for i in range(len(obj)):
+		l=str(i)
+		cd(l)
+		run()
+		cd('..')
+	aces.tools.printCommand=True
+def exe():
+	if(len(args)==0):
+		print("ERROR: Please input args!")
+		sys.exit()
+	a=args[0]
+	if a=="git":
+		process_git()
+		sys.exit()
+	if options.use_pbs:
+		process_pbs()
+		sys.exit()
+	if options.reduce_project:
+		process_reduce()
+		sys.exit()
+	if run_script(a):
+		sys.exit()
+	if run(a):
+		sys.exit()
+if __name__=="__main__":
+	exe()

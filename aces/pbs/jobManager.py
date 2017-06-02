@@ -1,5 +1,5 @@
-from config import libs
-from tools import *
+from aces.config import libs
+from aces.tools import *
 import time
 import numpy as np
 import pexpect
