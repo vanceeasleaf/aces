@@ -7,7 +7,7 @@ import time
 from aces.env import *
 def genPbs(path,disp,queue,nodes,procs):
 	content="cd %s\n"%path
-	content+=config.python+" %s/App.py >aces.out\n"%SRCHOME	
+	content+="ae app >aces.out\n"	
 	s="""#!/bin/bash -x
 #PBS -l nodes=%s:ppn=%s
 #PBS -l walltime=240:00:00
@@ -110,7 +110,6 @@ def setSubProject(index,single):
 	if(single):pid=''#exec.background("sh %s/%s/run.sh"%(PROJHOME,index));
 	else:
 		pid=shell_exec("cd %s/%s;qsub lammps.pbs;"%(PROJHOME,index));
-		from tools import debug
 		debug("pbsid=%s"%pid)
 		debug(time.strftime('%Y-%m-%d %H:%M:%S'))
 		print "submit: %s\t%s/%s"%(pid,PROJHOME,index);

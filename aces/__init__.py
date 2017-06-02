@@ -23,7 +23,7 @@ class Aces:
 		self.single=''
 	def run(self):
 
-		from aces.query import clean,stop,query
+		from aces.nemd.query import clean,stop,query
 		single=self.single
 
 		universe=''
@@ -40,7 +40,7 @@ class Aces:
 		else:
 			exit("Unkown command!");
 	def commit(self,opt,app):
-		from aces.toolsub import toolsub
+		from aces.pbs.toolsub import toolsub
 		origin=dict(single=False
 		,species='graphene'
 		,units='metal'

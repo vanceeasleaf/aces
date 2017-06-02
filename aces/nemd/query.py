@@ -2,7 +2,7 @@
 import json
 import os,sys
 import aces.config as config
-from aces.inequality import inequality
+from .inequality import inequality
 
 from aces.tools import *
 from ase.io import read

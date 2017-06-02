@@ -11,8 +11,9 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import time
 import numpy as np
-from aces.io.phonopy.bandplot import plotband
+from aces.io.phonopy.bandplot import plotband,plotbanddos
 from aces.f import readfc2
+from aces.pbs.jobManager import jobManager,th,pbs
 class runner(Runner):
 	def minimizePOSCAR(self):
 		m=self.m
@@ -295,14 +296,12 @@ VDW_R0 = 1.898 1.892
 			self.writeKPOINTS()
 		if 'jm' in self.__dict__:
 			if not m.th:
-				from aces.jobManager import pbs
 				path=pwd()
 				if m.queue=="q3.4":
 					pb=pbs(queue=m.queue,nodes=12,procs=1,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
 				else:
 					pb=pbs(queue=m.queue,nodes=1,procs=12,disp=m.pbsname,path=path,content=config.mpirun+" 12 "+config.vasp+' >log.out')
 			else:
-				from aces.jobManager import th
 				path=pwd()
 				pb=th(disp=m.pbsname,path=path)
 			self.jm.reg(pb)
@@ -312,7 +311,6 @@ VDW_R0 = 1.898 1.892
 	def getVaspRun_lammps(self):
 		m=self.m
 		if 'jm' in self.__dict__:
-			from aces.jobManager import pbs
 			path=pwd()
 			pb=pbs(queue=m.queue,nodes=1,procs=4,disp=m.pbsname,path=path,content=config.python+vasprun.__file__+' >log.out')
 			self.jm.reg(pb)
@@ -331,7 +329,6 @@ VDW_R0 = 1.898 1.892
 		m=self.m
 		maindir=pwd()
 		if m.engine=="vasp":
-			from aces.jobManager import jobManager
 			self.jm=jobManager()
 			for file in files:
 				print file
@@ -356,7 +353,6 @@ VDW_R0 = 1.898 1.892
 			pool.close()
 			pool.join()
 		elif m.engine=="lammps":
-			from aces.jobManager import jobManager
 			self.jm=jobManager()
 			for file in files:
 				print file

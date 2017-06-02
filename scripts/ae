@@ -87,6 +87,10 @@ def exe():
 		print("ERROR: Please input args!")
 		sys.exit()
 	a=args[0]
+	if a=="app":
+		from aces.App import App
+		App().execute()
+		sys.exit()
 	if a=="git":
 		process_git()
 		sys.exit()
