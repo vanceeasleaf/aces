@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-10-14 20:43:32
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-01-07 17:46:03
+# @Last Modified time: 2017-06-03 01:10:35
 from aces.tools import *
 import numpy as np
 from ase import io
@@ -244,3 +244,36 @@ def csf():
 	"""
 	from aces.cs1 import runner
 	runner(mu=0.0,lam=4.0).run()
+
+def trans_cal():
+	from mpi4py import MPI  
+	comm = MPI.COMM_WORLD  
+	rank = comm.Get_rank()  
+	size = comm.Get_size()  
+	print("my rank is: %d" %rank) 
+	if rank==0:
+		print("Reading force constants from cache")
+		d=np.load('fcbin.npz')
+		fccenter,fclead=d['fccenter'],d['fclead']
+	
+	data = comm.bcast((fccenter,fclead) if rank == 0 else None, root=0)  
+	fccenter,fclead=data
+	print rank,len(fccenter)
+	intval=60.0/20
+	dm=intval/size
+
+	omega=np.arange(dm*rank,60.0,intval)#THz
+	factor=1e12**2*1e-20*1e-3/1.6e-19/6.23e23
+	energies=(omega*2.0*np.pi)**2*factor
+
+	from ase.transport.calculators import TransportCalculator
+	tcalc =TransportCalculator(h=fccenter,h1=fclead,h2=fclead,energies=energies,dos=True)
+	if rank==0:
+		print ('Calculate Transmission')
+	trans=tcalc.get_transmission()
+	if rank==0:
+		print ('Calculate Dos')
+	dos=tcalc.get_dos()*omega
+	#np.savez('tmp/result%s.npz'%(rank),x=omega,trans=trans,dos=dos)
+	mkdir('tmp')
+	to_txt(['omega','trans','dos'],np.c_[omega,trans,dos],'tmp/result.txt'+str(rank))

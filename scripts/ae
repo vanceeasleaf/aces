@@ -66,7 +66,7 @@ def process_pbs():
 		procs=procs,
 		disp=m.pbsname,
 		path=pwd(),
-		content='ae '+' '.join(args)+' >aces.out')
+		content= 'ae '+' '.join(args)+' >aces.out')
 	cd(job.path)
 	job.writepbs()
 	job.submit()

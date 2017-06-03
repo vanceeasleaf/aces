@@ -10,7 +10,6 @@ from aces.runners.minimize import minimize as minimize_input
 from aces.runners.phonopy import runner as PRunner
 from importlib import import_module as im
 import time
-from ase.transport.calculators import TransportCalculator
 from aces.f import readfc2
 hbar=6.6260755e-34/3.14159/2.0
 kb=1.3806488e-23
@@ -49,31 +48,43 @@ class runner(Runner):
 		plot([omega,'Frequency (THz)'],[dos,'Phonon Density of State'],'test_green_dos.png')
 	def collect(self):		
 		leadm=self.preLead()
-		centerm=self.preCenter()
 		fclead=self.fc('lead')
 		fccenter=self.fc('center')
 		#write(np.around(fc[:,:,0,0],3),'orig_forces')
 		n=leadm.hatom
 		fccenter[:n,-n:]=0
 		fccenter[-n:,:n]=0
-		write(np.around(fccenter[:,:,0,0],3),'fccenter')
+		#write(np.around(fccenter[:,:,0,0],3),'fccenter')
 		fclead=fclead[:2*n][:2*n]
 		fccenter=self.reshape(fccenter)
 		fclead=self.reshape(fclead)	
 		return fccenter,fclead
 	def gettrans(self):
-		fccenter,fclead=self.collect()
-		dm=.5
-		omega=np.arange(dm,60,dm)#THz
-		factor=1e12**2*1e-20*1e-3/1.6e-19/6.23e23
-		energies=(omega*2.0*np.pi)**2*factor
-		tcalc =TransportCalculator(h=fccenter,h1=fclead,h2=fclead,energies=energies,logfile='negf.log',dos=True)
-		print 'Calculate Transmission'
-		trans=tcalc.get_transmission()
-		print 'Calculate Dos'
-		dos=tcalc.get_dos()*omega
+		print("Reading in force constants...")
+		if not exists("fcbin.npz"):
+			fccenter,fclead=self.collect()
+			np.savez("fcbin.npz",fccenter=fccenter,fclead=fclead)
+			print("Caching force constans")
+		import os
+		m=self.m
+		os.system(config.mpirun+" "+str(m.cores)+" ae trans_cal >trans_cal.out")
+	def reduce(self):
+		files=ls("tmp/result.txt*")
+		omega=[]
+		trans=[]
+		dos=[]
+		for file in files:
+			result=np.loadtxt(file,skiprows=1)
+			omega.append(result[:,0])
+			trans.append(result[:,1])
+			dos.append(result[:,2])
+
+		omega=np.array(omega).flatten().T
+		f=omega.argsort()
+		omega=omega[f]
+		trans=np.array(trans).flatten().T[f]
+		dos=np.array(dos).flatten().T[f]
 		to_txt(['omega','trans','dos'],np.c_[omega,trans,dos],'result.txt')
-		print 'Calculate Thermal Conductance'
 	def generate(self):
 		self.m.xp=1
 		leadm=self.preLead()
