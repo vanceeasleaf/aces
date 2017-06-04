@@ -63,14 +63,23 @@ class runner(Runner):
 		fclead=self.reshape(fclead)	
 		return fccenter,fclead
 	"""
-	def collet(self):
-		leftlead=
+	def collect(self):
+		fcleft=self.fc('leftlead')
+		write(np.around(fcleft[:,:,0,0],3),'fcleft')
+		fcleft=self.reshape(fcleft)
+		fcright=self.fc('rightlead')	
+		write(np.around(fcright[:,:,0,0],3),'fcright')
+		fcright=self.reshape(fcright)	
+		fccenter=self.fc('center')
+		write(np.around(fccenter[:,:,0,0],3),'fccenter')
+		fccenter=self.reshape(fccenter)
+		return fccenter,fcleft,fcright
 	def gettrans(self):
 		print("Reading in force constants...")
-		if not exists("fcbin.npz"):
-			fccenter,fclead=self.collect()
-			np.savez("fcbin.npz",fccenter=fccenter,fclead=fclead)
-			print("Caching force constans")
+		#if not exists("fcbin.npz"):
+		fccenter,fcleft,fcright=self.collect()
+		np.savez("fcbin.npz",fccenter=fccenter,fcleft=fcleft,fcright=fcright)
+		print("Caching force constans")
 		import os
 		m=self.m
 		os.system(config.mpirun+" "+str(m.cores)+" ae trans_cal >log.out")
@@ -93,10 +102,11 @@ class runner(Runner):
 		to_txt(['omega','trans','dos'],np.c_[omega,trans,dos],'result.txt')
 	def generate(self):
 		self.m.xp=1
-		leadm=self.preLead()
-		self.phonopy('lead',leadm)
+		#leadm=self.preLead()
+		#self.phonopy('lead',leadm)
 		centerm=self.preCenter()
 		self.phonopy('center',centerm)
+		self.getlead()
 		self.gettrans()
 		self.post()
 	def post(self):
@@ -105,6 +115,7 @@ class runner(Runner):
 		#a cm^-1=b THz =>a=b *1e12 Hz*cm
 		#a meV = b cm^-1 => a = b cm-1/meV
 		#omcm=omega*521.471？
+		self.reduce()
 		result=np.loadtxt("result.txt",skiprows=1)
 		omega=result[:,0]
 		trans =result[:,1]
@@ -138,21 +149,29 @@ class runner(Runner):
 		n,m=fc.shape[:2]
 		fc=np.einsum('ikjl',fc).reshape([n*3,m*3])
 		return fc
+	def testfc(self):
+		self.fc('center')
 	def fc(self,dir):
 		fc=readfc2(dir+'/FORCE_CONSTANTS')
 		satoms=io.read(dir+'/SPOSCAR')
-		atoms=io.read(dir+'/POSCAR')
 
 		# divide m_i*mj
 		
 		fc=nomalizeFC(fc,satoms)		
-		
-		fc=self.rearangefc(fc,satoms,atoms,dir)
+		if not dir=='center':
+			atoms=io.read(dir+'/POSCAR')
+
+			fc=self.rearangefc(fc,satoms,atoms)
+		else:
+			left=io.read(dir+'/POSCAR_left')
+			right=io.read(dir+'/POSCAR_right')
+			# why not record the order when generating POSCAR_left ? because atoms order may be changed after write to POSCAR
+			fc=self.rearangefc_center(fc,satoms,left,right)
 
 		return fc
 	def phonopy(self,dir,mm):
-		if exists(dir+'/FORCE_CONSTANTS'):
-			return
+		#if exists(dir+'/FORCE_CONSTANTS'):
+		#	return
 		mkcd(dir)	
 		self.creatmini(mm)
 		PRunner(mm).generate()
@@ -166,7 +185,7 @@ class runner(Runner):
 		u.cores=m.cores
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
-	def findunit(self,atoms,rightx,la,end="right",err=0.3):
+	def findunit(self,atoms,rightx,la,end="right",err=0.4):
 		"""[find atoms within the period]
 		
 		[filter the atoms with x > rightx-la (if end=='right') and use la as lattice constant to build a new unitcell]
@@ -206,17 +225,35 @@ class runner(Runner):
 			qatoms.append(q)
 
 		# check qatoms is a unitcell
-		isunit=[False]*len(patoms)
-		for i,p in enumerate(patoms):
+		isunit=[False]*len(qatoms)
+		for i,p in enumerate(qatoms):
 			for q in atoms:
 				if norm(p.position-offset-q.position)<err and q.symbol==p.symbol:
 					isunit[i]=True
 					break
-		print isunit
+		print "is maching:",isunit
 		# the unitcell must exist
-		assert reduce(lambda a,b:a*b,isunit)
+		#assert reduce(lambda a,b:a*b,isunit)
 		return qatoms	
-	def findlead(self,end="left",err=0.4):
+
+	def getlead(self):
+		cd('center')
+		left=self.findlead('left')
+		right=self.findlead('right')
+		cd('..')
+		from aces.io.vasp import writevasp
+		mkdir('leftlead')
+		mkdir('rightlead')
+		writevasp(left,'leftlead/POSCAR')
+		writevasp(right,'rightlead/POSCAR')
+		cd('leftlead')
+		self.runlead()
+		cd('..')
+		cd('rightlead')
+		self.runlead()
+		cd('..')
+
+	def findlead(self,end="left",err=0.3):
 		"""[from center POSCAR find periodic lead POSCAR]
 		
 		[the center POSCAR is expected to consist of scatter region and left lead region of 2 layers and 
@@ -256,23 +293,48 @@ class runner(Runner):
 		# waring this index is of atoms_inline but not of atoms
 		# catom is what we search
 		catom=atoms_inline[right_idx1]
-		print "next right similar atom position:",catom.position
+		print "next %s end similar atom position:"%end,catom.position
 		# the possible lattice constant of x direction 
 		la=np.abs(ratom.position[0]-catom.position[0])
 		rightx=ratom.position[0]
 		unit=self.findunit(atoms,rightx,la,end,err)
+		if end=="right":
+			unit.translate([-(rightx-la),0,0])
+		else:
+			unit.translate([-(rightx),0,0])
 		unit.cell=atoms.cell
 		unit.cell[0,0]=la
-		unit.center(axis=0)
+		#unit.center(axis=0)
 		from aces.io.vasp import writevasp
 		writevasp(unit,'POSCAR_%s'%end)
+		return unit
 	def runlead(self):
+		"""generate lead force constants
+		
+		TRICK!!
+		> If hc1/hc2 are None, they are assumed to be identical to the coupling matrix elements between neareste neighbor principal layers in lead1/lead2.
+
+		3 is important for the NEGF calculation ,if use 2, the regurlar fc and periodic fc is undistinguable,
+		1 -1 
+		-1 1
+
+		and the transimission is curve
+		for example ,
+		the fclead should be when lead layer=1,and two layer interaction is 
+		2 -1
+		-1 2
+		and we can get from 3 layer supercell by  fc[:2n,:2n] , this process will complete in rearangefc
+		2 -1 -1 
+		-1 2 -1 
+		-1 2 2
+		
+		"""
 		m=self.m
 		s=im('aces.materials.graphene')
 		mm=s.structure(dict(latx=1,laty=1,latz=1,xp=1,yp=0,zp=0))
 		mm.atoms=io.read("POSCAR")
-		# 2 is important for the NEGF calculation
-		mm.supercell=[2,1,1]
+
+		mm.supercell=[3,1,1]
 		mm.phofc=True
 		mm.__dict__=dict(m.__dict__,**mm.__dict__)
 		PRunner(mm).run()
@@ -287,7 +349,65 @@ class runner(Runner):
 		#u.cores=m.cores
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
-	def rearangefc(self,fc,satoms,atoms,dir):
+	def rearangefc_center(self,fc,satoms,left,right):
+		right_idx=satoms.positions[:,0].argsort()[-1]
+		x_right=satoms[right_idx].position[0]
+		left_idx=satoms.positions[:,0].argsort()[0]
+		x_left=satoms[left_idx].position[0]
+		# find the index of left part in satoms
+		atoms=left.copy()
+		# remove the offset
+		atoms.translate([x_left,0,0])
+		lidx=self.match_idx(atoms,satoms)
+		lidx=list(lidx)
+		# find the index of right part in satoms
+		atoms=right.copy()
+
+		atoms.translate([x_right-right.cell[0,0],0,0])
+
+		ridx=self.match_idx(atoms,satoms)
+		ridx=list(ridx)
+		# find the center index
+		cidx=[]
+		for i in range(len(satoms)):
+			if i in lidx:continue
+			if i in ridx:continue
+			cidx.append(i)
+		order= lidx+cidx+ridx
+		print order
+		newfc=fc[order][:,order]
+		n1=len(lidx)
+		n2=len(ridx)
+		# eliminate periodic effect ,which is very important
+		newfc[:n1][:,-n2:]=0
+		newfc[-n2:][:,:n1]=0
+		return newfc
+
+
+	def match_idx(self,atoms,satoms,err=0.4):
+		"""find the indexes of atoms in satoms with the same position
+		
+		[description]
+		
+		Arguments:
+			atoms {[type]} -- [description]
+			satoms {[type]} -- [description]
+			err {Number} -- tolerance for position compare
+		"""
+		natom=len(atoms)
+		idx=-np.ones(natom)
+		for i,p in enumerate(atoms):
+			for j,q in enumerate(satoms):
+				if norm(q.position-p.position)<err  and q.symbol==p.symbol:
+					idx[i]=j
+				if norm(q.position+satoms.cell[0]-p.position)<err  and q.symbol==p.symbol:
+					idx[i]=j
+					break
+		# there must be a match atom
+		assert (idx>=0).all()
+
+		return idx
+	def rearangefc(self,fc,satoms,atoms):
 		"""[ reorder fc by satoms-> atoms +atoms ]
 		
 		the order of atoms in SPOSCAR is not [atoms in left+ atoms in right] but may be random 
@@ -301,7 +421,6 @@ class runner(Runner):
 			fc {[type]} -- [description]
 			stoms {[type]} -- [description]
 			atoms {[type]} -- [description]
-			dir {[string]} -- the path of lead
 		
 		Returns:
 			[type] -- [description]
@@ -313,30 +432,25 @@ class runner(Runner):
 		#atoms[order].write('new.xyz')
 		
 		# find the index of left part in satoms
-		idx=-np.ones(len(atoms))
-		for i,p in enumerate(atoms):
-			for j,q in enumerate(satoms):
-				if norm(q.position-p.position)<0.4:
-					idx[i]=j
-					break
-		# there must be a match atom
-		assert (idx>=0).all()
-		lidx=idx
-		# find the index of right part in satoms
-		idx=-np.ones(len(atoms))
-		ratom=atoms.copy()
-		ratoms.translate(atoms.cell[0])
-		for i,p in enumerate(ratoms):
-			for j,q in enumerate(satoms):
-				if norm(q.position-p.position)<0.4:
-					idx[i]=j
-					break
-		assert (idx>=0).all()
-		ridx=idx 
-		# concat them 
-		order=list(lidx)+list(ridx)
+		lidx=self.match_idx(atoms,satoms)
+		lidx=list(lidx)
 
-		return fc[order][:,order]
+		# find the index of right part in satoms
+		ratoms=atoms.copy()
+		ratoms.translate(satoms.cell[0]-atoms.cell[0])
+		ridx=self.match_idx(ratoms,satoms)
+		ridx=list(ridx)
+		# concat them 
+		cidx=[]
+		for i in range(len(satoms)):
+			if i in lidx:continue
+			if i in ridx:continue
+			cidx.append(i)
+		order= lidx+cidx+ridx
+		print order
+		print satoms.positions[order]
+		newfc=fc[order][:,order]
+		return newfc[:2*len(atoms),:2*len(atoms)]
 		## generated from aces.io.vasp.writevasp to record original order of atoms 
 		#order=np.loadtxt(dir+'/POSCARswap').astype(np.int)
 		##writefc2(fc[order][:,order],'fc')

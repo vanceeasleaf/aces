@@ -376,7 +376,7 @@ VDW_R0 = 1.898 1.892
 		self.generate_supercells()
 		debug('generate_supercells:%f s'%(time.time()-a))
 		files=shell_exec("ls *-*").split('\n')
-		assert len(files)>0
+		assert len(files)>0 and not files[0]==""
 		#self.runSPOSCAR()
 		a=time.time()
 		self.getvasprun(files)

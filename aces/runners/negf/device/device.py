@@ -34,5 +34,5 @@ class Device(Material):
 		#atoms.center()
 		x=atoms.positions[:,0]
 
-		return atoms
+		return center
 
