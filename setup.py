@@ -12,7 +12,7 @@ if sys.argv[-1]=='zip':
     sys.exit()
 setup(
       name="aces",
-      version="0.15",
+      version="0.16",
       description="A python framework for computational physics numerical experiments.",
       author="Yang Zhou",
       author_email="404422239@qq.com",
