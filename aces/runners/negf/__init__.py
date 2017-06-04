@@ -89,10 +89,11 @@ class runner(Runner):
 		trans=[]
 		dos=[]
 		for file in files:
+			print file
 			result=np.loadtxt(file,skiprows=1)
-			omega.append(result[:,0])
-			trans.append(result[:,1])
-			dos.append(result[:,2])
+			omega=np.r_[omega,result[:,0]]
+			trans=np.r_[trans,result[:,1]]
+			dos=np.r_[dos,result[:,2]]
 
 		omega=np.array(omega).flatten().T
 		f=omega.argsort()
@@ -142,8 +143,10 @@ class runner(Runner):
 		np.c_[omega,omcm,omme,trans,dos,c,j,kappa],'transmission.txt')
 		
 		f=np.loadtxt('transmission.txt',skiprows=1)
+		from aces.algorithm.smooth import savitzky_golay
 		plot([f[:,0],'Frequency (THz)'],[f[:,4],'Phonon Density of State'],'green_dos.png')
 		plot([f[:,0],'Frequency (THz)'],[f[:,3],'Phonon Transmission'],'green_transmission.png')
+		plot([f[:,0],'Frequency (THz)'],[savitzky_golay(f[:,3],11,3),'Phonon Transmission'],'smooth_transmission.png')
 		plot([f[:,0],'Frequency (THz)'],[f[:,6],'Mode Thermal Conductance (W/m^2/K)'],'green_mode_conductance.png')
 	def reshape(self,fc):
 		n,m=fc.shape[:2]
