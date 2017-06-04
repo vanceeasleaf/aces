@@ -188,7 +188,7 @@ PRIMITIVE_AXIS = %s
 		write(mesh,'q.conf')	
 		s="%s\n"%len(q)
 		for qq in q:
-			s+="%s\n"%m.toString(qq)
+			s+="%s\n"%toString(qq)
 		write(s,'QPOINTS')
 	def generate_vqconf(self,q):
 		#generate q.conf
@@ -204,7 +204,7 @@ PRIMITIVE_AXIS = %s
 		write(mesh,'q.conf')	
 		s="%s\n"%len(q)
 		for qq in q:
-			s+="%s\n"%m.toString(qq)
+			s+="%s\n"%toString(qq)
 		write(s,'QPOINTS')
 	def generate_supercells(self):
 		m=self.m
@@ -370,9 +370,8 @@ VDW_R0 = 1.898 1.892
 			ii+=1
 			print >>out,"%d\t%f"%(ii,ccos)
 			cd(maindir)
-	def generate(self):
+	def run(self):
 		m=self.m
-		self.minimizePOSCAR()
 		a=time.time()
 		self.generate_supercells()
 		debug('generate_supercells:%f s'%(time.time()-a))
@@ -388,6 +387,10 @@ VDW_R0 = 1.898 1.892
 		
 		if m.phofc:return self
 		self.postp()
+	def generate(self):
+		
+		self.minimizePOSCAR()
+		self.run()
 	def get_force_sets(self):
 		files=shell_exec("ls dirs").split('\n')
 		files=map(lambda x:x.replace('dir_',''),files)
@@ -465,7 +468,7 @@ VDW_R0 = 1.898 1.892
 		m=self.m
 
 		bp=m.bandpoints
-		bpath=' '.join([m.toString(bp[x]) for x in m.bandpath])
+		bpath=' '.join([toString(bp[x]) for x in m.bandpath])
 		
 		band="""DIM = %s
 ATOM_NAME = %s

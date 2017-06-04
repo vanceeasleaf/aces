@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-01 21:49:49
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-02 21:31:17
+# @Last Modified time: 2017-06-03 18:22:40
 import numpy as np
 from aces.f import toString
 from aces.tools import *
@@ -22,11 +22,16 @@ def writevasp(atoms,file='POSCAR'):
 			continue
 		ele.append(a)
 	print >>f,toString(ele)
-	a=[]
+	a=[] # 
+	# len(s) = natom 
 	p=np.arange(len(s))
 	for e in ele:
 		a.append(p[s==e])
+	# p= 0 1 2 3 4 5
+	# s= C N N C N C
+	# a= [[0,3,5],[1,2,4]]
 	ns=[len(x) for x in a]
+	# ns =[3,3]
 	print >>f,toString(ns)
 	print >>f,'Direct'
 	v=[]
@@ -34,6 +39,7 @@ def writevasp(atoms,file='POSCAR'):
 		for u in x:
 			v.append(u)
 			print >>f,toString(ss[u])
+	# v= [0,3,5,1,2,4]
 	f.close()
 	x=np.array(v,dtype=np.int).argsort()
 	np.savetxt('POSCARswap',x)

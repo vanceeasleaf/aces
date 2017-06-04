@@ -25,7 +25,9 @@ class Material:
 		self.set_parameters()
 		self.__dict__=dict(self.__dict__,**opt)
 		self.super_setup()
-		
+	def __getattr__(self,attr):
+		if attr=="dim":
+			return toString(self.supercell)
 	#to be overided	
 	def set_parameters(self):
 		pass
@@ -39,7 +41,6 @@ class Material:
 		self.bandpoints['Y']=[0,0.5,0]
 		self.bandpath=['Gamma','X','Y','Gamma']
 		self.premitive=np.eye(3)
-		self.dim=toString(self.supercell)
 		if not self.useS3:
 			self.supercell3=self.supercell
 		self.setup()

@@ -1,7 +1,7 @@
 #encoding:utf8
 from aces.tools import *
 import aces.config as config
-from ase.io import read
+from ase import io
 from ase.io.vasp import write_vasp
 from aces.runners import Runner
 from aces.graph import plot,series
@@ -10,7 +10,9 @@ from aces.runners.minimize import minimize as minimize_input
 from aces.runners.phonopy import runner as PRunner
 from importlib import import_module as im
 import time
+from numpy.linalg import norm
 from aces.f import readfc2
+from aces.io.phonopy.fc import nomalizeFC
 hbar=6.6260755e-34/3.14159/2.0
 kb=1.3806488e-23
 def BE(w,T):
@@ -46,6 +48,7 @@ class runner(Runner):
 		dos=calc.get_dos()*omega
 		plot([omega,'Frequency (THz)'],[T,'Transmission'],'test_green_transmission.png')
 		plot([omega,'Frequency (THz)'],[dos,'Phonon Density of State'],'test_green_dos.png')
+	"""
 	def collect(self):		
 		leadm=self.preLead()
 		fclead=self.fc('lead')
@@ -59,6 +62,9 @@ class runner(Runner):
 		fccenter=self.reshape(fccenter)
 		fclead=self.reshape(fclead)	
 		return fccenter,fclead
+	"""
+	def collet(self):
+		leftlead=
 	def gettrans(self):
 		print("Reading in force constants...")
 		if not exists("fcbin.npz"):
@@ -67,7 +73,7 @@ class runner(Runner):
 			print("Caching force constans")
 		import os
 		m=self.m
-		os.system(config.mpirun+" "+str(m.cores)+" ae trans_cal >trans_cal.out")
+		os.system(config.mpirun+" "+str(m.cores)+" ae trans_cal >log.out")
 	def reduce(self):
 		files=ls("tmp/result.txt*")
 		omega=[]
@@ -134,10 +140,14 @@ class runner(Runner):
 		return fc
 	def fc(self,dir):
 		fc=readfc2(dir+'/FORCE_CONSTANTS')
-		atoms=read(dir+'/POSCAR')
-		fc=self.nomalizeFC(fc,atoms)		
+		satoms=io.read(dir+'/SPOSCAR')
+		atoms=io.read(dir+'/POSCAR')
+
+		# divide m_i*mj
 		
-		fc=self.rearangefc(fc,atoms,dir)
+		fc=nomalizeFC(fc,satoms)		
+		
+		fc=self.rearangefc(fc,satoms,atoms,dir)
 
 		return fc
 	def phonopy(self,dir,mm):
@@ -156,7 +166,116 @@ class runner(Runner):
 		u.cores=m.cores
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
+	def findunit(self,atoms,rightx,la,end="right",err=0.3):
+		"""[find atoms within the period]
+		
+		[filter the atoms with x > rightx-la (if end=='right') and use la as lattice constant to build a new unitcell]
+		
+		Arguments:
+			atoms {[Atoms]} -- [The center region atoms of NEGF, with scatter part and left and right lead part of 2 layers]
+			rightx {[Nubmer]} -- [the x position of right most atom]
+			la {[Number]} -- [the lattice constant of result unitcell]
+		
+		Keyword Arguments:
+			end {str} -- [which lead do you want ,can be 'left' and 'right'] (default: {"right"})
+			err {number} -- [the tolerence to find an atom ] (default: {0.3})
+		
+		Returns:
+			[Atoms] -- [The result unitcell]
+		"""
+		
+		from ase import Atoms
+		if end=="right":
+			fil=atoms.positions[:,0]>rightx-la-err
+			offset=[la,0,0]
+		else:
+			fil=atoms.positions[:,0]<rightx+la+err
+			offset=[-la,0,0]
+		patoms=atoms[fil]
 
+		# exclude the atoms that could be get though move one righer atom
+		invalids=[]
+		for p in patoms:
+			for i,q in enumerate(patoms):
+				if norm(q.position+offset-p.position)<err and q.symbol==p.symbol:
+					invalids.append(i)
+		qatoms=Atoms()
+		for i,q in enumerate(patoms):
+			if i in invalids:
+				continue
+			qatoms.append(q)
+
+		# check qatoms is a unitcell
+		isunit=[False]*len(patoms)
+		for i,p in enumerate(patoms):
+			for q in atoms:
+				if norm(p.position-offset-q.position)<err and q.symbol==p.symbol:
+					isunit[i]=True
+					break
+		print isunit
+		# the unitcell must exist
+		assert reduce(lambda a,b:a*b,isunit)
+		return qatoms	
+	def findlead(self,end="left",err=0.4):
+		"""[from center POSCAR find periodic lead POSCAR]
+		
+		[the center POSCAR is expected to consist of scatter region and left lead region of 2 layers and 
+		right lead region of 2 layers. So we can find the lead POSCAR from the two ends with this algorithm.]
+		
+		Keyword Arguments:
+			end {str} -- [which lead do you want ,can be 'left' and 'right'] (default: {"left"})
+			err {number} -- [the tolerence to find an atom ] (default: {0.4})
+		
+		Raises:
+			Exception -- [end is not set correctly]
+		"""
+		
+		from ase import io ,Atoms
+		atoms=io.read('POSCAR')
+		# find the most right atom index
+		if end=="right":
+			last=-1
+			next_last=-2
+		elif end=="left":
+			last=0
+			next_last=1
+		else:
+			raise Exception("Unkown value of `end`")
+		right_idx=atoms.positions[:,0].argsort()[last]
+		ratom=atoms[right_idx]
+		print "%s end atom position:"%end,ratom.position
+		# the atoms that has similar y,z to ratom , in our situatoin there is at least two such atoms.
+		fil=norm(atoms.positions[:,1:]-ratom.position[1:],axis=1)<err
+		# Don't forget the symbol must be the same.
+		# must convert to array
+		fil1=np.array(atoms.get_chemical_symbols())==ratom.symbol
+		fil=fil*fil1
+		atoms_inline=atoms[fil]
+		assert len(atoms_inline)>=2
+		right_idx1=atoms_inline.positions[:,0].argsort()[next_last]
+		# waring this index is of atoms_inline but not of atoms
+		# catom is what we search
+		catom=atoms_inline[right_idx1]
+		print "next right similar atom position:",catom.position
+		# the possible lattice constant of x direction 
+		la=np.abs(ratom.position[0]-catom.position[0])
+		rightx=ratom.position[0]
+		unit=self.findunit(atoms,rightx,la,end,err)
+		unit.cell=atoms.cell
+		unit.cell[0,0]=la
+		unit.center(axis=0)
+		from aces.io.vasp import writevasp
+		writevasp(unit,'POSCAR_%s'%end)
+	def runlead(self):
+		m=self.m
+		s=im('aces.materials.graphene')
+		mm=s.structure(dict(latx=1,laty=1,latz=1,xp=1,yp=0,zp=0))
+		mm.atoms=io.read("POSCAR")
+		# 2 is important for the NEGF calculation
+		mm.supercell=[2,1,1]
+		mm.phofc=True
+		mm.__dict__=dict(m.__dict__,**mm.__dict__)
+		PRunner(mm).run()
 	def preLead(self):
 		m=self.m
 		s=im('aces.materials.%s'%m.leads)
@@ -168,23 +287,57 @@ class runner(Runner):
 		#u.cores=m.cores
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
-	def rearangefc(self,fc,atoms,dir):
+	def rearangefc(self,fc,satoms,atoms,dir):
+		"""[ reorder fc by satoms-> atoms +atoms ]
+		
+		the order of atoms in SPOSCAR is not [atoms in left+ atoms in right] but may be random 
+		for example ,the atoms in POSCAR is C4N4 then the order in SPOSCAR is C8N8 however we need C4N4+C4N4
+		
+		if we get the order = [0,4,1,5,2,6,3,7] ,which means newfc[1]=fc[4]
+		then we have newfc[i]=fc[order[i]]=fc[order][i] => newfc=fc[order]
+		more acurately because fc.dimension=2 we must have newfc=fc[order][:,order]
+		
+		Arguments:
+			fc {[type]} -- [description]
+			stoms {[type]} -- [description]
+			atoms {[type]} -- [description]
+			dir {[string]} -- the path of lead
+		
+		Returns:
+			[type] -- [description]
+		"""
+		
 		#from aces.f import mapatoms,writefc2
 		#pos,order=mapatoms(atoms,old)
 		#old.write('old.xyz')
 		#atoms[order].write('new.xyz')
-		order=np.loadtxt(dir+'/POSCARswap').astype(np.int)
-		#writefc2(fc[order][:,order],'fc')
-		return fc[order][:,order]
+		
+		# find the index of left part in satoms
+		idx=-np.ones(len(atoms))
+		for i,p in enumerate(atoms):
+			for j,q in enumerate(satoms):
+				if norm(q.position-p.position)<0.4:
+					idx[i]=j
+					break
+		# there must be a match atom
+		assert (idx>=0).all()
+		lidx=idx
+		# find the index of right part in satoms
+		idx=-np.ones(len(atoms))
+		ratom=atoms.copy()
+		ratoms.translate(atoms.cell[0])
+		for i,p in enumerate(ratoms):
+			for j,q in enumerate(satoms):
+				if norm(q.position-p.position)<0.4:
+					idx[i]=j
+					break
+		assert (idx>=0).all()
+		ridx=idx 
+		# concat them 
+		order=list(lidx)+list(ridx)
 
-	def nomalizeFC(self,fc,atoms):
-		from aces.materials import getMassFromLabel
-		natom=len(atoms)
-		newfc=np.zeros([natom,natom,3,3])
-		masses=getMassFromLabel(atoms.get_chemical_symbols())
-		for i in range(natom):
-			for j in range(natom):
-				m1=masses[i]
-				m2=masses[j]
-				newfc[i,j]=1.0/np.sqrt(m1*m2)*fc[i,j]
-		return newfc
+		return fc[order][:,order]
+		## generated from aces.io.vasp.writevasp to record original order of atoms 
+		#order=np.loadtxt(dir+'/POSCARswap').astype(np.int)
+		##writefc2(fc[order][:,order],'fc')
+		#return fc[order][:,order]

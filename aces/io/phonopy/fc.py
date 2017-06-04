@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-01 21:53:01
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-02 11:40:21
+# @Last Modified time: 2017-06-04 15:58:37
 from aces.f import *
 def writefc2(fc2,filename='FORCE_CONSTANTS_2ND'):
 	natom=len(fc2)
@@ -240,3 +240,26 @@ def hash(pos,positions):
 	for i,pos in enumerate(positions):
 		if(np.allclose(pos,positions[i])):
 			return i
+
+def nomalizeFC(fc,atoms):
+	""" add mass term to force constants 
+	
+	[fc_ij=1/mi*1/mj*fc_ij]
+	
+	Arguments:
+		fc {np.array[natom,natom]} -- [fc calculated from SPOSCAR]
+		atoms {[Atoms]} -- [atoms from SPOSCAR]
+	
+	Returns:
+		[np.array[natom,natom]] -- [new force constants]
+	"""
+	from aces.materials import getMassFromLabel
+	natom=len(atoms)
+	newfc=np.zeros([natom,natom,3,3])
+	masses=getMassFromLabel(atoms.get_chemical_symbols())
+	for i in range(natom):
+		for j in range(natom):
+			m1=masses[i]
+			m2=masses[j]
+			newfc[i,j]=1.0/np.sqrt(m1*m2)*fc[i,j]
+	return newfc
