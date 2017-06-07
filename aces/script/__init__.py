@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-10-14 20:43:32
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-04 22:07:36
+# @Last Modified time: 2017-06-06 16:49:42
 from aces.tools import *
 import numpy as np
 from ase import io
@@ -247,6 +247,8 @@ def csf():
 
 def trans_cal():
 	from mpi4py import MPI  
+	from aces.App import App
+	m=App().m
 	comm = MPI.COMM_WORLD  
 	rank = comm.Get_rank()  
 	size = comm.Get_size()  
@@ -258,11 +260,12 @@ def trans_cal():
 	
 	#fccenter,fcleft,fcright = comm.bcast((fccenter,fcleft,fcright) if rank == 0 else None, root=0)  
 	print rank,len(fccenter)
-	total=400
-	dm=60.0/total
+	total=400.0
+	fmax=m.fmax
+	dm=fmax/total
 	intval=dm*size
 
-	omega=np.arange(dm*rank,60.0,intval)#THz
+	omega=np.arange(dm*rank,fmax,intval)#THz
 	factor=1e12**2*1e-20*1e-3/1.6e-19/6.23e23
 	energies=(omega*2.0*np.pi)**2*factor
 	mkdir('tmp')

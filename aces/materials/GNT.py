@@ -2,6 +2,7 @@ from aces.materials  import Material
 from ase import Atoms,Atom
 from math import pi,sqrt,cos,sin
 from aces.materials.graphene import structure as graphene
+from aces.materials import atomic  
 import numpy as np
 class structure(Material):
 	def set_parameters(self):
@@ -12,7 +13,7 @@ class structure(Material):
 
 	def lmp_structure(self):
 		atoms=graphene(dict(latx=self.latx,laty=self.laty,latz=self.latz,gnrtype=self.type)).lmp_structure()
-		self.center_box(atoms)
+		atomic.center_box(atoms)
 		self.radius=atoms.cell[1][1]/self.phi
 		for atom in atoms:
 			atom.position=self.trans(atom.position,r=self.radius)

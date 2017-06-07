@@ -65,14 +65,18 @@ class runner(Runner):
 	"""
 	def collect(self):
 		fcleft=self.fc('leftlead')
-		write(np.around(fcleft[:,:,0,0],3),'fcleft')
+		
 		fcleft=self.reshape(fcleft)
+
 		fcright=self.fc('rightlead')	
-		write(np.around(fcright[:,:,0,0],3),'fcright')
 		fcright=self.reshape(fcright)	
 		fccenter=self.fc('center')
-		write(np.around(fccenter[:,:,0,0],3),'fccenter')
 		fccenter=self.reshape(fccenter)
+		write(np.around(fcleft,3),'fcleft')
+
+		write(np.around(fcright,3),'fcright')
+
+		write(np.around(fccenter,3),'fccenter')
 		return fccenter,fcleft,fcright
 	def gettrans(self):
 		print("Reading in force constants...")
@@ -101,12 +105,14 @@ class runner(Runner):
 		trans=np.array(trans).flatten().T[f]
 		dos=np.array(dos).flatten().T[f]
 		to_txt(['omega','trans','dos'],np.c_[omega,trans,dos],'result.txt')
+	def getcenter(self):
+		centerm=self.preCenter()
+		self.phonopy('center',centerm)
 	def generate(self):
 		self.m.xp=1
 		#leadm=self.preLead()
 		#self.phonopy('lead',leadm)
-		centerm=self.preCenter()
-		self.phonopy('center',centerm)
+		self.getcenter()
 		self.getlead()
 		self.gettrans()
 		self.post()
@@ -143,10 +149,10 @@ class runner(Runner):
 		np.c_[omega,omcm,omme,trans,dos,c,j,kappa],'transmission.txt')
 		
 		f=np.loadtxt('transmission.txt',skiprows=1)
-		from aces.algorithm.smooth import savitzky_golay
+		#from aces.algorithm.smooth import savitzky_golay
 		plot([f[:,0],'Frequency (THz)'],[f[:,4],'Phonon Density of State'],'green_dos.png')
 		plot([f[:,0],'Frequency (THz)'],[f[:,3],'Phonon Transmission'],'green_transmission.png')
-		plot([f[:,0],'Frequency (THz)'],[savitzky_golay(f[:,3],11,3),'Phonon Transmission'],'smooth_transmission.png')
+		#plot([f[:,0],'Frequency (THz)'],[savitzky_golay(f[:,3],11,3),'Phonon Transmission'],'smooth_transmission.png')
 		plot([f[:,0],'Frequency (THz)'],[f[:,6],'Mode Thermal Conductance (W/m^2/K)'],'green_mode_conductance.png')
 	def reshape(self,fc):
 		n,m=fc.shape[:2]
@@ -245,14 +251,12 @@ class runner(Runner):
 		right=self.findlead('right')
 		cd('..')
 		from aces.io.vasp import writevasp
-		mkdir('leftlead')
-		mkdir('rightlead')
-		writevasp(left,'leftlead/POSCAR')
-		writevasp(right,'rightlead/POSCAR')
-		cd('leftlead')
+		mkcd('leftlead')
+		writevasp(left,'POSCAR')
 		self.runlead()
 		cd('..')
-		cd('rightlead')
+		mkcd('rightlead')
+		writevasp(right,'POSCAR')
 		self.runlead()
 		cd('..')
 
@@ -329,7 +333,7 @@ class runner(Runner):
 		and we can get from 3 layer supercell by  fc[:2n,:2n] , this process will complete in rearangefc
 		2 -1 -1 
 		-1 2 -1 
-		-1 2 2
+		-1 -1 2
 		
 		"""
 		m=self.m
@@ -382,8 +386,8 @@ class runner(Runner):
 		n1=len(lidx)
 		n2=len(ridx)
 		# eliminate periodic effect ,which is very important
-		newfc[:n1][:,-n2:]=0
-		newfc[-n2:][:,:n1]=0
+		newfc[:n1,-n2:]=0
+		newfc[-n2:,:n1]=0
 		return newfc
 
 
@@ -398,7 +402,7 @@ class runner(Runner):
 			err {Number} -- tolerance for position compare
 		"""
 		natom=len(atoms)
-		idx=-np.ones(natom)
+		idx=-np.ones(natom,dtype="int")
 		for i,p in enumerate(atoms):
 			for j,q in enumerate(satoms):
 				if norm(q.position-p.position)<err  and q.symbol==p.symbol:
@@ -411,7 +415,7 @@ class runner(Runner):
 
 		return idx
 	def rearangefc(self,fc,satoms,atoms):
-		"""[ reorder fc by satoms-> atoms +atoms ]
+		"""[ reorder fc by satoms-> atoms +atoms +atoms]
 		
 		the order of atoms in SPOSCAR is not [atoms in left+ atoms in right] but may be random 
 		for example ,the atoms in POSCAR is C4N4 then the order in SPOSCAR is C8N8 however we need C4N4+C4N4
@@ -453,6 +457,8 @@ class runner(Runner):
 		print order
 		print satoms.positions[order]
 		newfc=fc[order][:,order]
+		# x[:2,:2]==x[:2][:,:2]
+		# but x[[0,1],[0,1]]==[x[0,0],x[1,1]] !=x[[0,1]][:,[0,1]] that's why the order and :2len is not the same
 		return newfc[:2*len(atoms),:2*len(atoms)]
 		## generated from aces.io.vasp.writevasp to record original order of atoms 
 		#order=np.loadtxt(dir+'/POSCARswap').astype(np.int)
