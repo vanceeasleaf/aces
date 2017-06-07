@@ -30,7 +30,11 @@ class runner(Runner):
 		minimize_input(m)
 		write(time.strftime('%Y-%m-%d %H:%M:%S'),'done')
 		cd('..')
-		return m.dump2POSCAR(m.home+'/minimize/range')
+		if m.engine=="lammps":
+			return m.dump2POSCAR(m.home+'/minimize/range')
+		else:
+
+			return io.read(m.home+'/minimize/CONTCAR')
 	def test(self):
 		dm=.1
 		omega=np.arange(dm,60,dm)#THz
@@ -64,14 +68,15 @@ class runner(Runner):
 		return fccenter,fclead
 	"""
 	def collect(self):
-		fcleft=self.fc('leftlead')
+		
+		fccenter,fcleft,fcright=self.fc('center')
+		fccenter=self.reshape(fccenter)
+		#fcleft=self.fc('leftlead')
 		
 		fcleft=self.reshape(fcleft)
 
-		fcright=self.fc('rightlead')	
+		#fcright=self.fc('rightlead')	
 		fcright=self.reshape(fcright)	
-		fccenter=self.fc('center')
-		fccenter=self.reshape(fccenter)
 		write(np.around(fcleft,3),'fcleft')
 
 		write(np.around(fcright,3),'fcright')
@@ -87,6 +92,7 @@ class runner(Runner):
 		import os
 		m=self.m
 		os.system(config.mpirun+" "+str(m.cores)+" ae trans_cal >log.out")
+		self.post()
 	def reduce(self):
 		files=ls("tmp/result.txt*")
 		omega=[]
@@ -194,14 +200,14 @@ class runner(Runner):
 		u.cores=m.cores
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
-	def findunit(self,atoms,rightx,la,end="right",err=0.4):
+	def findunit(self,atoms,refpos,la,end="right",err=0.4):
 		"""[find atoms within the period]
 		
 		[filter the atoms with x > rightx-la (if end=='right') and use la as lattice constant to build a new unitcell]
 		
 		Arguments:
 			atoms {[Atoms]} -- [The center region atoms of NEGF, with scatter part and left and right lead part of 2 layers]
-			rightx {[Nubmer]} -- [the x position of right most atom]
+			refpos {[Array[3]]} -- [the position of right most atom]
 			la {[Number]} -- [the lattice constant of result unitcell]
 		
 		Keyword Arguments:
@@ -214,11 +220,16 @@ class runner(Runner):
 		
 		from ase import Atoms
 		if end=="right":
-			fil=atoms.positions[:,0]>rightx-la-err
-			offset=[la,0,0]
+			offset=np.array([la,0,0])
+			# to account for tilt cells 
+			uatoms=Atoms('C',positions=[np.array(refpos-offset)-[err,0,0]],cell=atoms.cell)
+			fil=atoms.get_scaled_positions()[:,0]>uatoms.get_scaled_positions()[0,0]
+
 		else:
-			fil=atoms.positions[:,0]<rightx+la+err
-			offset=[-la,0,0]
+			offset=np.array([-la,0,0])
+			uatoms=Atoms('C',positions=[np.array(refpos-offset)+[err,0,0]],cell=atoms.cell)
+			fil=atoms.get_scaled_positions()[:,0]<uatoms.get_scaled_positions()[0,0]
+
 		patoms=atoms[fil]
 
 		# exclude the atoms that could be get though move one righer atom
@@ -250,6 +261,7 @@ class runner(Runner):
 		left=self.findlead('left')
 		right=self.findlead('right')
 		cd('..')
+		return 
 		from aces.io.vasp import writevasp
 		mkcd('leftlead')
 		writevasp(left,'POSCAR')
@@ -275,7 +287,7 @@ class runner(Runner):
 		"""
 		
 		from ase import io ,Atoms
-		atoms=io.read('POSCAR')
+		atoms=io.read('SPOSCAR')
 		# find the most right atom index
 		if end=="right":
 			last=-1
@@ -303,8 +315,9 @@ class runner(Runner):
 		print "next %s end similar atom position:"%end,catom.position
 		# the possible lattice constant of x direction 
 		la=np.abs(ratom.position[0]-catom.position[0])
-		rightx=ratom.position[0]
-		unit=self.findunit(atoms,rightx,la,end,err)
+		refpos=ratom.position
+		unit=self.findunit(atoms,refpos,la,end,err)
+		rightx=refpos[0]
 		if end=="right":
 			unit.translate([-(rightx-la),0,0])
 		else:
@@ -367,13 +380,19 @@ class runner(Runner):
 		atoms.translate([x_left,0,0])
 		lidx=self.match_idx(atoms,satoms)
 		lidx=list(lidx)
+		atoms.translate(left.cell[0])
+		lidx1=self.match_idx(atoms,satoms)
+		lidx1=list(lidx1)
 		# find the index of right part in satoms
 		atoms=right.copy()
 
-		atoms.translate([x_right-right.cell[0,0],0,0])
+		atoms.translate(np.array([x_right,0,0])-right.cell[0])
 
 		ridx=self.match_idx(atoms,satoms)
 		ridx=list(ridx)
+		atoms.translate(-right.cell[0])
+		ridx1=self.match_idx(atoms,satoms)
+		ridx1=list(ridx1)
 		# find the center index
 		cidx=[]
 		for i in range(len(satoms)):
@@ -382,13 +401,19 @@ class runner(Runner):
 			cidx.append(i)
 		order= lidx+cidx+ridx
 		print order
-		newfc=fc[order][:,order]
+		fccenter=fc[order][:,order]
 		n1=len(lidx)
 		n2=len(ridx)
 		# eliminate periodic effect ,which is very important
-		newfc[:n1,-n2:]=0
-		newfc[-n2:,:n1]=0
-		return newfc
+		fccenter[:n1,-n2:]=0
+		fccenter[-n2:,:n1]=0
+
+		# with this method there is no need to calculate fc for left or right again, it's very important for abinitial calculation.
+		order=lidx+lidx1
+		fcleft=fc[order][:,order]
+		order=ridx1+ridx 
+		fcright=fc[order][:,order]
+		return fccenter,fcleft,fcright
 
 
 	def match_idx(self,atoms,satoms,err=0.4):

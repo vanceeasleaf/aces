@@ -54,7 +54,8 @@ VDW_R0 = 1.898 1.892
 """
 	write(s,'INCAR')
 	m.structure()
-	m.writePOTCAR()
+	from aces.io.vasp import writePOTCAR
+	writePOTCAR(m,m.elements)
 	s="""A
 0
 Monkhorst-Pack
