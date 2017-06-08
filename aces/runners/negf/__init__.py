@@ -87,7 +87,7 @@ class runner(Runner):
 		#np.set_printoptions(threshold='nan') 	
 		#write((fcleft1-fcleft)*1e6,'fcleft1')
 		#write(fcright1-fcright,'fcright1')
-		return fccenter,fcleft1,fcright
+		return fccenter,fcleft,fcright
 	def gettrans(self):
 		print("Reading in force constants...")
 		#if not exists("fcbin.npz"):
