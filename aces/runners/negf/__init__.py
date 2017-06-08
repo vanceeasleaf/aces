@@ -2,7 +2,7 @@
 from aces.tools import *
 import aces.config as config
 from ase import io
-from ase.io.vasp import write_vasp
+from aces.io.vasp import writevasp
 from aces.runners import Runner
 from aces.graph import plot,series
 import numpy as np
@@ -71,18 +71,23 @@ class runner(Runner):
 		
 		fccenter,fcleft,fcright=self.fc('center')
 		fccenter=self.reshape(fccenter)
-		#fcleft=self.fc('leftlead')
 		
 		fcleft=self.reshape(fcleft)
-
-		#fcright=self.fc('rightlead')	
+		
 		fcright=self.reshape(fcright)	
 		write(np.around(fcleft,3),'fcleft')
-
 		write(np.around(fcright,3),'fcright')
-
 		write(np.around(fccenter,3),'fccenter')
-		return fccenter,fcleft,fcright
+		#fcleft1=self.fc('leftlead')
+		#fcleft1=self.reshape(fcleft1)	
+		#fcright1=self.fc('rightlead')	
+		#fcright1=self.reshape(fcright1)
+		#
+		# don't ingore any elements in the array to print
+		#np.set_printoptions(threshold='nan') 	
+		#write((fcleft1-fcleft)*1e6,'fcleft1')
+		#write(fcright1-fcright,'fcright1')
+		return fccenter,fcleft1,fcright
 	def gettrans(self):
 		print("Reading in force constants...")
 		#if not exists("fcbin.npz"):
@@ -100,7 +105,8 @@ class runner(Runner):
 		dos=[]
 		for file in files:
 			print file
-			result=np.loadtxt(file,skiprows=1)
+			# using this but loadtxt because there may be data that missing some columns when there are nan
+			result=self.read(file)
 			omega=np.r_[omega,result[:,0]]
 			trans=np.r_[trans,result[:,1]]
 			dos=np.r_[dos,result[:,2]]
@@ -122,6 +128,8 @@ class runner(Runner):
 		self.getlead()
 		self.gettrans()
 		self.post()
+	def read(self,file):
+		return np.genfromtxt(file,delimiter='\t',skip_header=1)
 	def post(self):
 		#1eV = 8049 cm^(-1) => 1000emV=8049 cm-1 => cm-1/meV=1000/8049
 		#1cm^(-1) = 3 * 10^(10) hz =>Hz*cm=1/3e10
@@ -129,7 +137,7 @@ class runner(Runner):
 		#a meV = b cm^-1 => a = b cm-1/meV
 		#omcm=omega*521.471？
 		self.reduce()
-		result=np.loadtxt("result.txt",skiprows=1)
+		result=self.read('result.txt')
 		omega=result[:,0]
 		trans =result[:,1]
 		dos   =result[:,2]
@@ -154,7 +162,7 @@ class runner(Runner):
 			],
 		np.c_[omega,omcm,omme,trans,dos,c,j,kappa],'transmission.txt')
 		
-		f=np.loadtxt('transmission.txt',skiprows=1)
+		f=self.read('transmission.txt')
 		#from aces.algorithm.smooth import savitzky_golay
 		plot([f[:,0],'Frequency (THz)'],[f[:,4],'Phonon Density of State'],'green_dos.png')
 		plot([f[:,0],'Frequency (THz)'],[f[:,3],'Phonon Transmission'],'green_transmission.png')
@@ -324,7 +332,9 @@ class runner(Runner):
 			unit.translate([-(rightx),0,0])
 		unit.cell=atoms.cell
 		unit.cell[0,0]=la
-		#unit.center(axis=0)
+		ys=unit.positions[:,1]
+		order=ys.argsort()
+		unit=unit[order]
 		from aces.io.vasp import writevasp
 		writevasp(unit,'POSCAR_%s'%end)
 		return unit
@@ -402,6 +412,11 @@ class runner(Runner):
 		order= lidx+cidx+ridx
 		print order
 		fccenter=fc[order][:,order]
+
+		satoms=satoms.copy()
+		satoms=satoms[order]
+		writevasp(satoms,"POSCAR_ordered")
+
 		n1=len(lidx)
 		n2=len(ridx)
 		# eliminate periodic effect ,which is very important

@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-10-14 20:43:32
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-06 16:49:42
+# @Last Modified time: 2017-06-08 12:30:42
 from aces.tools import *
 import numpy as np
 from ase import io
@@ -270,7 +270,14 @@ def trans_cal():
 	energies=(omega*2.0*np.pi)**2*factor
 	mkdir('tmp')
 	from ase.transport.calculators import TransportCalculator
-	tcalc =TransportCalculator(h=fccenter,h1=fcleft,h2=fcright,energies=energies,dos=True,logfile='tmp/negf.log'+str(rank))
+	# important trick!
+	# if eta is too small , there would be infinite value in transmission
+	# while if eta is too large, the transmission will be curve.
+	#
+	eta=np.abs(fccenter).max()*1e-5
+	eta1=np.abs(fcleft).max()*1e-4
+	eta2=np.abs(fcright).max()*1e-4
+	tcalc =TransportCalculator(h=fccenter,h1=fcleft,h2=fcright,energies=energies,dos=True,logfile='tmp/negf.log'+str(rank),eta=eta,eta1=eta1,eta2=eta2)
 	if rank==0:
 		print ('Calculate Transmission')
 	trans=tcalc.get_transmission()
