@@ -1,5 +1,5 @@
 from aces.materials  import Material
-from .atomic import get_unique_atoms,swap
+from .atomic import get_unique_atoms,swap,wrap
 from ase import Atoms,Atom
 from math import pi,sqrt
 from ase.dft.kpoints import ibz_points
@@ -36,10 +36,14 @@ class structure(Material):
 			"""
 			swap(col,2)
 		else: raise Exception('Unkown gnr type!')		
-		atoms=get_unique_atoms(col)
+		
+		cell=col.cell*bond
+		col.set_cell(cell,scale_atoms=True)
+
+		col.translate([0.01,0.01,0.01])
+		
 		col.set_pbc([self.xp,self.yp,self.zp])
-		cell=atoms.cell*bond
-		atoms.set_cell(cell,scale_atoms=True)
+		atoms=get_unique_atoms(col)
 		atoms.center()
 		if self.pi3:
 			if self.pi3==True:
@@ -66,11 +70,14 @@ class structure(Material):
 	def ring(self):
 		#armchair ring
 		atoms=Atoms()
-		atom=Atoms('C',[(1.0,0.0,0.0)])
-		for i in range(6):			
-			atom.rotate('z',pi/3*i)
-			atoms.extend(atom.copy())
+		atom=Atoms('C',positions=[(1.0,0.0,0.0)])
+		for i in range(6):
+			unit=atom.copy()			
+			unit.rotate('z',pi/3*i)
+			atoms.extend(unit)
 		atoms.set_cell([3.0,sqrt(3),self.az])
+		atoms.center()
+		wrap(atoms)
 		return atoms
 			
 		

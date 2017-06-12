@@ -24,25 +24,42 @@ def getMassFromLabel(labels):
 	return masses
 def get_cluster(n,i,dis,cluster=[]):
 	for j in range(i+1,n):
-		if(dis[i,j]<0.001):
+		if(dis[i,j]<0.01):
 			cluster.append(j)
 			get_cluster(n,j,dis,cluster)
 	return cluster
 	
 def get_clusters(n,dis):
-	#every atom is first
-	clusters=[True for i in range(n)]
+	"""find the head of link-table made of atoms at the same positions
+	
+	[description]
+	
+	Arguments:
+		n {[type]} -- [number of atoms]
+		dis {[array[n][n]} -- [distance between atoms]
+	
+	Returns:
+		[list] -- [the boolean value wheather that atom is at the same position of some other atom]
+	"""
+	#every atom is head
+	clusters=[True]*n
 	for i in range(n):
+		# if the position of atom is occupied
 		if(not clusters[i]):continue
 		cluster=get_cluster(n,i,dis,[])
 		for j in cluster:
 			clusters[j]=False	
 			
 	return clusters
-	
+def wrap(atoms):
+	atoms.positions=atoms.get_positions(wrap=True)
+
 def get_unique_atoms(atoms,mic=True):
 	n=len(atoms)
-	dis=atoms.get_all_distances(mic=mic)
+	u=atoms.copy()
+	if(mic):
+		u.set_pbc([True]*3)
+	dis=u.get_all_distances(mic=mic)
 	clusters=get_clusters(n,dis)
 	newatoms=Atoms()
 	for i in range(n):
@@ -50,15 +67,10 @@ def get_unique_atoms(atoms,mic=True):
 			newatoms.append(atoms[i])
 	
 	cell=atoms.get_cell()
-	if mic:
-		pbc=[1,1,1]
-	else:
-		pbc=atoms.get_pbc()
+	pbc=atoms.get_pbc()
 	newatoms.set_pbc(pbc)
 	newatoms.set_cell(cell)
-	newatoms.center()
-	if mic and False:
-		newatoms.positions=newatoms.get_positions(wrap=True)
+	#newatoms.center()
 	return newatoms
 
 def atoms_from_dump(filename,elements=None,index=-1):

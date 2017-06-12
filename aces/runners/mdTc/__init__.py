@@ -85,6 +85,9 @@ class runner(Runner):
 		print "reset_timestep 0"
 		hook.doAction('elimination')
 		print "fix    flux_out  all  ave/time  1  %d  %d  c_jflux[1]  c_jflux[2] c_jflux[3] file  flux.txt "%(m.aveRate,m.aveRate)
+		print "variable T_atom atom c_ke/(1.5*%f)"%m.kb
+		print "fix  T_atom  all  ave/atom  1  %d  %d  v_T_atom "%(m.aveRate,m.aveRate)
+		print "dump dump_T all custom %d dump.T type xs ys zs f_T_atom"%(m.dumpRate)
 		hook.doAction('temp')
 		hook.doAction('flux')
 		hook.doAction('swap')
