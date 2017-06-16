@@ -5,13 +5,11 @@ from ase.io import read
 from ase.io.vasp import write_vasp
 from aces.binary import pr
 from aces.runners import Runner
-from aces.UnitCell.unitcell import UnitCell
 from aces.graph import plot,series
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as pl
 import numpy as np
-from aces.f import toString
 from aces.runners.phonopy import runner as Runner
 import pandas as pd
 from aces.graph import fig,pl
@@ -26,7 +24,7 @@ class runner(Runner):
 		cut=str(m.shengcut/10.0)
 		if m.shengcut<0:
 			cut=str(m.shengcut)
-		return " %s %s "%(m.toString(m.supercell3),cut)
+		return " %s %s "%(toString(m.supercell3),cut)
 	def generate_supercells3(self):
 		#generate supercells
 		cmd=config.thirdorder+"sow"+self.getcut()
@@ -50,10 +48,10 @@ class runner(Runner):
 &end
 """%(len(elements),len(atoms),toString(m.kpoints))
 		cell=atoms.cell
-		types=m.toString([m.elements.index(x)+1 for x in atoms.get_chemical_symbols()])
+		types=toString([m.elements.index(x)+1 for x in atoms.get_chemical_symbols()])
 		pos=""
 		for i,atom in enumerate(atoms):
-			pos+="	positions(:,%d)=%s\n"%(i+1,m.toString(atoms.get_scaled_positions()[i]))
+			pos+="	positions(:,%d)=%s\n"%(i+1,toString(atoms.get_scaled_positions()[i]))
 		crystal="""&crystal
 	lfactor=0.1,
 	lattvec(:,1)=%s

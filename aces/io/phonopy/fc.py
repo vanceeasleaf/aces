@@ -2,8 +2,9 @@
 # @Author: YangZhou
 # @Date:   2017-06-01 21:53:01
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-04 15:58:37
-from aces.f import *
+# @Last Modified time: 2017-06-16 20:06:55
+import numpy as np
+from aces.f import rotationMatrix
 def writefc2(fc2,filename='FORCE_CONSTANTS_2ND'):
 	natom=len(fc2)
 	s="%d\n"%natom

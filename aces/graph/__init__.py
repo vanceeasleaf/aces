@@ -74,8 +74,23 @@ def wfig(filename,f,legend=False):
 		pl.legend(loc='best').get_frame().set_alpha(0.0)
 	pl.savefig(filename,bbox_inches='tight',transparent=True) 
 	pl.close()
-def setLegend(pl,ncol=1):
-	frame=pl.legend(loc='best',scatterpoints=1,numpoints=1,ncol=ncol,fontsize=12).get_frame()
+def fit(x,z,p0,tt):
+	def errorfunc(p,x,z):
+		return tt(p,x)-z
+	from scipy.optimize import leastsq
+	solp, ier = leastsq(errorfunc, 
+				p0, 
+				args=(x,z),
+				Dfun=None,
+				full_output=False,
+				ftol=1e-9,
+				xtol=1e-9,
+				maxfev=100000,
+				epsfcn=1e-10,
+				factor=0.1)
+	return solp
+def setLegend(pl,ncol=1,loc='best',fontsize=12):
+	frame=pl.legend(loc=loc,scatterpoints=1,numpoints=1,ncol=ncol,fontsize=fontsize).get_frame()
 	frame.set_linewidth(1.5)
 class fig:
 	def __init__(self,filename,legend=False,ncol=3,figsize=None):

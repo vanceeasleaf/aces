@@ -9,7 +9,7 @@ import aces.script.vasprun as vasprun
 import time
 import numpy as np
 from aces.io.phonopy.bandplot import plotband,plotbanddos
-from aces.f import readfc2
+from aces.io.phonopy.fc import readfc2
 from aces.pbs.jobManager import jobManager,th,pbs
 from aces.io.vasp import writePOTCAR
 class runner(Runner):

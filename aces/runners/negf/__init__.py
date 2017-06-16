@@ -1,7 +1,7 @@
 #encoding:utf8
 from aces.tools import *
 import aces.config as config
-from ase import io
+from ase import io ,Atoms
 from aces.io.vasp import writevasp
 from aces.runners import Runner
 from aces.graph import plot,series
@@ -11,8 +11,7 @@ from aces.runners.phonopy import runner as PRunner
 from importlib import import_module as im
 import time
 from numpy.linalg import norm
-from aces.f import readfc2
-from aces.io.phonopy.fc import nomalizeFC
+from aces.io.phonopy.fc import nomalizeFC,readfc2
 hbar=6.6260755e-34/3.14159/2.0
 kb=1.3806488e-23
 def BE(w,T):
@@ -125,6 +124,9 @@ class runner(Runner):
 		#leadm=self.preLead()
 		#self.phonopy('lead',leadm)
 		self.getcenter()
+		self.run()
+	def run(self):
+		self.m.xp=1
 		self.getlead()
 		self.gettrans()
 		self.post()
@@ -208,6 +210,38 @@ class runner(Runner):
 		u.cores=m.cores
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
+	def getEndFil(self,atoms,refpos,la,end="right",err=0.4):
+		"""get the index of the left or right end with depth=la
+		
+		[description]
+		
+		Arguments:
+			atoms {[Atoms]} -- [description]
+			refpos {[array[3]]} -- [the position of relative atom that is trait as 0 when counting for depth]
+			la {[number]} -- [the depth]
+		
+		Keyword Arguments:
+			end {str} -- [left or right] (default: {"right"})
+			err {number} -- [the tolerance for atoms selectoin] (default: {0.4})
+		
+		Returns:
+			[array[N]] -- [the filter of the ends]
+		"""
+		ax=self.m.negfaxis
+		errs=[0.0,0,0]
+		errs[ax]=err
+		offset=np.array([0.0,0,0])
+		if end=="right":			
+			offset[ax]=la
+			# to account for tilt cells 
+			uatoms=Atoms('C',positions=[np.array(refpos-offset)-errs],cell=atoms.cell)
+			fil=atoms.get_scaled_positions()[:,ax]>uatoms.get_scaled_positions()[0,ax]
+
+		else:
+			offset[ax]=-la
+			uatoms=Atoms('C',positions=[np.array(refpos-offset)+errs],cell=atoms.cell)
+			fil=atoms.get_scaled_positions()[:,ax]<uatoms.get_scaled_positions()[0,ax]
+		return fil,offset
 	def findunit(self,atoms,refpos,la,end="right",err=0.4):
 		"""[find atoms within the period]
 		
@@ -226,20 +260,9 @@ class runner(Runner):
 			[Atoms] -- [The result unitcell]
 		"""
 		
-		from ase import Atoms
-		if end=="right":
-			offset=np.array([la,0,0])
-			# to account for tilt cells 
-			uatoms=Atoms('C',positions=[np.array(refpos-offset)-[err,0,0]],cell=atoms.cell)
-			fil=atoms.get_scaled_positions()[:,0]>uatoms.get_scaled_positions()[0,0]
-
-		else:
-			offset=np.array([-la,0,0])
-			uatoms=Atoms('C',positions=[np.array(refpos-offset)+[err,0,0]],cell=atoms.cell)
-			fil=atoms.get_scaled_positions()[:,0]<uatoms.get_scaled_positions()[0,0]
-
+		fil,offset=self.getEndFil(atoms,refpos,la,end,err)
 		patoms=atoms[fil]
-
+		print offset
 		# exclude the atoms that could be get though move one righer atom
 		invalids=[]
 		for p in patoms:
@@ -251,7 +274,6 @@ class runner(Runner):
 			if i in invalids:
 				continue
 			qatoms.append(q)
-
 		# check qatoms is a unitcell
 		isunit=[False]*len(qatoms)
 		for i,p in enumerate(qatoms):
@@ -262,7 +284,7 @@ class runner(Runner):
 		print "is maching:",isunit
 		# the unitcell must exist
 		#assert reduce(lambda a,b:a*b,isunit)
-		return qatoms	
+		return qatoms,np.array(isunit)
 
 	def getlead(self):
 		cd('center')
@@ -279,7 +301,8 @@ class runner(Runner):
 		writevasp(right,'POSCAR')
 		self.runlead()
 		cd('..')
-
+	def clear(self):
+		shell_exec("rm fc*;rm tmp -r;rm *.png;rm transmission.txt result.txt")
 	def findlead(self,end="left",err=0.3):
 		"""[from center POSCAR find periodic lead POSCAR]
 		
@@ -294,45 +317,65 @@ class runner(Runner):
 			Exception -- [end is not set correctly]
 		"""
 		
-		from ase import io ,Atoms
+		
 		atoms=io.read('SPOSCAR')
 		# find the most right atom index
 		if end=="right":
 			last=-1
 			next_last=-2
+			next_last1=-3
 		elif end=="left":
 			last=0
 			next_last=1
+			next_last1=2
 		else:
 			raise Exception("Unkown value of `end`")
-		right_idx=atoms.positions[:,0].argsort()[last]
+		ax=self.m.negfaxis
+		right_idx=atoms.positions[:,ax].argsort()[last]
 		ratom=atoms[right_idx]
 		print "%s end atom position:"%end,ratom.position
 		# the atoms that has similar y,z to ratom , in our situatoin there is at least two such atoms.
-		fil=norm(atoms.positions[:,1:]-ratom.position[1:],axis=1)<err
+		cross=~(np.arange(3,dtype='int')==ax)
+		fil=norm(atoms.positions[:,cross]-ratom.position[cross],axis=1)<err
 		# Don't forget the symbol must be the same.
 		# must convert to array
 		fil1=np.array(atoms.get_chemical_symbols())==ratom.symbol
 		fil=fil*fil1
 		atoms_inline=atoms[fil]
 		assert len(atoms_inline)>=2
-		right_idx1=atoms_inline.positions[:,0].argsort()[next_last]
+		right_idx1=atoms_inline.positions[:,ax].argsort()[next_last]
 		# waring this index is of atoms_inline but not of atoms
 		# catom is what we search
 		catom=atoms_inline[right_idx1]
 		print "next %s end similar atom position:"%end,catom.position
 		# the possible lattice constant of x direction 
-		la=np.abs(ratom.position[0]-catom.position[0])
+		la=np.abs(ratom.position[ax]-catom.position[ax])
 		refpos=ratom.position
-		unit=self.findunit(atoms,refpos,la,end,err)
-		rightx=refpos[0]
+		unit,isunit=self.findunit(atoms,refpos,la,end,err)
+		if (isunit==False).sum()>1:
+			next_last=next_last1
+			right_idx1=atoms_inline.positions[:,ax].argsort()[next_last]
+			# waring this index is of atoms_inline but not of atoms
+			# catom is what we search
+			catom=atoms_inline[right_idx1]
+			print "next next %s end similar atom position:"%end,catom.position
+			la=np.abs(ratom.position[ax]-catom.position[ax])
+			refpos=ratom.position
+			unit,isunit=self.findunit(atoms,refpos,la,end,err)
+			assert isunit.all()
+		#the possible lattice constant of x direction 
+		rightx=refpos[ax]
 		if end=="right":
-			unit.translate([-(rightx-la),0,0])
+			offset=[0,0,0]
+			offset[ax]=-(rightx-la)
+			unit.translate(offset)
 		else:
-			unit.translate([-(rightx),0,0])
+			offset=[0,0,0]
+			offset[ax]=-(rightx)
+			unit.translate(offset)
 		unit.cell=atoms.cell
-		unit.cell[0,0]=la
-		ys=unit.positions[:,1]
+		unit.cell[ax,ax]=la
+		ys=unit.positions[:,(ax+1)%3]
 		order=ys.argsort()
 		unit=unit[order]
 		from aces.io.vasp import writevasp
@@ -380,27 +423,36 @@ class runner(Runner):
 		u.__dict__=dict(m.__dict__,**u.__dict__)
 		return u
 	def rearangefc_center(self,fc,satoms,left,right):
-		right_idx=satoms.positions[:,0].argsort()[-1]
-		x_right=satoms[right_idx].position[0]
-		left_idx=satoms.positions[:,0].argsort()[0]
-		x_left=satoms[left_idx].position[0]
+		ax=self.m.negfaxis
+		right_idx=satoms.positions[:,ax].argsort()[-1]
+
+		x_right=satoms[right_idx].position[ax]
+		left_idx=satoms.positions[:,ax].argsort()[0]
+
+		x_left=satoms[left_idx].position[ax]
+		# don't put these after satoms=satoms[order] 
+		lpos=satoms[left_idx].position		
+		rpos=satoms[right_idx].position
 		# find the index of left part in satoms
 		atoms=left.copy()
 		# remove the offset
-		atoms.translate([x_left,0,0])
+		offset=[0,0,0]
+		offset[ax]=x_left
+		atoms.translate(offset)
 		lidx=self.match_idx(atoms,satoms)
 		lidx=list(lidx)
-		atoms.translate(left.cell[0])
+		atoms.translate(left.cell[ax])
 		lidx1=self.match_idx(atoms,satoms)
 		lidx1=list(lidx1)
 		# find the index of right part in satoms
 		atoms=right.copy()
-
-		atoms.translate(np.array([x_right,0,0])-right.cell[0])
+		offset=[0,0,0]
+		offset[ax]=x_right
+		atoms.translate(np.array(offset)-right.cell[ax])
 
 		ridx=self.match_idx(atoms,satoms)
 		ridx=list(ridx)
-		atoms.translate(-right.cell[0])
+		atoms.translate(-right.cell[ax])
 		ridx1=self.match_idx(atoms,satoms)
 		ridx1=list(ridx1)
 		# find the center index
@@ -412,23 +464,68 @@ class runner(Runner):
 		order= lidx+cidx+ridx
 		print order
 		fccenter=fc[order][:,order]
-
+		oatoms=satoms
 		satoms=satoms.copy()
 		satoms=satoms[order]
 		writevasp(satoms,"POSCAR_ordered")
 
-		n1=len(lidx)
-		n2=len(ridx)
-		# eliminate periodic effect ,which is very important
-		fccenter[:n1,-n2:]=0
-		fccenter[-n2:,:n1]=0
+
+
+		cut=self.m.negfcut
+		if cut>0:
+			self.elimiPeriodic(satoms,fccenter,cut,left,right,lpos,rpos)
+		else:
+
+		# the default assumption is that cell length is larger than interaction length, 
+		# so for | x x | x x | x x | the interaction of cell 1 and cell 3 is only from periodic and the periodic interction only apparear in between 1 and 3
+		# F_13 <==> periodic interaction so if we want to eliminate periodic interaction we only have to set F_13=0
+
+			n1=len(lidx)
+			n2=len(ridx)
+			fccenter[:n1,-n2:]=0
+			fccenter[-n2:,:n1]=0
+
+
 
 		# with this method there is no need to calculate fc for left or right again, it's very important for abinitial calculation.
 		order=lidx+lidx1
 		fcleft=fc[order][:,order]
+		# this is for the situation of 2x1x1 supercell when the cell size if pretty large
+		if len(cidx)==0 and cut>0:
+			satoms=oatoms[order]
+			self.elimiPeriodic(satoms,fcleft,cut,left,left,lpos,rpos)
 		order=ridx1+ridx 
 		fcright=fc[order][:,order]
+		if len(cidx)==0 and cut>0:
+			satoms=oatoms[order]
+			self.elimiPeriodic(satoms,fcright,cut,right,right,lpos,rpos)
 		return fccenter,fcleft,fcright
+
+	def elimiPeriodic(self,satoms,fc,cut,left,right,lpos,rpos):
+		"""eliminate periodic effect ,which is very important
+
+		# if the FORCE_CONSTANTS is obtain from 2x1x1 supercell it's also possible to get correct fc without periodic effects
+		# for example if we have only nearest interaction in  | x x | x x | then the 1 and 4 atom interaction <==> periodic interaction 
+		# that is , periodic interaction only present between 1 and 4 ,and 1 and 4 atoms has not in-cell interaction.
+		# negfcut is the max distance from ends to filter those only has periodic interaction but not in-cell insteraction
+		# we have to garentee that there is not such atoms that interact both in-cell and periodic, that's physically wrong when getting fc.
+		
+		
+		Arguments:
+			satoms {[Atoms]} -- [super cell ]
+			fc {[fc[N][N][3][3]]} -- [force constant ,N=len(satoms)]
+			cut {[number]} -- [max interaction distance]
+			left {[Atoms]} -- [left cell]
+			right {[Atoms]} -- [right cell]
+			la {[nubmer]} -- [description]
+		"""
+		ax=self.m.negfaxis
+		la=min(cut,norm(left.cell[ax]))
+		lfil,offset=self.getEndFil(satoms,lpos,la,"left")
+		la=min(cut,norm(right.cell[ax]))
+		rfil,offset=self.getEndFil(satoms,rpos,la,"right")
+		fc[lfil][:,rfil]=0
+		fc[rfil][:,lfil]=0
 
 
 	def match_idx(self,atoms,satoms,err=0.4):
@@ -441,13 +538,14 @@ class runner(Runner):
 			satoms {[type]} -- [description]
 			err {Number} -- tolerance for position compare
 		"""
+		ax=self.m.negfaxis
 		natom=len(atoms)
 		idx=-np.ones(natom,dtype="int")
 		for i,p in enumerate(atoms):
 			for j,q in enumerate(satoms):
 				if norm(q.position-p.position)<err  and q.symbol==p.symbol:
 					idx[i]=j
-				if norm(q.position+satoms.cell[0]-p.position)<err  and q.symbol==p.symbol:
+				if norm(q.position+satoms.cell[ax]-p.position)<err  and q.symbol==p.symbol:
 					idx[i]=j
 					break
 		# there must be a match atom
@@ -479,12 +577,13 @@ class runner(Runner):
 		#atoms[order].write('new.xyz')
 		
 		# find the index of left part in satoms
+		ax=self.m.negfaxis
 		lidx=self.match_idx(atoms,satoms)
 		lidx=list(lidx)
 
 		# find the index of right part in satoms
 		ratoms=atoms.copy()
-		ratoms.translate(satoms.cell[0]-atoms.cell[0])
+		ratoms.translate(satoms.cell[ax]-atoms.cell[ax])
 		ridx=self.match_idx(ratoms,satoms)
 		ridx=list(ridx)
 		# concat them 

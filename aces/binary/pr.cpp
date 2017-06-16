@@ -29,6 +29,7 @@ char filename[20]="mesh.yaml";
 	long npr=nqpoint*nbranch;
 	double pr[npr];
 	double fr[npr];
+	double fq1[npr],fq2[npr],fq3[npr];
 	char c;
 	int rec=fscanf(fp,"reciprocal_lattice%c\n",&c); 
 	for(long ipr=0;ipr<npr;ipr++){
@@ -37,7 +38,13 @@ char filename[20]="mesh.yaml";
 
 			for(int iqp=0;iqp<nqpoint;iqp++){
 				long qline=4+iqp*(3+nbranch*(3+4*natom)+1);
+
+
 				if (rec>0){qline+=4;}
+				fseek(fp,lineNumber[qline],SEEK_SET);
+				double q1,q2,q3;
+				fscanf(fp,"- q-position: [    %lf,    %lf,    %lf ]\n",&q1,&q2,&q3);
+					
 				for(int ibranch=0;ibranch<nbranch;ibranch++){
 					long branchline=qline+3+ibranch*(3+4*natom);
 					fseek(fp,lineNumber[branchline+1],SEEK_SET);
@@ -58,6 +65,9 @@ char filename[20]="mesh.yaml";
 						e2+=a*a+b*b;//printf("%d\t%f\n",ifreq,ldos[ifreq]);					
 					}
 					fr[ibranch+nbranch*iqp]=freq;
+					fq1[ibranch+nbranch*iqp]=q1;
+					fq2[ibranch+nbranch*iqp]=q2;
+					fq3[ibranch+nbranch*iqp]=q3;
 					pr[ibranch+nbranch*iqp]+=e2*e2;
 					//fgets(s,100,fp);
 					//printf("%s",s);
@@ -72,6 +82,10 @@ char filename[20]="mesh.yaml";
 				pr[ipr]*=natom;
 				pr[ipr]=1/pr[ipr];
 				fprintf(fpr,"%f\t%f\n",fr[ipr],pr[ipr]);
+			}
+	 fpr=fopen("prq.txt","w");
+	for(int ipr=0;ipr<npr;ipr++){
+				fprintf(fpr,"%f\t%f\t%f\t%f\t%f\n",fq1[ipr],fq2[ipr],fq3[ipr],fr[ipr],pr[ipr]);
 			}
 	//double a,b;
 	//fscanf(fp,"      - [ %lf,%lf]\n",&a,&b);

@@ -5,7 +5,7 @@ class Runner:
 		self.m=m
 	def generate(self):
 		pass
-	def run(self):
+	def run0(self):
 		__console__=sys.stdout
 		
 		f=open('input', 'w',0)

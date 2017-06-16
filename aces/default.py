@@ -91,7 +91,7 @@ default=dict(
 	,ispin=False
 	,soc=False
 	,boxOpt=True
-	,gamma_only=False,fmax=60.0,eta=None
+	,gamma_only=False,fmax=60.0,eta=None,negfcut=0.0,negfaxis=0
 )
 default['Thi']=default['T']+default['dT']
 default['Tlo']=default['T']-default['dT']

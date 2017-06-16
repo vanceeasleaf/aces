@@ -49,7 +49,7 @@ class App:
 	def execute(self):		
 		
 		self.minimize()
-		self.runner.run()
+		self.runner.run0()
 
 		
 	
