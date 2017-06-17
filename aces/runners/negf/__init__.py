@@ -336,7 +336,7 @@ class runner(Runner):
 		print "%s end atom position:"%end,ratom.position
 		# the atoms that has similar y,z to ratom , in our situatoin there is at least two such atoms.
 		cross=~(np.arange(3,dtype='int')==ax)
-		fil=norm(atoms.positions[:,cross]-ratom.position[cross],axis=1)<err
+		fil=norm(atoms.positions[:,cross]-ratom.position[cross],axis=1)<err/10
 		# Don't forget the symbol must be the same.
 		# must convert to array
 		fil1=np.array(atoms.get_chemical_symbols())==ratom.symbol
