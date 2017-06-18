@@ -95,7 +95,7 @@ class runner(Runner):
 		print("Caching force constans")
 		import os
 		m=self.m
-		os.system(config.mpirun+" "+str(m.cores)+" ae trans_cal >log.out")
+		os.system(config.mpirun+" "+str(m.nodes*m.procs)+" ae trans_cal >log.out")
 		self.post()
 	def reduce(self):
 		files=ls("tmp/result.txt*")

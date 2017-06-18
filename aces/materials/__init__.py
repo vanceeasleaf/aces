@@ -75,9 +75,9 @@ class Material:
 	def prepare_phonts(self):
 		masses=getMassFromLabel(self.elements)
 		self.phontsmasses='\n'.join(["%s %f 0.0"%(label,mass) for label,mass in zip(self.elements,masses)])
-		
-	
-	
+	@property
+	def cores(self):
+		return self.nodes*self.procs
 		
 	def structure(self):
 		
