@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-16 20:09:09
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 22:17:54
+# @Last Modified time: 2017-06-19 12:30:22
 
 from aces.tools import mkdir, mv, cd, cp, mkcd, shell_exec,\
     exists, write, passthru, toString, pwd, debug, ls, parseyaml
@@ -156,14 +156,15 @@ class runner(Runner):
         m = self.m
 
         mesh = """DIM = %s
-ATOM_NAME = %s
-MP = %s
-EIGENVECTORS=.TRUE.
-FORCE_CONSTANTS = READ
-MESH_SYMMETRY = .FALSE.
-PRIMITIVE_AXIS = %s
-""" % (m.dim, ' '.join(m.elements), ' '.join(map(str, m.kpoints)),
-            toString(m.premitive.flatten()))
+        ATOM_NAME = %s
+        MP = %s
+        EIGENVECTORS=.TRUE.
+        FORCE_CONSTANTS = READ
+        MESH_SYMMETRY = .FALSE.
+        PRIMITIVE_AXIS = %s
+        """ % (m.dim, ' '.join(m.elements), ' '.join(map(str, m.kpoints)),
+               toString(m.premitive.flatten()))
+        mesh = mesh.replace(r'^\s+', '')
         write(mesh, 'mesh.conf')
 
     def generate_vconf(self):
@@ -171,14 +172,15 @@ PRIMITIVE_AXIS = %s
         m = self.m
 
         mesh = """DIM = %s
-ATOM_NAME = %s
-MP = %s
-FORCE_CONSTANTS = READ
-MESH_SYMMETRY = .FALSE.
-GROUP_VELOCITY=.TRUE.
-PRIMITIVE_AXIS = %s
-""" % (m.dim, ' '.join(m.elements), ' '.join(map(str, m.kpoints)),
-            toString(m.premitive.flatten()))
+        ATOM_NAME = %s
+        MP = %s
+        FORCE_CONSTANTS = READ
+        MESH_SYMMETRY = .FALSE.
+        GROUP_VELOCITY=.TRUE.
+        PRIMITIVE_AXIS = %s
+        """ % (m.dim, ' '.join(m.elements), ' '.join(map(str, m.kpoints)),
+               toString(m.premitive.flatten()))
+        mesh = mesh.replace(r'^\s+', '')
         write(mesh, 'v.conf')
 
     def generate_qconf(self, q):
@@ -186,12 +188,13 @@ PRIMITIVE_AXIS = %s
         m = self.m
 
         mesh = """DIM = %s
-ATOM_NAME = %s
-FORCE_CONSTANTS = READ
-EIGENVECTORS=.TRUE.
-QPOINTS=.TRUE.
-PRIMITIVE_AXIS = %s
-""" % (m.dim, ' '.join(m.elements), toString(m.premitive.flatten()))
+        ATOM_NAME = %s
+        FORCE_CONSTANTS = READ
+        EIGENVECTORS=.TRUE.
+        QPOINTS=.TRUE.
+        PRIMITIVE_AXIS = %s
+        """ % (m.dim, ' '.join(m.elements), toString(m.premitive.flatten()))
+        mesh = mesh.replace(r'^\s+', '')
         write(mesh, 'q.conf')
         s = "%s\n" % len(q)
         for qq in q:
@@ -203,12 +206,13 @@ PRIMITIVE_AXIS = %s
         m = self.m
 
         mesh = """DIM = %s
-ATOM_NAME = %s
-FORCE_CONSTANTS = READ
-GROUP_VELOCITY=.TRUE.
-QPOINTS=.TRUE.
-PRIMITIVE_AXIS = %s
-""" % (m.dim, ' '.join(m.elements), toString(m.premitive.flatten()))
+        ATOM_NAME = %s
+        FORCE_CONSTANTS = READ
+        GROUP_VELOCITY=.TRUE.
+        QPOINTS=.TRUE.
+        PRIMITIVE_AXIS = %s
+        """ % (m.dim, ' '.join(m.elements), toString(m.premitive.flatten()))
+        mesh = mesh.replace(r'^\s+', '')
         write(mesh, 'q.conf')
         s = "%s\n" % len(q)
         for qq in q:
@@ -240,31 +244,32 @@ PRIMITIVE_AXIS = %s
         else:
             sym = "ISYM = 0"
         s = """SYSTEM=calculate energy
-PREC = High
-IBRION = -1
-ENCUT = %f
-EDIFF = 1.0e-8
-ISMEAR = %d; SIGMA = 0.01
-IALGO = 38
-LREAL = .FALSE.
-ADDGRID = .TRUE.
-LWAVE = .FALSE.
-LCHARG = .FALSE.
-NPAR = %d
-%s
-%s
-%s
-""" % (self.m.ecut, m.ismear, npar, sym, ispin, soc)
+        PREC = High
+        IBRION = -1
+        ENCUT = %f
+        EDIFF = 1.0e-8
+        ISMEAR = %d; SIGMA = 0.01
+        IALGO = 38
+        LREAL = .FALSE.
+        ADDGRID = .TRUE.
+        LWAVE = .FALSE.
+        LCHARG = .FALSE.
+        NPAR = %d
+        %s
+        %s
+        %s
+        """ % (self.m.ecut, m.ismear, npar, sym, ispin, soc)
         if m.vdw:
             s += """\nIVDW = 1
-VDW_RADIUS = 50
-VDW_S6 = 0.75
-VDW_SR = 1.00
-VDW_SCALING = 0.75
-VDW_D = 20.0
-VDW_C6 = 63.540 31.50
-VDW_R0 = 1.898 1.892
-"""
+            VDW_RADIUS = 50
+            VDW_S6 = 0.75
+            VDW_SR = 1.00
+            VDW_SCALING = 0.75
+            VDW_D = 20.0
+            VDW_C6 = 63.540 31.50
+            VDW_R0 = 1.898 1.892
+            """
+        s = s.replace(r'^\s+', '')
         write(s, 'INCAR')
 
     def getVaspRun_vasp(self):
@@ -529,12 +534,14 @@ VDW_R0 = 1.898 1.892
         bpath = ' '.join([toString(bp[x]) for x in m.bandpath])
 
         band = """DIM = %s
-ATOM_NAME = %s
-BAND = %s
-BAND_POINTS = 101
-FORCE_CONSTANTS = READ
-PRIMITIVE_AXIS = %s
-""" % (m.dim, ' '.join(m.elements), bpath, toString(m.premitive.flatten()))
+        ATOM_NAME = %s
+        BAND = %s
+        BAND_POINTS = 101
+        FORCE_CONSTANTS = READ
+        PRIMITIVE_AXIS = %s
+        """ % (m.dim, ' '.join(m.elements),
+               bpath, toString(m.premitive.flatten()))
+        band = band.replace(r'^\s+', '')
         write(band, 'band.conf')
 
     def getpdos(self):

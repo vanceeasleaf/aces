@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 21:53:21
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 21:51:11
+# @Last Modified time: 2017-06-19 13:35:00
 
 from __future__ import print_function
 import os
@@ -17,12 +17,25 @@ def loadjson(file):
     return json.loads(read(file))
 
 
+def input(s):
+    try:
+        # python 2
+        return raw_input(s)
+    except:
+        # python 3
+        return input(s)
+
+
 def shell_exec(cmd):
     if printCommand:
         print("[Command]" + cmd)
         sys.stdout.flush()
     c = os.popen(cmd).read()
     return c.strip()
+
+
+def trimhead(str1):
+    return str1.replace(r"^ +", "")
 
 
 def toString(m, sep=' '):

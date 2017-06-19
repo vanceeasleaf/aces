@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2015-12-10 12:50:49
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 23:20:24
+# @Last Modified time: 2017-06-19 12:27:03
 
 import aces.tools as tl
 import aces.config as config
@@ -68,13 +68,13 @@ class runner(Runner):
             fixl2 = fixl1 + deta * wfix
             fixr2 = xhi + deta
             fixr1 = fixr2 - deta * wfix
-            print >>f, "region	stayl	block   %s  %s" + \
-                " INF  INF INF  INF units box" % (fixl1, fixl2)
-            print >>f, "region	stayr	block   %s  %s" + \
-                " INF INF   INF  INF units box" % (fixr1, fixr2)
+            print >>f, "region	stayl	block   %s  %s" % (fixl1, fixl2) + \
+                " INF  INF INF  INF units box"
+            print >>f, "region	stayr	block   %s  %s" % (fixr1, fixr2) + \
+                " INF INF   INF  INF units box"
             print >> f, "region   stay    union  2 stayl stayr"
-            print >>f, "region	main	block   %s  %s" + \
-                " INF INF   INF  INF units box" % (fixl2, fixr1)
+            print >>f, "region	main	block   %s  %s" % (fixl2, fixr1) + \
+                " INF INF   INF  INF units box"
             print >> f, "group   stay    region  stay"
             print >> f, "group   main    region  main"
             print >> f, "velocity stay set 0 0 0"
@@ -82,8 +82,8 @@ class runner(Runner):
             print >> f, "region	main	block   INF" + \
                 "  INF INF  INF INF  INF units box"
             print >> f, "group    main    region  main"
-        print >> f, "velocity main create %f %d mom" + \
-            " yes rot yes dist gaussian" % (m.T, m.seed)
+        print >> f, "velocity main create %f %d mom" % (m.T, m.seed) + \
+            " yes rot yes dist gaussian"
         if m.dimension == 1:
             print >> f, "velocity  main set NULL 0.0 0.0 units box"
         elif m.dimension == 2:
@@ -105,19 +105,24 @@ class runner(Runner):
             print >> f, "fix phonon1 all phonon" + \
                 " %s %s 0 phana.map.in phonon" % (m.Cinterval, m.Ctime)
         if m.runner == "dynaphopy":
-            print >> f, "dump lala main custom %s" + \
-                "  dynaphopy.lammpstrj x y z" % m.Cinterval
+            print >> f, "dump lala main custom %s" % m.Cinterval + \
+                "  dynaphopy.lammpstrj x y z"
             print >> f, "dump_modify  lala sort id"
         elif not m.phanaonly:
-            print >> f, "dump lala main h5md %s" +\
+            print >> f, "dump lala main h5md %s" % m.Cinterval +\
                 " velocity.h5md velocity" + \
-                "  box no create_group yes" % m.Cinterval
+                "  box no create_group yes"
         print >> f, "run %s" % m.Ctime
 
         f.close()
 
-        tl.passthru(config.mpirun + "  %s " % self.m.cores + config.lammps +
-                    " <correlation.lmp  >out.dat")
+        tl.passthru(
+            config.mpirun +
+            "  %s " %
+            self.m.nodes *
+            self.m.procs +
+            config.lammps +
+            " <correlation.lmp  >out.dat")
         if m.usephana:
             self.phana()
             self.phanados()
@@ -144,12 +149,13 @@ class runner(Runner):
             v += "%s\n%s\n101\n" % (tl.toString(bpp[bp[i]]),
                                     tl.toString(bpp[bp[i + 1]]))
         s = """20
-1
-2
-phana.band.txt
-%sq
-0
-""" % v
+        1
+        2
+        phana.band.txt
+        %sq
+        0
+        """ % v
+        s = s.replace(r'^\s+', '')
         tl.write(s, 'phana.in')
 
         tl.passthru(config.phana + 'phonon.bin.%d <phana.in' % m.Ctime)
@@ -164,17 +170,18 @@ phana.band.txt
         from aces.tools import read
         m = self.m
         s = """20
-1
-1
-%s
-2
-y
-
-1000
-y
-phana.dos.txt
-0
-""" % tl.toString(m.kpoints)
+        1
+        1
+        %s
+        2
+        y
+        
+        1000
+        y
+        phana.dos.txt
+        0
+        """ % tl.toString(m.kpoints)
+        s = s.replace(r'^\s+', '')
         tl.write(s, 'phana.dos.in')
 
         tl.passthru(config.phana + 'phonon.bin.%d <phana.dos.in' % m.Ctime)

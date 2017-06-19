@@ -1,4 +1,13 @@
-# this script is used to parrallelize the procedure of getting vasprun.xml
+# -*- coding: utf-8 -*-
+# @Author: YangZhou
+# @Date:   2017-06-19 12:53:12
+# @Last Modified by:   YangZhou
+# @Last Modified time: 2017-06-19 12:50:01
+
+""" this script is used to parrallelize
+the procedure of getting vasprun.xml"""
+
+
 import aces.tools as tl
 from aces import config
 from aces.App import App
@@ -18,18 +27,19 @@ def get_lammps_script(m):
         pbcz = 'p'
     b = "boundary %s %s %s" % (pbcx, pbcy, pbcz)
     content += """%s
-dimension       3
-%s
-read_data       structure
-%s
-%s
-neighbor        2 nsq
-neigh_modify    every 1 delay 1 check yes
-dump 1 all custom 1 dump.force id  fx fy fz xs ys zs
-dump_modify 1 format "%%d %%f %%f %%f %%f %%f %%f"
-dump_modify  1 sort id
-run 0
-""" % (b, m.getatomicstyle(), m.masses, m.potential)
+    dimension       3
+    %s
+    read_data       structure
+    %s
+    %s
+    neighbor        2 nsq
+    neigh_modify    every 1 delay 1 check yes
+    dump 1 all custom 1 dump.force id  fx fy fz xs ys zs
+    dump_modify 1 format "%%d %%f %%f %%f %%f %%f %%f"
+    dump_modify  1 sort id
+    run 0
+    """ % (b, m.getatomicstyle(), m.masses, m.potential)
+    content = tl.headtrim(content)
     return content
 
 

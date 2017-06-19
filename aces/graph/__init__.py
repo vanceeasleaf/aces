@@ -1,5 +1,12 @@
-# encoding : utf8
+# -*- coding: utf-8 -*-
+# @Author: YangZhou
+# @Date:   2017-06-18 21:55:43
+# @Last Modified by:   YangZhou
+# @Last Modified time: 2017-06-19 13:03:11
+
 import matplotlib
+import numpy as np
+import matplotlib.pyplot as pl
 matplotlib.use('Agg')
 matplotlib.rcParams['font.size'] = 14
 matplotlib.rcParams['axes.linewidth'] = 2
@@ -8,9 +15,8 @@ matplotlib.rcParams['ytick.major.width'] = 1.5
 matplotlib.rcParams['patch.linewidth'] = 0
 matplotlib.rcParams['legend.markerscale'] = .7
 matplotlib.rcParams['mathtext.default'] = 'regular'
-#matplotlib.rcParams['legend.frameon'] = 'False'
-import numpy as np
-import matplotlib.pyplot as pl
+
+# matplotlib.rcParams['legend.frameon'] = 'False'
 
 
 def twinx(x, y1, y2, filename):
@@ -32,19 +38,18 @@ def plot(x, y, filename, **args):
     series(x[1], y[1], [(x[0], y[0], y[1])], filename, **args)
 
 
-def series(
-        xlabel,
-        ylabel,
-        datas,
-        filename,
-        linewidth=1,
-        legend=True,
-        grid=False,
-        xmax=None,
-        xmin=None,
-        scatter=False,
-        logx=False,
-        logy=False):
+def series(xlabel,
+           ylabel,
+           datas,
+           filename,
+           linewidth=1,
+           legend=True,
+           grid=False,
+           xmax=None,
+           xmin=None,
+           scatter=False,
+           logx=False,
+           logy=False):
     pl.figure()
     pl.xlabel(xlabel)
     pl.ylabel(ylabel)
@@ -116,26 +121,25 @@ def wfig(filename, f, legend=False):
 def fit(x, z, p0, tt):
     def errorfunc(p, x, z):
         return tt(p, x) - z
+
     from scipy.optimize import leastsq
-    solp, ier = leastsq(errorfunc,
-                        p0,
-                        args=(x, z),
-                        Dfun=None,
-                        full_output=False,
-                        ftol=1e-9,
-                        xtol=1e-9,
-                        maxfev=100000,
-                        epsfcn=1e-10,
-                        factor=0.1)
+    solp, ier = leastsq(
+        errorfunc,
+        p0,
+        args=(x, z),
+        Dfun=None,
+        full_output=False,
+        ftol=1e-9,
+        xtol=1e-9,
+        maxfev=100000,
+        epsfcn=1e-10,
+        factor=0.1)
     return solp
 
 
 def setLegend(pl, ncol=1, loc='best', fontsize=12):
     frame = pl.legend(
-        loc=loc,
-        scatterpoints=1,
-        numpoints=1,
-        ncol=ncol,
+        loc=loc, scatterpoints=1, numpoints=1, ncol=ncol,
         fontsize=fontsize).get_frame()
     frame.set_linewidth(1.5)
 
@@ -159,7 +163,6 @@ class fig:
 
 
 def surf(X, Y, Z, filename):
-    from mpl_toolkits.mplot3d import Axes3D
     fig = pl.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(X, Y, Z)
@@ -184,19 +187,18 @@ def scatter(x, y, c, xlabel, ylabel, filename, marker_size=2.0, marker='s'):
 
 
 def scatter3d(x, y, z, filename):
-    from mpl_toolkits.mplot3d import Axes3D, proj3d
+    from mpl_toolkits.mplot3d import proj3d
     fig = pl.figure()
     ax = fig.add_subplot(111, projection='3d')
-    #ax.view_init(0, 0)
+    # ax.view_init(0, 0)
     import numpy
 
     def orthogonal_proj(zfront, zback):
         a = (zfront + zback) / (zfront - zback)
         b = -2 * (zfront * zback) / (zfront - zback)
-        return numpy.array([[1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, a, b],
+        return numpy.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, a, b],
                             [0, 0, 0, zback]])
+
     proj3d.persp_transformation = orthogonal_proj
     ax.scatter(x, y, z)
     pl.savefig(filename, bbox_inches='tight', transparent=True)

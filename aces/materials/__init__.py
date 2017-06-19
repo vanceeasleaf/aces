@@ -2,9 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-17 13:34:52
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 22:08:24
-
-# C2N hollow 2D structure
+# @Last Modified time: 2017-06-19 13:12:50
 
 
 import aces.tools as tl
@@ -24,9 +22,11 @@ import atomic
 class Material:
 
     def __init__(self, opt={}):
-        self.__dict__ = dict(self.__dict__,
-                             **default.default)  # all the values needed
+
+        # all the values needed
         # unit might be changed by opt but need to be used first
+        self.__dict__ = dict(self.__dict__,
+                             **default.default)
         if 'units' in opt:
             self.units = opt['units']
         self.units = Units(self.units)
@@ -38,8 +38,8 @@ class Material:
     def __getattr__(self, attr):
         if attr == "dim":
             return tl.toString(self.supercell)
-    # to be overided
 
+    # to be overided
     def set_parameters(self):
         pass
 
