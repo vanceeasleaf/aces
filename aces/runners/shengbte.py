@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-13 00:44:48
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 21:24:25
+# @Last Modified time: 2017-06-19 17:38:05
 
 import aces.config as config
 from ase import io
@@ -49,11 +49,11 @@ class runner(Runner):
         if len(elements) > len(atoms):
             elements = elements[:len(atoms)]
         allocations = """&allocations
-    nelements=%d
-    natoms=%d
-    ngrid(:)=%s
-&end
-""" % (len(elements), len(atoms), toString(m.kpoints))
+        \tnelements=%d
+        \tnatoms=%d
+        \tngrid(:)=%s
+        &end
+        """ % (len(elements), len(atoms), toString(m.kpoints))
         cell = atoms.cell
         types = toString(
             [m.elements.index(x) + 1 for x in atoms.get_chemical_symbols()])
@@ -61,33 +61,32 @@ class runner(Runner):
         for i, atom in enumerate(atoms):
             tu = (i + 1, toString(atoms.get_scaled_positions()[i]))
             pos += "  positions(:,%d)=%s\n" % tu
+
         crystal = """&crystal
-    lfactor=0.1,
-    lattvec(:,1)=%s
-    lattvec(:,2)=%s
-    lattvec(:,3)=%s
-    elements=%s
-    types=%s
-%s
-    scell(:)=%s
-&end
-""" % (toString(cell[0]),
-            toString(cell[1]),
-            toString(cell[2]),
-            ' '.join(map(lambda x: '"' + x + '"', elements)),
-            types,
-            pos,
-            m.dim)
+            lfactor=0.1,
+            lattvec(:,1)=%s
+            lattvec(:,2)=%s
+            lattvec(:,3)=%s
+            elements=%s
+            types=%s
+            %s
+            scell(:)=%s
+        &end
+        """ % (toString(cell[0]), toString(cell[1]), toString(cell[2]),
+               ' '.join(map(lambda x: '"' + x + '"', elements)), types, pos,
+               m.dim)
+
         parameters = """&parameters
-    T=%f
-    scalebroad=1.0
-&end
-""" % (m.T)
+            T=%f
+            scalebroad=1.0
+        &end
+        """ % (m.T)
+
         flags = """
-&flags
-    nonanalytic=.TRUE.
-    nanowires=.FALSE.
-&end
+        &flags
+            nonanalytic=.TRUE.
+            nanowires=.FALSE.
+        &end
         """
         f.write(allocations)
         f.write(crystal)
@@ -121,8 +120,7 @@ class runner(Runner):
             xlabel='Frequency (THz)',
             ylabel='Relaxation Time (ps)',
             datas=data,
-            filename='scaling-%f.png' %
-            th,
+            filename='scaling-%f.png' % th,
             scatter=True,
             legend=False,
             logx=True,
@@ -262,12 +260,33 @@ class runner(Runner):
             k1 = a[:, 1]
             k2 = a[:, 5]
             k3 = a[:, 9]
-            pl.plot(ts, k1, lw=3, markersize=30, linestyle='--',
-                    markeredgecolor='w', marker=".", label="${\kappa_{xx}}$")
-            pl.plot(ts, k2, lw=3, markersize=15, linestyle='--',
-                    markeredgecolor='w', marker="v", label="${\kappa_{yy}}$")
-            pl.plot(ts, k3, lw=3, markersize=15, linestyle='--',
-                    markeredgecolor='w', marker="^", label="${\kappa_{zz}}$")
+            pl.plot(
+                ts,
+                k1,
+                lw=3,
+                markersize=30,
+                linestyle='--',
+                markeredgecolor='w',
+                marker=".",
+                label="${\kappa_{xx}}$")
+            pl.plot(
+                ts,
+                k2,
+                lw=3,
+                markersize=15,
+                linestyle='--',
+                markeredgecolor='w',
+                marker="v",
+                label="${\kappa_{yy}}$")
+            pl.plot(
+                ts,
+                k3,
+                lw=3,
+                markersize=15,
+                linestyle='--',
+                markeredgecolor='w',
+                marker="^",
+                label="${\kappa_{zz}}$")
             pl.xlabel("Tempeature (K)")
             pl.ylabel('Thermal Conductivity (W/mK)')
             pl.xlim([200, 800])
@@ -288,8 +307,13 @@ class runner(Runner):
         tao = 1.0 / w + 1e-6
         g = np.loadtxt('../BTE.gruneisen')
         with fig("gruneisen_tao.png"):
-            pl.semilogy(g.flatten(), tao.flatten(), ls='.',
-                        marker='.', color='r', markersize=10)
+            pl.semilogy(
+                g.flatten(),
+                tao.flatten(),
+                ls='.',
+                marker='.',
+                color='r',
+                markersize=10)
             pl.ylabel('Relaxation Time (ps)')
             pl.xlabel('Gruneisen Coeffecient')
             pl.xlim([-10, 5])
@@ -302,18 +326,15 @@ class runner(Runner):
                 "BTE.kappa_scalar",
                 sep=r"[ \t]+",
                 header=None,
-                names=[
-                    'step',
-                    'kappa'],
+                names=['step', 'kappa'],
                 engine='python')
             ks = np.array(df['kappa'])
-            plot((np.array(df['step']),
-                  'Iteration Step'),
-                 (ks,
-                  'Thermal Conductivity (W/mK)'),
-                 'kappa_scalar.png',
-                 grid=True,
-                 linewidth=2)
+            plot(
+                (np.array(df['step']), 'Iteration Step'),
+                (ks, 'Thermal Conductivity (W/mK)'),
+                'kappa_scalar.png',
+                grid=True,
+                linewidth=2)
         except Exception as e:
             print(e)
 
@@ -322,39 +343,35 @@ class runner(Runner):
                 "BTE.cumulative_kappa_scalar",
                 sep=r"[ \t]+",
                 header=None,
-                names=[
-                    'l',
-                    'kappa'],
+                names=['l', 'kappa'],
                 engine='python')
             ks = np.array(df['kappa'])
-            plot((np.array(df['l']),
-                  'Cutoff Mean Free Path for Phonons (Angstrom)'),
-                 (ks,
-                  'Thermal Conductivity (W/mK)'),
-                 'cumulative_kappa_scalar.png',
-                 grid=True,
-                 linewidth=2,
-                 logx=True)
+            plot(
+                (np.array(df['l']),
+                 'Cutoff Mean Free Path for Phonons (Angstrom)'),
+                (ks, 'Thermal Conductivity (W/mK)'),
+                'cumulative_kappa_scalar.png',
+                grid=True,
+                linewidth=2,
+                logx=True)
         except Exception as e:
             print(e)
         try:
             omega = np.loadtxt('../BTE.omega') / (2.0 * np.pi)
             kappa = np.loadtxt('BTE.kappa')[-1, 1:]
             kappa = np.einsum('jji', kappa.reshape([3, 3, -1])) / 3.0
-            plot((np.arange(len(omega[0])),
-                  'Band'),
-                 (kappa,
-                  'Thermal Conductivity (W/mK)'),
-                 'kappa_band.png',
-                 grid=True,
-                 linewidth=2)
-            plot((np.arange(len(omega[0])),
-                  'Band'),
-                 (kappa.cumsum(),
-                  'Thermal Conductivity (W/mK)'),
-                 'cumulative_kappa_band.png',
-                 grid=True,
-                 linewidth=2)
+            plot(
+                (np.arange(len(omega[0])), 'Band'),
+                (kappa, 'Thermal Conductivity (W/mK)'),
+                'kappa_band.png',
+                grid=True,
+                linewidth=2)
+            plot(
+                (np.arange(len(omega[0])), 'Band'),
+                (kappa.cumsum(), 'Thermal Conductivity (W/mK)'),
+                'cumulative_kappa_band.png',
+                grid=True,
+                linewidth=2)
         except Exception as e:
             print(e)
         try:
@@ -379,8 +396,7 @@ class runner(Runner):
 
             # (N,1)
             w = np.abs(w)
-            q = np.loadtxt(open('../BTE.qpoints'))
-
+            q = np.loadtxt('../BTE.qpoints')[:, 3:]
             # reshape w to like omega
             n = len(q)
 
@@ -392,31 +408,57 @@ class runner(Runner):
             w.flags.writeable = True
             print(w.shape, omega.shape)
             w[omega < omega.flatten().max() * 0.005] = float('nan')
-            plot((omega.flatten(),
-                  'Frequency (THz)'),
-                 (w.flatten(),
-                  'Scatter Rate (THz)'),
-                 'scatter_freq.png',
-                 grid=True,
-                 scatter=True,
-                 logy=True)
+            plot(
+                (omega.flatten(), 'Frequency (THz)'), (w.flatten(),
+                                                       'Scatter Rate (THz)'),
+                'scatter_freq.png',
+                grid=True,
+                scatter=True,
+                logy=True)
             tao = 1.0 / w + 1e-6
-            plot((omega.flatten(),
-                  'Frequency (THz)'),
-                 (tao.flatten(),
-                  'Relaxation Time (ps)'),
-                 'tao_freq.png',
-                 grid=True,
-                 scatter=True,
-                 logy=True)
-            to_txt(['freq', 'tao'], np.c_[
-                   omega.flatten(), tao.flatten()], 'tao_freq.txt')
-
+            plot(
+                (omega.flatten(), 'Frequency (THz)'), (tao.flatten(),
+                                                       'Relaxation Time (ps)'),
+                'tao_freq.png',
+                grid=True,
+                scatter=True,
+                logy=True)
+            to_txt(['freq', 'tao'],
+                   np.c_[omega.flatten(), tao.flatten()], 'tao_freq.txt')
+            r = []
+            for i, qq in enumerate(q):
+                c = tao[i]
+                d = omega[i]
+                for j, cc in enumerate(c):
+                    r.append([qq[0], qq[1], qq[2], d[j], c[j]])
+            to_txt(['q1', 'q2', 'q3', 'f(THz)', 'tao(ps)'], r, 'q_tao.txt')
             # del--
             #  qs=q[:,3:]
             # np.savetxt('q_w.txt',np.c_[qs,w])
             # --
 
+            kappa = np.loadtxt('BTE.cumulative_kappaVsOmega_tensor')
+            with fig("atc_freq.png"):
+                pl.plot(kappa[:, 0], kappa[:, 1], label="${\kappa_{xx}}$")
+                pl.plot(kappa[:, 0], kappa[:, 5], label="${\kappa_{xx}}$")
+                pl.plot(kappa[:, 0], kappa[:, 9], label="${\kappa_{xx}}$")
+                pl.xlabel("Frequency (THz)")
+                pl.ylabel("Cumulative Thermal Conductivity(W/mK)")
+            with fig("tc_freq.png"):
+                pl.plot(
+                    kappa[:, 0],
+                    np.gradient(kappa[:, 1]),
+                    label="${\kappa_{xx}}$")
+                pl.plot(
+                    kappa[:, 0],
+                    np.gradient(kappa[:, 5]),
+                    label="${\kappa_{xx}}$")
+                pl.plot(
+                    kappa[:, 0],
+                    np.gradient(kappa[:, 9]),
+                    label="${\kappa_{xx}}$")
+                pl.xlabel("Frequency (THz)")
+                pl.ylabel("Cumulative Thermal Conductivity(W/mK)")
         except Exception as e:
             print(e)
         try:
@@ -427,52 +469,65 @@ class runner(Runner):
             v = v.T.reshape([3, -1, n])
             v = np.einsum('ijk->kji', v)
             v = np.linalg.norm(v, axis=-1)
-            y = (v.flatten(),
-                 'Group Velocity (nm/ps)')
-            plot((omega.flatten(), 'Frequency (THz)'), y,
-                 'v_freq.png', grid=True, scatter=True)
-            to_txt(['freq', 'vg'], np.c_[
-                   omega.flatten(), v.flatten()], 'v_freq.txt')
+            y = (v.flatten(), 'Group Velocity (nm/ps)')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'),
+                y,
+                'v_freq.png',
+                grid=True,
+                scatter=True)
+            to_txt(['freq', 'vg'],
+                   np.c_[omega.flatten(), v.flatten()], 'v_freq.txt')
 
             l = v * tao
-            y = (l.flatten(),
-                 'Mean Free Path (nm)')
-            plot((omega.flatten(), 'Frequency (THz)'), y,
-                 'lamda_freq.png', grid=True, scatter=True)
-            to_txt(['freq', 'mfp'], np.c_[
-                   omega.flatten(), l.flatten()], 'lamda_freq.txt')
+            y = (l.flatten(), 'Mean Free Path (nm)')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'),
+                y,
+                'lamda_freq.png',
+                grid=True,
+                scatter=True)
+            to_txt(['freq', 'mfp'],
+                   np.c_[omega.flatten(), l.flatten()], 'lamda_freq.txt')
         except Exception as e:
             print(e)
         try:
             g = np.loadtxt('../BTE.gruneisen')
-            y = (g.flatten(),
-                 'Gruneisen')
-            plot((omega.flatten(), 'Frequency (THz)'), y,
-                 'gruneisen_freq.png', grid=True, scatter=True)
+            y = (g.flatten(), 'Gruneisen')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'),
+                y,
+                'gruneisen_freq.png',
+                grid=True,
+                scatter=True)
             with fig('gruneisen_freq.png'):
-                pl.scatter(omega.flatten(), g.flatten(),
-                           marker='.', color='r', s=50)
+                pl.scatter(
+                    omega.flatten(), g.flatten(), marker='.', color='r', s=50)
                 pl.xlabel('Frequency (THz)')
                 pl.ylabel('Gruneisen Coeffecient')
                 # pl.grid(True)
                 pl.xlim([0, omega.max()])
                 pl.ylim([-10, 5])
                 # pl.tick_params(axis='both', which='major', labelsize=14)
-            to_txt(['freq', 'gruneisen'], np.c_[
-                   omega.flatten(), g.flatten()], 'gruneisen_freq.txt')
+            to_txt(['freq', 'gruneisen'],
+                   np.c_[omega.flatten(), g.flatten()], 'gruneisen_freq.txt')
             g = np.loadtxt('../BTE.P3')
 
             with fig('p3_freq.png'):
-                pl.scatter(omega.flatten(), g.flatten() *
-                           1e6, marker='.', color='r', s=50)
+                pl.scatter(
+                    omega.flatten(),
+                    g.flatten() * 1e6,
+                    marker='.',
+                    color='r',
+                    s=50)
                 pl.xlabel('Frequency (THz)')
                 pl.ylabel('P3 $(\\times 10^{-6})$')
                 # pl.grid(True)
                 pl.xlim([0, omega.max()])
                 pl.ylim([0, g.max() * 1e6])
 
-            to_txt(['freq', 'p3'], np.c_[
-                   omega.flatten(), g.flatten()], 'p3_freq.txt')
+            to_txt(['freq', 'p3'],
+                   np.c_[omega.flatten(), g.flatten()], 'p3_freq.txt')
         except Exception as e:
             print(e)
         try:
@@ -509,20 +564,35 @@ class runner(Runner):
         l = v * tao
         l[l < 1e-6] = None
         with fig('tao_v.png'):
-            pl.semilogy(v.flatten(), tao.flatten(), linestyle='.',
-                        marker='.', color='r', markersize=5)
+            pl.semilogy(
+                v.flatten(),
+                tao.flatten(),
+                linestyle='.',
+                marker='.',
+                color='r',
+                markersize=5)
             pl.xlabel('Group Velocity (nm/ps)')
             pl.ylabel('Relaxation Time (ps)')
             pl.grid(True)
         with fig('tao_l.png'):
-            pl.loglog(l.flatten(), tao.flatten(), linestyle='.',
-                      marker='.', color='r', markersize=5)
+            pl.loglog(
+                l.flatten(),
+                tao.flatten(),
+                linestyle='.',
+                marker='.',
+                color='r',
+                markersize=5)
             pl.xlabel('Mean Free Path (nm)')
             pl.ylabel('Relaxation Time (ps)')
             pl.grid(True)
         with fig('v_l.png'):
-            pl.semilogy(v.flatten(), l.flatten(), linestyle='.',
-                        marker='.', color='r', markersize=5)
+            pl.semilogy(
+                v.flatten(),
+                l.flatten(),
+                linestyle='.',
+                marker='.',
+                color='r',
+                markersize=5)
             pl.xlabel('Group Velocity (nm/ps)')
             pl.ylabel('Mean Free Path (nm)')
             pl.grid(True)
@@ -541,8 +611,11 @@ class runner(Runner):
         for ii in range(grid[0]):
             for jj in range(grid[1]):
                 for kk in range(grid[2]):
-                    k = [float(ii) / grid[0] - .5, float(jj) /
-                         grid[1] - .5, float(kk) / grid[2] - .5]
+                    k = [
+                        float(ii) / grid[0] - .5,
+                        float(jj) / grid[1] - .5,
+                        float(kk) / grid[2] - .5
+                    ]
                     # q0.append(np.einsum('ij,i',rcell,k))
                     q0.append(k)
         return np.array(q0)
@@ -601,18 +674,15 @@ class runner(Runner):
                 "BTE.kappa_scalar",
                 sep=r"[ \t]+",
                 header=None,
-                names=[
-                    'step',
-                    'kappa'],
+                names=['step', 'kappa'],
                 engine='python')
             ks = np.array(df['kappa'])
-            plot((np.array(df['step']),
-                  'Iteration Step'),
-                 (ks,
-                  'Thermal Conductivity (W/mK)'),
-                 'kappa_scalar.png',
-                 grid=True,
-                 linewidth=2)
+            plot(
+                (np.array(df['step']), 'Iteration Step'),
+                (ks, 'Thermal Conductivity (W/mK)'),
+                'kappa_scalar.png',
+                grid=True,
+                linewidth=2)
         except Exception as e:
             print(e)
 
@@ -621,64 +691,64 @@ class runner(Runner):
                 "BTE.cumulative_kappa_scalar",
                 sep=r"[ \t]+",
                 header=None,
-                names=[
-                    'l',
-                    'kappa'],
+                names=['l', 'kappa'],
                 engine='python')
             ks = np.array(df['kappa'])
-            plot((np.array(df['l']),
-                  'Cutoff Mean Free Path for Phonons (Angstrom)'),
-                 (ks,
-                  'Thermal Conductivity (W/mK)'),
-                 'cumulative_kappa_scalar.png',
-                 grid=True,
-                 linewidth=2,
-                 logx=True)
+            plot(
+                (np.array(df['l']),
+                 'Cutoff Mean Free Path for Phonons (Angstrom)'),
+                (ks, 'Thermal Conductivity (W/mK)'),
+                'cumulative_kappa_scalar.png',
+                grid=True,
+                linewidth=2,
+                logx=True)
         except Exception as e:
             print(e)
         try:
             omega = np.loadtxt('BTE.omega') / (2.0 * np.pi)
             kappa = np.loadtxt('BTE.kappa')[-1, 1:]
             kappa = np.einsum('jji', kappa.reshape([3, 3, -1])) / 3.0
-            plot((np.arange(len(omega[0])),
-                  'Band'),
-                 (kappa,
-                  'Thermal Conductivity (W/mK)'),
-                 'kappa_band.png',
-                 grid=True,
-                 linewidth=2)
-            plot((np.arange(len(omega[0])),
-                  'Band'),
-                 (kappa.cumsum(),
-                  'Thermal Conductivity (W/mK)'),
-                 'cumulative_kappa_band.png',
-                 grid=True,
-                 linewidth=2)
+            plot(
+                (np.arange(len(omega[0])), 'Band'),
+                (kappa, 'Thermal Conductivity (W/mK)'),
+                'kappa_band.png',
+                grid=True,
+                linewidth=2)
+            plot(
+                (np.arange(len(omega[0])), 'Band'),
+                (kappa.cumsum(), 'Thermal Conductivity (W/mK)'),
+                'cumulative_kappa_band.png',
+                grid=True,
+                linewidth=2)
         except Exception as e:
             print(e)
         try:
             w = np.loadtxt('BTE.w_final')
             w = np.abs(w)
             w[omega < omega.flatten().max() * 0.005] = float('nan')
-            plot((omega.flatten(),
-                  'Frequency (THz)'),
-                 (w.flatten(),
-                  'Scatter Rate (THz)'),
-                 'scatter_freq.png',
-                 grid=True,
-                 scatter=True,
-                 logy=True)
+            plot(
+                (omega.flatten(), 'Frequency (THz)'), (w.flatten(),
+                                                       'Scatter Rate (THz)'),
+                'scatter_freq.png',
+                grid=True,
+                scatter=True,
+                logy=True)
             tao = 1.0 / w + 1e-6
             with fig('tao_freq.png'):
-                pl.semilogy(omega.flatten(), tao.flatten(),
-                            linestyle='.', marker='.', color='r', markersize=5)
+                pl.semilogy(
+                    omega.flatten(),
+                    tao.flatten(),
+                    linestyle='.',
+                    marker='.',
+                    color='r',
+                    markersize=5)
                 pl.xlabel('Frequency (THz)')
                 pl.ylabel('Relaxation Time (ps)')
                 pl.grid(True)
                 pl.xlim([0, omega.max()])
                 # pl.ylim([0,tao.flatten().max()])
-            to_txt(['freq', 'tao'], np.c_[
-                   omega.flatten(), tao.flatten()], 'tao_freq.txt')
+            to_txt(['freq', 'tao'],
+                   np.c_[omega.flatten(), tao.flatten()], 'tao_freq.txt')
         except Exception as e:
             print(e)
         """
@@ -696,29 +766,31 @@ class runner(Runner):
             n, m = v.shape
             v = v.reshape([n, 3, m / 3])
             v = np.linalg.norm(v, axis=1)
-            y = (v.flatten(),
-                 'Group Velocity (nm/ps)')
-            plot((omega.flatten(), 'Frequency (THz)'), y,
-                 'v_freq.png', grid=True, scatter=True)
-            to_txt(['freq', 'vg'], np.c_[
-                   omega.flatten(), v.flatten()], 'v_freq.txt')
+            y = (v.flatten(), 'Group Velocity (nm/ps)')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'),
+                y,
+                'v_freq.png',
+                grid=True,
+                scatter=True)
+            to_txt(['freq', 'vg'],
+                   np.c_[omega.flatten(), v.flatten()], 'v_freq.txt')
         except Exception as e:
             print(e)
         try:
             l = v * tao
             l[l < 1e-6] = None
-            plot((omega.flatten(),
-                  'Frequency (THz)'),
-                 (l.flatten(),
-                  'Mean Free Path (nm)'),
-                 'lamda_freq.png',
-                 grid=True,
-                 scatter=True,
-                 logy=True,
-                 logx=True,
-                 xmin=0)
-            to_txt(['freq', 'mfp'], np.c_[
-                   omega.flatten(), l.flatten()], 'lamda_freq.txt')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'), (l.flatten(),
+                                                       'Mean Free Path (nm)'),
+                'lamda_freq.png',
+                grid=True,
+                scatter=True,
+                logy=True,
+                logx=True,
+                xmin=0)
+            to_txt(['freq', 'mfp'],
+                   np.c_[omega.flatten(), l.flatten()], 'lamda_freq.txt')
         except Exception as e:
             print(e)
         try:
@@ -791,8 +863,8 @@ class runner(Runner):
         # Thermal conductivity calculation
         m = self.m
         print("START SHENGBTE...")
-        passthru(config.mpirun + " %s " %
-                 (m.nodes * m.procs) + config.shengbte)
+        passthru(config.mpirun + " %s " % (m.nodes * m.procs) +
+                 config.shengbte)
 
     def kkappa(self):
         dirs = ls('shengold*')
@@ -830,12 +902,30 @@ class runner(Runner):
             k1 = np.array(k1)[f]
             k2 = np.array(k2)[f]
             k3 = np.array(k3)[f]
-            pl.plot(ks, k1, markersize=30, linestyle='--',
-                    markeredgecolor='w', marker=".", label="${\kappa_{xx}}$")
-            pl.plot(ks, k2, markersize=15, linestyle='--',
-                    markeredgecolor='w', marker="v", label="${\kappa_{yy}}$")
-            pl.plot(ks, k3, markersize=15, linestyle='--',
-                    markeredgecolor='w', marker="^", label="${\kappa_{zz}}$")
+            pl.plot(
+                ks,
+                k1,
+                markersize=30,
+                linestyle='--',
+                markeredgecolor='w',
+                marker=".",
+                label="${\kappa_{xx}}$")
+            pl.plot(
+                ks,
+                k2,
+                markersize=15,
+                linestyle='--',
+                markeredgecolor='w',
+                marker="v",
+                label="${\kappa_{yy}}$")
+            pl.plot(
+                ks,
+                k3,
+                markersize=15,
+                linestyle='--',
+                markeredgecolor='w',
+                marker="^",
+                label="${\kappa_{zz}}$")
             pl.ylim([0, 0.35])
             pl.xlim([0, np.array(ks).max() + 1])
             pl.xlabel("$Nq_y$ and $Nq_z$")
@@ -856,12 +946,30 @@ class runner(Runner):
             k1 = np.array(k1)[f]
             k2 = np.array(k2)[f]
             k3 = np.array(k3)[f]
-            pl.plot(ks, k1, markersize=30, linestyle='--',
-                    markeredgecolor='w', marker=".", label="${\kappa_{xx}}$")
-            pl.plot(ks, k2, markersize=15, linestyle='--',
-                    markeredgecolor='w', marker="v", label="${\kappa_{yy}}$")
-            pl.plot(ks, k3, markersize=15, linestyle='--',
-                    markeredgecolor='w', marker="^", label="${\kappa_{zz}}$")
+            pl.plot(
+                ks,
+                k1,
+                markersize=30,
+                linestyle='--',
+                markeredgecolor='w',
+                marker=".",
+                label="${\kappa_{xx}}$")
+            pl.plot(
+                ks,
+                k2,
+                markersize=15,
+                linestyle='--',
+                markeredgecolor='w',
+                marker="v",
+                label="${\kappa_{yy}}$")
+            pl.plot(
+                ks,
+                k3,
+                markersize=15,
+                linestyle='--',
+                markeredgecolor='w',
+                marker="^",
+                label="${\kappa_{zz}}$")
             pl.ylim([0, 0.35])
             pl.xlim([0, np.array(ks).max() + 100])
             pl.xlabel("$Nq_x$")
@@ -876,18 +984,21 @@ class runner(Runner):
         def fit(x, z, p0, tt):
             def errorfunc(p, x, z):
                 return tt(p, x) - z
+
             from scipy.optimize import leastsq
-            solp, ier = leastsq(errorfunc,
-                                p0,
-                                args=(x, z),
-                                Dfun=None,
-                                full_output=False,
-                                ftol=1e-9,
-                                xtol=1e-9,
-                                maxfev=100000,
-                                epsfcn=1e-10,
-                                factor=0.1)
+            solp, ier = leastsq(
+                errorfunc,
+                p0,
+                args=(x, z),
+                Dfun=None,
+                full_output=False,
+                ftol=1e-9,
+                xtol=1e-9,
+                maxfev=100000,
+                epsfcn=1e-10,
+                factor=0.1)
             return solp
+
         dirs = ls('shengold*')
         from aces.scanf import sscanf
         from aces.graph import fig, pl
@@ -895,7 +1006,7 @@ class runner(Runner):
         for d in dirs:
             f = shell_exec('grep ngrid %s/CONTROL' % d)
             ks = sscanf(f, "   ngrid(:)=%d %d %d")
-            if(ks[1] != 4):
+            if (ks[1] != 4):
                 continue
             f = np.loadtxt('%s/BTE.cumulative_kappa_scalar' % d)
             us.append([ks, f])
@@ -925,6 +1036,7 @@ class runner(Runner):
 
             def ll(p, x):
                 return p[0] * x + p[1]
+
             fil = xx > xx.max() / 4
             p = fit(xx[fil], yy[fil], [1, 1, 1], ll)
             pl.plot(xx, ll(p, xx), lw=3, ls='dashed', label="Fitted")

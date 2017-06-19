@@ -1,17 +1,20 @@
-#encoding: utf-8
+# encoding: utf-8
 import unittest
 from aces.tools import write
 from aces.tools import shell_exec
 from aces.phononyaml import phononyaml
 import numpy as np
+
+
 class testphononyaml(unittest.TestCase):
-	def setUp(self):
-		content="""mesh: [     3,     3,     1 ]
-nqpoint: 4      
-natom:   6      
+
+    def setUp(self):
+        content = """mesh: [     3,     3,     1 ]
+nqpoint: 4
+natom:   6
 phonon:
 - q-position: [    0.0000000,    0.0000000,    0.0000000 ]
-  weight: 1    
+  weight: 1
   band:
   - # 1
     frequency:    -0.3536780637
@@ -501,7 +504,7 @@ phonon:
       - [  0.00000000000000,  0.00000000000000 ]
 
 - q-position: [    0.3333333,    0.0000000,    0.0000000 ]
-  weight: 2    
+  weight: 2
   band:
   - # 1
     frequency:    -0.3536780637
@@ -991,7 +994,7 @@ phonon:
       - [  0.00000000000000, -0.00000000000000 ]
 
 - q-position: [    0.0000000,    0.3333333,    0.0000000 ]
-  weight: 2    
+  weight: 2
   band:
   - # 1
     frequency:    -0.3536780637
@@ -1481,7 +1484,7 @@ phonon:
       - [  0.00000000000000, -0.00000000000000 ]
 
 - q-position: [    0.3333333,    0.3333333,    0.0000000 ]
-  weight: 4    
+  weight: 4
   band:
   - # 1
     frequency:    -0.3536780637
@@ -1972,45 +1975,102 @@ phonon:
 
 
 """
-		write(content,'tmpphononyaml.txt')
-	def tearDown(self):
-		shell_exec("rm tmpphononyaml.txt")
-	def testinit(self):
-		pya=phononyaml('tmpphononyaml.txt')
-		self.assertEqual(pya.mesh,(3,3,1))
-		self.assertEqual(pya.nqpoint,4)
-		self.assertEqual(pya.natom,6)
-		self.assertEqual(pya.nbranch,18)
-	def testqposition(self):
-		pya=phononyaml('tmpphononyaml.txt')
-		self.assertTrue(np.allclose(pya.qposition(0),[0,0,0]))
-		self.assertTrue(np.allclose(pya.qposition(2),[    0.0000000,    0.3333333,    0.0000000 ]))
-	def testfrequency(self):
-		pya=phononyaml('tmpphononyaml.txt')
-		self.assertTrue(np.allclose(pya.frequency(0,0),-0.3536780637))
-		self.assertTrue(np.allclose(pya.frequency(2,2),-0.0037850209))
-	def testatom(self):
-		pya=phononyaml('tmpphononyaml.txt')
-		self.assertTrue(np.allclose(pya.atom(0,0,0),[-0.00000000000001+1j*0.00000000000000 , 0.00000000000048+1j*0.00000000000000 ,0.28868893164522+1j*0.00000000000000]))
-		self.assertTrue(np.allclose(pya.atom(2,2,2),[-0.40264439583068+1j*0.06756451874390,-0.00003722791014+1j*0.00000624599737,0.00000000082905-1j*0.00000000072809]))
-	def testatoms(self):
-		pya=phononyaml('tmpphononyaml.txt')
-		x00=[[ -0.00000000000001+1j*0.00000000000000,0.00000000000048+1j*0.00000000000000,0.28868893164522+1j*0.00000000000000 ]
-,[ -0.00000000000005+1j*0.00000000000000,0.00000000000045+1j*0.00000000000000,0.57733647164453+1j*0.00000000000000 ]
-,[-0.00000000000010+1j*0.00000000000000,0.00000000000048+1j*0.00000000000000,0.28868893164558+1j*0.00000000000000 ]
-,[ -0.00000000000001+1j*0.00000000000000,0.00000000000053+1j*0.00000000000000,-0.28868893164551+1j*0.00000000000000 ]
-,[ -0.00000000000005+1j*0.00000000000000,0.00000000000055+1j*0.00000000000000,-0.57733647164446+1j*0.00000000000000 ]
-,[ -0.00000000000010+1j*0.00000000000000,0.00000000000053+1j*0.00000000000000,-0.28868893164514+1j*0.00000000000000 ]]
-		self.assertTrue(np.allclose(pya.atoms(0,0),x00))
-		x22=[[	-0.408273773+(0*1j)	,	0.0000377333+(-0.00000000090624*1j)	,	0.00000000093634+(-0.00000000058136*1j)	],
-[	-0.406787803+(0.033892966*1j)	,	-0.00000000750337+(-0.00000000028419*1j)	,	0.00000000088571+(-0.00000000065693*1j)	],
-[	-0.402644396+(0.067564519*1j)	,	-0.0000372279+(0.000006246*1j)	,	0.00000000082905+(-0.00000000072809*1j)	],
-[	-0.408273773+(0.00000000000002*1j)	,	-0.0000377482+(-0.00000000090638*1j)	,	0.00000000093661+(-0.00000000058147*1j)	],
-[	-0.406787803+(0.033892966*1j)	,	-0.00000000749968+(-0.00000000028477*1j)	,	0.00000000088623+(-0.00000000065719*1j)	],
-[	-0.402644396+(0.067564519*1j)	,	0.0000372129+(-0.00000624532*1j)	,	0.0000000008293+(-0.00000000072824*1j)	]
-]
-		self.assertTrue(np.allclose(pya.atoms(2,2),x22))
+        write(content, 'tmpphononyaml.txt')
+
+    def tearDown(self):
+        shell_exec("rm tmpphononyaml.txt")
+
+    def testinit(self):
+        pya = phononyaml('tmpphononyaml.txt')
+        self.assertEqual(pya.mesh, (3, 3, 1))
+        self.assertEqual(pya.nqpoint, 4)
+        self.assertEqual(pya.natom, 6)
+        self.assertEqual(pya.nbranch, 18)
+
+    def testqposition(self):
+        pya = phononyaml('tmpphononyaml.txt')
+        self.assertTrue(np.allclose(pya.qposition(0), [0, 0, 0]))
+        self.assertTrue(
+            np.allclose(pya.qposition(2), [0.0000000, 0.3333333, 0.0000000]))
+
+    def testfrequency(self):
+        pya = phononyaml('tmpphononyaml.txt')
+        self.assertTrue(np.allclose(pya.frequency(0, 0), -0.3536780637))
+        self.assertTrue(np.allclose(pya.frequency(2, 2), -0.0037850209))
+
+    def testatom(self):
+        pya = phononyaml('tmpphononyaml.txt')
+        self.assertTrue(
+            np.allclose(
+                pya.atom(0, 0, 0), [
+                    -0.00000000000001 + 1j * 0.00000000000000, 0.00000000000048
+                    + 1j * 0.00000000000000, 0.28868893164522 +
+                    1j * 0.00000000000000
+                ]))
+        self.assertTrue(
+            np.allclose(
+                pya.atom(2, 2, 2), [
+                    -0.40264439583068 + 1j * 0.06756451874390,
+                    -0.00003722791014 + 1j * 0.00000624599737, 0.00000000082905
+                    - 1j * 0.00000000072809
+                ]))
+
+    def testatoms(self):
+        pya = phononyaml('tmpphononyaml.txt')
+        x00 = [[
+            -0.00000000000001 + 1j * 0.00000000000000,
+            0.00000000000048 + 1j * 0.00000000000000,
+            0.28868893164522 + 1j * 0.00000000000000
+        ], [
+            -0.00000000000005 + 1j * 0.00000000000000,
+            0.00000000000045 + 1j * 0.00000000000000,
+            0.57733647164453 + 1j * 0.00000000000000
+        ], [
+            -0.00000000000010 + 1j * 0.00000000000000,
+            0.00000000000048 + 1j * 0.00000000000000,
+            0.28868893164558 + 1j * 0.00000000000000
+        ], [
+            -0.00000000000001 + 1j * 0.00000000000000,
+            0.00000000000053 + 1j * 0.00000000000000,
+            -0.28868893164551 + 1j * 0.00000000000000
+        ], [
+            -0.00000000000005 + 1j * 0.00000000000000,
+            0.00000000000055 + 1j * 0.00000000000000,
+            -0.57733647164446 + 1j * 0.00000000000000
+        ], [
+            -0.00000000000010 + 1j * 0.00000000000000,
+            0.00000000000053 + 1j * 0.00000000000000,
+            -0.28868893164514 + 1j * 0.00000000000000
+        ]]
+        self.assertTrue(np.allclose(pya.atoms(0, 0), x00))
+        x22 = [[
+            -0.408273773 + (0 * 1j), 0.0000377333 + (-0.00000000090624 * 1j),
+            0.00000000093634 + (-0.00000000058136 * 1j)
+        ], [
+            -0.406787803 + (0.033892966 * 1j),
+            -0.00000000750337 + (-0.00000000028419 * 1j),
+            0.00000000088571 + (-0.00000000065693 * 1j)
+        ], [
+            -0.402644396 + (0.067564519 * 1j), -0.0000372279 +
+            (0.000006246 * 1j), 0.00000000082905 + (-0.00000000072809 * 1j)
+        ], [
+            -0.408273773 + (0.00000000000002 * 1j),
+            -0.0000377482 + (-0.00000000090638 * 1j),
+            0.00000000093661 + (-0.00000000058147 * 1j)
+        ], [
+            -0.406787803 + (0.033892966 * 1j),
+            -0.00000000749968 + (-0.00000000028477 * 1j),
+            0.00000000088623 + (-0.00000000065719 * 1j)
+        ], [
+            -0.402644396 + (0.067564519 * 1j), 0.0000372129 +
+            (-0.00000624532 * 1j), 0.0000000008293 + (-0.00000000072824 * 1j)
+        ]]
+        self.assertTrue(np.allclose(pya.atoms(2, 2), x22))
+
+
 def test():
-	unittest.main()
-if __name__ =='__main__':
-	test()
+    unittest.main()
+
+
+if __name__ == '__main__':
+    test()

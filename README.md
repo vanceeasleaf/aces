@@ -26,7 +26,7 @@ Docs at [http://vanceeasleaf.github.io/aces/](http://vanceeasleaf.github.io/aces
 
 ## Why
 
-- First principle calculation or molecular dynamics computation code usually needs structure files such as POSCAR of **VASP**,  data file of **LAMMPS**, struct file of **Quantum Espresso** and  input files such as INCAR, KPOINTS of **VASP**, CONTROL file of **ShengBTE**. The information of these files are similar but the format needs carefully treatment,for instance, the length and energy units. ACES is pretended to unify the input and out file format of all the materials computational codes to let user easily carry up a new engine.
+- First principle calculation or molecular dynamics computation code usually needs structure files such as POSCAR of **VASP**,  data file of **LAMMPS**, struct file of **Quantum Espresso** and  input files such as INCAR, KPOINTS of **VASP**, CONTROL file of **ShengBTE**. The information of these files are similar but the format needs carefully treatment,for instance, the length and energy units. ACES is intended to unify the input and out file format of all the materials computational codes to let user easily carry up a new engine.
 
 - A computational experiment project is always  chaotic because of confused folder structure and name. ACES let you manage your project in a unify standard which could be version controlled and is easily to track.
 

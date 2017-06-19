@@ -2,12 +2,12 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 21:55:43
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 13:03:11
+# @Last Modified time: 2017-06-19 16:51:50
 
 import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as pl
-matplotlib.use('Agg')
 matplotlib.rcParams['font.size'] = 14
 matplotlib.rcParams['axes.linewidth'] = 2
 matplotlib.rcParams['xtick.major.width'] = 1.5
