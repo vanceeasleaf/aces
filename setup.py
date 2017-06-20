@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-19 13:38:47
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 13:38:52
+# @Last Modified time: 2017-06-21 02:10:43
 from setuptools import setup, find_packages
 import sys
 import os
@@ -27,4 +27,5 @@ setup(
     license="GPL2.0",
     packages=find_packages(),
     scripts=["scripts/ae"]
-    #long_description=open('README.md').read())
+    # long_description=open('README.md').read()
+)
