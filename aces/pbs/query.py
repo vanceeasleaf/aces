@@ -2,8 +2,8 @@
 # @Author: YangZhou
 # @Date:   2017-06-19 13:22:37
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 13:34:19
-
+# @Last Modified time: 2017-06-20 14:57:58
+from __future__ import print_function
 import json
 import sys
 

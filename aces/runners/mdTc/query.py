@@ -2,9 +2,9 @@
 # @Author: YangZhou
 # @Date:   2017-06-02 18:39:05
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 18:59:49
+# @Last Modified time: 2017-06-20 14:57:30
 
-
+from __future__ import print_function
 import os
 import aces.config as config
 from .inequality import inequality

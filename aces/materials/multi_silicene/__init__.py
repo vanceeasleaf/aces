@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-13 21:41:19
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 13:15:59
+# @Last Modified time: 2017-06-20 14:55:15
 from aces.materials import Material
 import aces.tools as tl
 from aces import config
@@ -20,10 +20,10 @@ class structure(Material):
         self.bandpoints = {
             'K': [0.5, 0.5, 0],
             'Gamma': [0, 0, 0],
-            'J': [0.5, 0.0, 0],
-            'J\'': [0.0, 0.5, 0]
+            'X': [0.5, 0.0, 0],
+            'Y\'': [0.0, 0.5, 0]
         }
-        self.bandpath = ['K', 'Gamma', 'J', 'J\'', 'Gamma']
+        self.bandpath = ['K', 'Gamma', 'X', 'Y', 'Gamma']
         tl.debug("graphene potential chosen:Si.tersoff.mod")
         self.potential = 'pair_style	tersoff/mod\n' +\
             'pair_coeff	* * %s/Si.tersoff.mod Si' % (

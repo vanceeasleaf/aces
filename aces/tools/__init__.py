@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 21:53:21
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 13:35:00
+# @Last Modified time: 2017-06-20 15:02:18
 
 from __future__ import print_function
 import os
@@ -17,7 +17,7 @@ def loadjson(file):
     return json.loads(read(file))
 
 
-def input(s):
+def input(s=""):
     try:
         # python 2
         return raw_input(s)
