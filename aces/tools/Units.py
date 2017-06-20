@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-19 19:16:40
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 19:13:13
+# @Last Modified time: 2017-06-20 15:47:25
 constants = {
     'real': {
         'boltz': 0.0019872067,
@@ -152,11 +152,13 @@ class Units:
         self.cgs = unitBase(targetUnit, 'cgs', mass=mass)
         # current unit of environment
         self.targetUnit = targetUnit
-        units = targetUnit
         si = self.si
         self.tcfactor = 1 / si.E() * si.t() * si.L() * si.T()
 
     def __str__(self):
+        return self.targetUnit
+
+    def __repr__(self):
         return self.targetUnit
 
     def __getattr__(self, name):

@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 21:53:21
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-20 15:02:18
+# @Last Modified time: 2017-06-20 15:28:29
 
 from __future__ import print_function
 import os
@@ -34,7 +34,7 @@ def shell_exec(cmd):
     return c.strip()
 
 
-def trimhead(str1):
+def headtrim(str1):
     return str1.replace(r"^ +", "")
 
 

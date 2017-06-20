@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-07 14:59:50
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 22:43:27
+# @Last Modified time: 2017-06-20 15:15:09
 
 import aces.tools as tl
 from aces import config
@@ -36,44 +36,44 @@ def minimize_vasp(m):
     else:
         sym = "ISYM = 0"
     s = """SYSTEM = - local optimisation
-PREC = high
-ENCUT=%f
-EDIFF = 1e-8
-IBRION = 2
-NSW=100
-ISIF = 3
-ISMEAR = 0 ; SIGMA = 0.1
-POTIM=0.01
-ISTART = 0
-LWAVE = FALSE
-LCHARG = FALSE
-EDIFFG = -0.01
-LREAL=FALSE
-NPAR = %d
-%s
-%s
-%s
-""" % (m.ecut, npar, sym, ispin, soc)
+	PREC = high
+	ENCUT=%f
+	EDIFF = 1e-8
+	IBRION = 2
+	NSW=100
+	ISIF = 3
+	ISMEAR = 0 ; SIGMA = 0.1
+	POTIM=0.01
+	ISTART = 0
+	LWAVE = FALSE
+	LCHARG = FALSE
+	EDIFFG = -0.01
+	LREAL=FALSE
+	NPAR = %d
+	%s
+	%s
+	%s
+	""" % (m.ecut, npar, sym, ispin, soc)
     if m.vdw:
         s += """\nIVDW = 1
-VDW_RADIUS = 50
-VDW_S6 = 0.75
-VDW_SR = 1.00
-VDW_SCALING = 0.75
-VDW_D = 20.0
-VDW_C6 = 63.540 31.50
-VDW_R0 = 1.898 1.892
-"""
+		VDW_RADIUS = 50
+		VDW_S6 = 0.75
+		VDW_SR = 1.00
+		VDW_SCALING = 0.75
+		VDW_D = 20.0
+		VDW_C6 = 63.540 31.50
+		VDW_R0 = 1.898 1.892
+		"""
     tl.write(s, 'INCAR')
     m.structure()
     from aces.io.vasp import writePOTCAR
     writePOTCAR(m, m.elements)
     s = """A
-0
-Monkhorst-Pack
-%s
-0  0  0
-""" % ' '.join(map(str, m.mekpoints))
+	0
+	Monkhorst-Pack
+	%s
+	0  0  0
+	""" % ' '.join(map(str, m.mekpoints))
     tl.write(s, 'KPOINTS')
     vasp = [config.vasp, config.vasp_2d][m.d2]
     if m.useMini:
@@ -84,26 +84,22 @@ Monkhorst-Pack
 
 def minimize_lammps(m):
     f = open('input', 'w')
-    units, structure, potential, timestep, masses,\
-        dumpRate, write_structure, metropolis, dump = m.units,\
-        m.structure, m.potential, m.timestep,\
-        m.masses, m.dumpRate, m.write_structure, m.metropolis, m.dump
-    print >> f, "units %s" % units
+    print >> f, "units %s" % m.units
     print >> f, m.getatomicstyle()
     print >> f, "boundary p p p"
     print >> f, "dimension 3"
-    structure()
+    m.structure()
     print >> f, 'read_data structure'
-    print >> f, potential
-    print >> f, "timestep %f" % timestep
-    print >> f, masses
+    print >> f, m.potential
+    print >> f, "timestep %f" % m.timestep
+    print >> f, m.masses
     print >> f, "thermo_style custom step pe etotal"
-    print >> f, "thermo %d" % dumpRate
-    if write_structure:
+    print >> f, "thermo %d" % m.dumpRate
+    if m.write_structure:
         print >> f, "write_data structure"
         print >> f, "dump dumpc all xyz 1CN.xyz"
         print >> f, "run 0"
-    if metropolis:
+    if m.metropolis:
         print >> f, "min_style metropolis"
         print >> f, "minimize 1e-12 1e-12 1000000 1000000"
     if m.useMini:
@@ -116,7 +112,7 @@ def minimize_lammps(m):
         print >> f, "minimize 1e-12 1e-12 1000000 1000000"
     print >> f, "write_restart restart.minimize"
     print >> f, "dump dump1 all xyz 1 minimize.xyz"
-    print >> f, dump
+    print >> f, m.dump
     print >> f, "dump kaka all atom 1 range"
     print >> f, "dump_modify  kaka sort id"
     print >> f, "dump 1 all custom 1 dump.force id  fx fy fz xs ys zs"

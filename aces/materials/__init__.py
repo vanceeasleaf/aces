@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-17 13:34:52
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 13:12:50
+# @Last Modified time: 2017-06-20 16:08:25
 
 
 import aces.tools as tl
@@ -38,6 +38,8 @@ class Material:
     def __getattr__(self, attr):
         if attr == "dim":
             return tl.toString(self.supercell)
+        if attr == "cores":
+            return int(self.nodes) * int(self.procs)
 
     # to be overided
     def set_parameters(self):
@@ -94,10 +96,6 @@ class Material:
         masses = atomic.getMassFromLabel(self.elements)
         self.phontsmasses = '\n'.join(
             ["%s %f 0.0" % (label, mass) for label, mass in zip(self.elements, masses)])
-
-    @property
-    def cores(self):
-        return self.nodes * self.procs
 
     def structure(self):
 

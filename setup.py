@@ -6,7 +6,7 @@
 from setuptools import setup, find_packages
 import sys
 import os
-version = "0.16"
+version = "0.17"
 if sys.argv[-1] == 'publish':
     os.system("python setup.py sdist upload")
     os.system("python setup.py bdist_wheel upload")
@@ -26,5 +26,5 @@ setup(
     url="https://github.com/vanceeasleaf/aces",
     license="GPL2.0",
     packages=find_packages(),
-    scripts=["scripts/ae"],
-    long_description=open('README.md').read())
+    scripts=["scripts/ae"]
+    #long_description=open('README.md').read())

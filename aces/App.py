@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 21:58:57
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 21:57:34
+# @Last Modified time: 2017-06-20 15:57:31
 #from aces.env import SRCHOME,PROJHOME,PROJNAME
 import time
 from aces.runners.minimize import minimize as minimize_input
@@ -14,10 +14,10 @@ class App:
 
     def __init__(self):
         """
-                while not os.path.exists('app.json'):
-                        time.sleep(1)
-                        print pwd()+'/app.json'
-                """
+        while not os.path.exists('app.json'):
+                time.sleep(1)
+                print pwd()+'/app.json'
+        """
         if tl.exists('app.json'):
             opt = tl.loadjson('app.json')
         elif tl.exists('../app.json'):
