@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 21:55:43
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 16:51:50
+# @Last Modified time: 2017-06-21 16:41:01
 
 import matplotlib
 matplotlib.use('Agg')
@@ -160,6 +160,16 @@ class fig:
             setLegend(pl, ncol=self.ncol)
         pl.savefig(self.filename, bbox_inches='tight', transparent=True)
         pl.close()
+        if self.filename.find(".eps") > 0:
+            try:
+                import aces.tools as tl
+                cmd = "convert %s %s" % (self.filename,
+                                         self.filename.replace(
+                                             ".eps",
+                                             ".png"))
+                tl.passthru(cmd)
+            except Exception as e:
+                print(e)
 
 
 def surf(X, Y, Z, filename):
