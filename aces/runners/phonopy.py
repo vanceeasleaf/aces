@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-16 20:09:09
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 12:30:22
+# @Last Modified time: 2017-06-21 21:39:07
 
 from aces.tools import mkdir, mv, cd, cp, mkcd, shell_exec,\
     exists, write, passthru, toString, pwd, debug, ls, parseyaml
@@ -67,7 +67,7 @@ class runner(Runner):
         vasprunxml = "dir_SPOSCAR/vasprun.xml"
         if exists(vasprunxml):
             vasprun = etree.iterparse(vasprunxml, tag='varray')
-            forces0 = self.parseVasprun(vasprun, 'forces')
+            forces0 = parseVasprun(vasprun, 'forces')
             print(forces0.max())
         else:
             forces0 = 0.0
@@ -80,7 +80,7 @@ class runner(Runner):
             f = -np.einsum('ijkl,jl', fc2, u)
 
             vasprun = etree.iterparse(vasprunxml, tag='varray')
-            forces = self.parseVasprun(vasprun, 'forces') - forces0
+            forces = parseVasprun(vasprun, 'forces') - forces0
             print(np.abs(f).max(), "\n")
             print(np.abs(forces - f).max())
             print(np.allclose(f, forces, atol=1e-2))
@@ -93,7 +93,7 @@ class runner(Runner):
         vasprunxml = "dir_SPOSCAR/vasprun.xml"
         if exists(vasprunxml):
             vasprun = etree.iterparse(vasprunxml, tag='varray')
-            forces0 = self.parseVasprun(vasprun, 'forces')
+            forces0 = parseVasprun(vasprun, 'forces')
             print(forces0.max())
         else:
             forces0 = 0.0
@@ -106,7 +106,7 @@ class runner(Runner):
             f = -np.einsum('ijkl,jl', fc2, u)
 
             vasprun = etree.iterparse(vasprunxml, tag='varray')
-            forces = self.parseVasprun(vasprun, 'forces') - forces0
+            forces = parseVasprun(vasprun, 'forces') - forces0
             print(np.abs(f).max(), "\n")
             print(np.abs(forces - f).max())
             print(np.allclose(f, forces, atol=1e-2))
@@ -525,6 +525,19 @@ class runner(Runner):
             freq=freq,
             dos=np.sum(pdos, axis=1),
             labels=' '.join(self.m.bandpath))
+
+    def animate(self):
+        m = self.m
+        conf = """
+        DIM = %s
+        ANIME = 0 0 20
+        ANIME_TYPE = xyz
+        ATOM_NAME = %s
+        FORCE_CONSTANTS = READ
+        """ % (m.dim, ' '.join(m.elements))
+        write(conf, 'animate.conf')
+
+        passthru(config.phonopy + "--tolerance=1e-4    animate.conf")
 
     def generate_bandconf(self):
         # generate mesh.conf

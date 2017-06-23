@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 22:00:07
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 22:01:41
+# @Last Modified time: 2017-06-23 21:19:26
 import numpy as np
 from numpy.linalg import norm
 import time
@@ -303,3 +303,41 @@ def ktmatch(a, b):
         neworder[i], neworder[-1] = neworder[-1], neworder[i]
         d = dis(a, p)
     return p, neworder
+
+
+def binmean(y, xlim=[0, 1], n=20):
+    """bin average of 2d data
+
+    we always need [y[fil].mean() for fil=x.slice(bin[i],bin[i+1])],this function is mean to do this
+
+    Arguments:
+        y [array[N,2]]-- y and x data
+
+    Keyword Arguments:
+        xlim {list} -- [x limits of the range] (default: {[0,1]})
+        n {int} -- [the number of returned points ,also the number of bins] (default: {20})
+    """
+
+    # if we want to return n=3 points , for example ,xr=[0,0.5,1],
+    # then the bins are [-0.25,0.25,0.75,1.25], dx=1.0/2=1.0/(n-1).
+    # xs=np.linspace(-0.25,1.25,4)
+    dx = (xlim[1] - xlim[0]) / (n - 1)
+    xr = np.linspace(xlim[0], xlim[1], n)
+    xs = np.linspace(xlim[0] - .5 * dx, xlim[1] + .5 * dx, n + 1)
+
+    # return the idx of y[:,0], idx[i] means xs[i-1]<=y[i,0]<xs[i]
+    dig = np.digitize(y[:, 0], xs)
+    ys = [y[:, 1][dig == i].mean() for i in range(1, len(xs))]
+    ys = np.array(ys)
+    return xr, ys
+
+
+def binmeanx(q, xlim=[0.0, 5.0], dx=0.4):
+
+    xx = []
+    for p in np.arange(xlim[0], xlim[1], dx):
+        f1 = (q[:, 0] <= (p + dx)) * (q[:, 0] > p)
+        if f1.any():
+            xx.append([p + dx * .5, q[f1, 1].mean()])
+    xx = np.array(xx)
+    return xx[:, 0], xx[:, 1]

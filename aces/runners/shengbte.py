@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-13 00:44:48
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-19 17:38:05
+# @Last Modified time: 2017-06-23 18:53:35
 
 import aces.config as config
 from ase import io
@@ -13,6 +13,8 @@ import pandas as pd
 from aces.graph import fig, pl
 from aces.tools import passthru, toString, cd,\
     to_txt, shell_exec, mkdir, cp, ls
+from aces.algorithm.kpoints import filter_along_direction
+from aces.io.shengbte import get_w_final, get_qpoints, get_omega, get_tau, get_v
 
 
 class runner(Runner):
@@ -98,7 +100,7 @@ class runner(Runner):
 
         qpoints_full = np.loadtxt('BTE.qpoints_full')
         ks = qpoints_full[:, 2:4]
-        f = self.direction(ks, th)
+        f = filter_along_direction(ks, th, eps=0.5)
         ids = qpoints_full[:, 1].astype(np.int)[f]
         qpoints = np.loadtxt('BTE.qpoints')
         idx = qpoints[:, 0].astype(np.int)
@@ -217,20 +219,7 @@ class runner(Runner):
             logx=True,
             logy=True)
 
-    def direction(self, ks, t):
-        # find the k points that are in the t direction
-        if t < 0:
-            t = -t
-        t = t * np.pi / 180.0
-        u = np.arctan2(ks[:, 1], ks[:, 0])
-        b = u - t
-        b[b > np.pi] -= 2.0 * np.pi
-        b[b < -np.pi] += 2.0 * np.pi
-        filter = np.abs(b) < .5 * np.pi / 180.0
-        return filter
-
     def postT(self):
-        from aces.graph import fig, pl
         a = np.loadtxt("BTE.KappaTensorVsT_CONV")
         with fig('T_kappa.png', legend=True):
             ts = a[:, 0]
@@ -244,52 +233,6 @@ class runner(Runner):
             pl.plot(ts, k3, lw=2, label="${\kappa_{zz}}$")
             pl.xlabel("Tempeature (K)")
             pl.ylabel('Thermal Conductivity (W/mK)')
-
-    def oldT(self):
-        from aces.graph import fig, pl
-        import matplotlib as mpl
-        mpl.rcParams['axes.color_cycle'] = ['#e24a33', '#2A749A', '#988ed5']
-        ts = np.arange(200, 801, 100)
-        a = []
-        for dir in ts:
-            print(dir)
-            x = np.loadtxt("12844." + str(dir) + "K/BTE.kappa_tensor")
-            a.append(x)
-        a = np.array(a)
-        with fig('T_kappa.png', legend=True):
-            k1 = a[:, 1]
-            k2 = a[:, 5]
-            k3 = a[:, 9]
-            pl.plot(
-                ts,
-                k1,
-                lw=3,
-                markersize=30,
-                linestyle='--',
-                markeredgecolor='w',
-                marker=".",
-                label="${\kappa_{xx}}$")
-            pl.plot(
-                ts,
-                k2,
-                lw=3,
-                markersize=15,
-                linestyle='--',
-                markeredgecolor='w',
-                marker="v",
-                label="${\kappa_{yy}}$")
-            pl.plot(
-                ts,
-                k3,
-                lw=3,
-                markersize=15,
-                linestyle='--',
-                markeredgecolor='w',
-                marker="^",
-                label="${\kappa_{zz}}$")
-            pl.xlabel("Tempeature (K)")
-            pl.ylabel('Thermal Conductivity (W/mK)')
-            pl.xlim([200, 800])
 
     def grtao(self):
         cd('T300K')
@@ -375,67 +318,6 @@ class runner(Runner):
         except Exception as e:
             print(e)
         try:
-            ###########################################
-            #
-            # understanding format of BTE.w_final
-            # w_final.shape = (N,2), N=3natom*nqpoints
-            # for branch in range(3natom)
-            #   for q in qpoints:
-            #       w_final.append([omega_i,w_i])
-            #
-            ###########################################
-            #
-            # understanding format of BTE.omega
-            # omega.shape = (nqpoints,3natom)
-            # for q in qpoints:
-            #   omega.append([omega of all branchs])
-            #
-            ###########################################
-
-            w = np.loadtxt('BTE.w_final')[:, 1]
-
-            # (N,1)
-            w = np.abs(w)
-            q = np.loadtxt('../BTE.qpoints')[:, 3:]
-            # reshape w to like omega
-            n = len(q)
-
-            # (1,N)->(3natom,nqpoints)
-            w = w.T.reshape([-1, n])
-
-            # (3natom,nqpoints)
-            w = np.einsum('jk->kj', w)
-            w.flags.writeable = True
-            print(w.shape, omega.shape)
-            w[omega < omega.flatten().max() * 0.005] = float('nan')
-            plot(
-                (omega.flatten(), 'Frequency (THz)'), (w.flatten(),
-                                                       'Scatter Rate (THz)'),
-                'scatter_freq.png',
-                grid=True,
-                scatter=True,
-                logy=True)
-            tao = 1.0 / w + 1e-6
-            plot(
-                (omega.flatten(), 'Frequency (THz)'), (tao.flatten(),
-                                                       'Relaxation Time (ps)'),
-                'tao_freq.png',
-                grid=True,
-                scatter=True,
-                logy=True)
-            to_txt(['freq', 'tao'],
-                   np.c_[omega.flatten(), tao.flatten()], 'tao_freq.txt')
-            r = []
-            for i, qq in enumerate(q):
-                c = tao[i]
-                d = omega[i]
-                for j, cc in enumerate(c):
-                    r.append([qq[0], qq[1], qq[2], d[j], c[j]])
-            to_txt(['q1', 'q2', 'q3', 'f(THz)', 'tao(ps)'], r, 'q_tao.txt')
-            # del--
-            #  qs=q[:,3:]
-            # np.savetxt('q_w.txt',np.c_[qs,w])
-            # --
 
             kappa = np.loadtxt('BTE.cumulative_kappaVsOmega_tensor')
             with fig("atc_freq.png"):
@@ -461,36 +343,7 @@ class runner(Runner):
                 pl.ylabel("Cumulative Thermal Conductivity(W/mK)")
         except Exception as e:
             print(e)
-        try:
 
-            v = np.loadtxt(open('../BTE.v'))
-            q = np.loadtxt(open('../BTE.qpoints'))
-            n = len(q)
-            v = v.T.reshape([3, -1, n])
-            v = np.einsum('ijk->kji', v)
-            v = np.linalg.norm(v, axis=-1)
-            y = (v.flatten(), 'Group Velocity (nm/ps)')
-            plot(
-                (omega.flatten(), 'Frequency (THz)'),
-                y,
-                'v_freq.png',
-                grid=True,
-                scatter=True)
-            to_txt(['freq', 'vg'],
-                   np.c_[omega.flatten(), v.flatten()], 'v_freq.txt')
-
-            l = v * tao
-            y = (l.flatten(), 'Mean Free Path (nm)')
-            plot(
-                (omega.flatten(), 'Frequency (THz)'),
-                y,
-                'lamda_freq.png',
-                grid=True,
-                scatter=True)
-            to_txt(['freq', 'mfp'],
-                   np.c_[omega.flatten(), l.flatten()], 'lamda_freq.txt')
-        except Exception as e:
-            print(e)
         try:
             g = np.loadtxt('../BTE.gruneisen')
             y = (g.flatten(), 'Gruneisen')
@@ -530,9 +383,46 @@ class runner(Runner):
                    np.c_[omega.flatten(), g.flatten()], 'p3_freq.txt')
         except Exception as e:
             print(e)
+        self.draw_gv()
+        self.draw_branch_scatter()
+        self.draw_tau()
+        cd('..')
+
+    def draw_gv(self):
         try:
-            q = np.loadtxt(open('../BTE.qpoints'))
-            qnorm = np.linalg.norm(q[:, -3:], axis=1)
+            omega = get_omega('..')
+            tau = get_tau('..')
+            v = get_v('..')
+
+            v = np.linalg.norm(v, axis=-1)
+            y = (v.flatten(), 'Group Velocity (nm/ps)')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'),
+                y,
+                'v_freq.png',
+                grid=True,
+                scatter=True)
+            to_txt(['freq', 'vg'],
+                   np.c_[omega.flatten(), v.flatten()], 'v_freq.txt')
+
+            l = v * tau
+            y = (l.flatten(), 'Mean Free Path (nm)')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'),
+                y,
+                'lamda_freq.png',
+                grid=True,
+                scatter=True)
+            to_txt(['freq', 'mfp'],
+                   np.c_[omega.flatten(), l.flatten()], 'lamda_freq.txt')
+        except Exception as e:
+            print(e)
+
+    def draw_branch_scatter(self):
+        try:
+            w = get_w_final('..')
+            q = get_qpoints('..')
+            qnorm = np.linalg.norm(q, axis=1)
             data = []
             n, m = w.shape
             for i in range(m):
@@ -548,7 +438,39 @@ class runner(Runner):
                 logy=True)
         except Exception as e:
             pass
-        cd('..')
+
+    def draw_tau(self):
+        try:
+
+            w = get_w_final('..')
+            q = get_qpoints('..')
+            omega = get_omega('..')
+            tau = get_tau('..')
+            plot(
+                (omega.flatten(), 'Frequency (THz)'), (w.flatten(),
+                                                       'Scatter Rate (THz)'),
+                'scatter_freq.png',
+                grid=True,
+                scatter=True,
+                logy=True)
+            plot(
+                (omega.flatten(), 'Frequency (THz)'), (tau.flatten(),
+                                                       'Relaxation Time (ps)'),
+                'tau_freq.png',
+                grid=True,
+                scatter=True,
+                logy=True)
+            to_txt(['freq', 'tau'],
+                   np.c_[omega.flatten(), tau.flatten()], 'tao_freq.txt')
+            r = []
+            for i, qq in enumerate(q):
+                c = tau[i]
+                d = omega[i]
+                for j, cc in enumerate(c):
+                    r.append([qq[0], qq[1], qq[2], d[j], c[j]])
+            to_txt(['q1', 'q2', 'q3', 'f(THz)', 'tao(ps)'], r, 'q_tao.txt')
+        except Exception as e:
+            pass
 
     def vtao(self):
         # group velocity vs. tao using old version of shengbte
@@ -865,115 +787,6 @@ class runner(Runner):
         print("START SHENGBTE...")
         passthru(config.mpirun + " %s " % (m.nodes * m.procs) +
                  config.shengbte)
-
-    def kkappa(self):
-        dirs = ls('shengold*')
-        from aces.scanf import sscanf
-        from aces.graph import fig, pl
-        import matplotlib as mpl
-        mpl.rcParams['axes.color_cycle'] = ['#e24a33', '#2A749A', '#988ed5']
-        us = []
-        for d in dirs:
-            f = shell_exec('grep ngrid %s/CONTROL' % d)
-            ks = sscanf(f, "   ngrid(:)=%d %d %d")
-            f = np.loadtxt('%s/BTE.kappa_tensor' % d)
-            print(ks)
-            if len(f.shape) == 2:
-                x = f[-1]
-            else:
-                x = f
-            x = x[1:].reshape([3, 3])
-            print(x)
-            us.append([ks, x])
-
-        with fig('kkappa_64nn.png', legend=True):
-            p1 = filter(lambda u: u[0][0] == 64, us)
-            k1 = []
-            k2 = []
-            k3 = []
-            ks = []
-            for u in p1:
-                ks.append(u[0][1])
-                k1.append(u[1][0, 0])
-                k2.append(u[1][1, 1])
-                k3.append(u[1][2, 2])
-            f = np.argsort(ks)
-            ks = np.array(ks)[f]
-            k1 = np.array(k1)[f]
-            k2 = np.array(k2)[f]
-            k3 = np.array(k3)[f]
-            pl.plot(
-                ks,
-                k1,
-                markersize=30,
-                linestyle='--',
-                markeredgecolor='w',
-                marker=".",
-                label="${\kappa_{xx}}$")
-            pl.plot(
-                ks,
-                k2,
-                markersize=15,
-                linestyle='--',
-                markeredgecolor='w',
-                marker="v",
-                label="${\kappa_{yy}}$")
-            pl.plot(
-                ks,
-                k3,
-                markersize=15,
-                linestyle='--',
-                markeredgecolor='w',
-                marker="^",
-                label="${\kappa_{zz}}$")
-            pl.ylim([0, 0.35])
-            pl.xlim([0, np.array(ks).max() + 1])
-            pl.xlabel("$Nq_y$ and $Nq_z$")
-            pl.ylabel("Themal Conductivity (W/mK)")
-        with fig('kkappa_n44.png', legend=True):
-            p1 = filter(lambda u: u[0][1] == 4, us)
-            k1 = []
-            k2 = []
-            k3 = []
-            ks = []
-            for u in p1:
-                ks.append(u[0][0])
-                k1.append(u[1][0, 0])
-                k2.append(u[1][1, 1])
-                k3.append(u[1][2, 2])
-            f = np.argsort(ks)
-            ks = np.array(ks)[f]
-            k1 = np.array(k1)[f]
-            k2 = np.array(k2)[f]
-            k3 = np.array(k3)[f]
-            pl.plot(
-                ks,
-                k1,
-                markersize=30,
-                linestyle='--',
-                markeredgecolor='w',
-                marker=".",
-                label="${\kappa_{xx}}$")
-            pl.plot(
-                ks,
-                k2,
-                markersize=15,
-                linestyle='--',
-                markeredgecolor='w',
-                marker="v",
-                label="${\kappa_{yy}}$")
-            pl.plot(
-                ks,
-                k3,
-                markersize=15,
-                linestyle='--',
-                markeredgecolor='w',
-                marker="^",
-                label="${\kappa_{zz}}$")
-            pl.ylim([0, 0.35])
-            pl.xlim([0, np.array(ks).max() + 100])
-            pl.xlabel("$Nq_x$")
-            pl.ylabel("Themal Conductivity (W/mK)")
 
     def kmfp(self):
         def ff(p, x):
