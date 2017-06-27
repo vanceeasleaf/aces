@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-17 13:34:52
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-20 16:08:25
+# @Last Modified time: 2017-06-26 16:31:11
 
 
 import aces.tools as tl
@@ -62,7 +62,7 @@ class Material:
             atoms = io.read(
                 str(PROJHOME + "/data/" + self.atomfile), format="vasp")
             self.atoms = atoms.repeat([self.latx, self.laty, self.latz])
-            self.atoms.center()
+            # self.atoms.center()
         else:
             self.atoms = self.lmp_structure()
         if self.dimension == 1:
@@ -110,12 +110,12 @@ class Material:
         self.watoms(self.atoms)
 
     def watoms(self, atoms):
-        atoms.write("structure.xyz")
+        # atoms.write("structure.xyz")
         writevasp(atoms)
         # write_vasp("POSCAR",atoms,sort="True",direct=True,vasp5=True)
         self.POSCAR2data()
-        if len(atoms) < 1000:
-            atoms.write('structure.png')
+        # if len(atoms) < 1000:
+        #     atoms.write('structure.png')
 
     def writeatoms(self, atoms, label='atoms'):
         tl.mkcd(label)
@@ -156,6 +156,7 @@ class Material:
             atoms.rotate(d, -p, rotate_cell=True)
         # write_vasp(poscar,atoms,sort="True",direct=True,vasp5=True)
         writevasp(atoms, poscar)
+        return atoms
 
     def getboxrange(self):
         file = open("range")

@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 22:24:41
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-18 22:26:12
+# @Last Modified time: 2017-06-26 22:28:03
 
 from aces.tools import mkdir, cd,  mkcd, shell_exec,\
     write, pwd, ls, to_txt
@@ -18,16 +18,9 @@ from importlib import import_module as im
 import time
 from numpy.linalg import norm
 from aces.io.phonopy.fc import nomalizeFC, readfc2
-hbar = 6.6260755e-34 / 3.14159 / 2.0
-kb = 1.3806488e-23
 from ase.transport import TransportCalculator
 
-
-def BE(w, T):
-    w = np.array(w)
-    t = hbar * w / kb / T
-    # return np.exp(-t)
-    return 1.0 / (np.exp(t) - 1.0000001)
+from aces.f import capacity
 
 
 class runner(Runner):
@@ -175,11 +168,11 @@ class runner(Runner):
         dos = result[:, 2]
         omcm = omega * 1e12 * 1 / 3e10
         omme = omcm * 1e12 * 6.6260755e-34 / 1.6e-19 * 1000
-        w = omega * 1e12 * 2.0 * np.pi
+
         T = self.m.T
         centerm = self.preCenter()
         V = np.linalg.det(centerm.atoms.cell)
-        c = hbar * w * (BE(w, T + 0.005) - BE(w, T - 0.005)) * 100.0 / V * 1e30
+        c = capacity(omega, T, V)
         j = c * trans / 2.0 / np.pi
         dm = omega[1] - omega[0]
         kappa = j.cumsum() * dm

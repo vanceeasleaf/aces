@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-18 22:00:07
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-23 21:19:26
+# @Last Modified time: 2017-06-26 22:43:57
 import numpy as np
 from numpy.linalg import norm
 import time
@@ -75,8 +75,10 @@ def others_match(unit, supercell):
     unit = unit.copy()
     supercell = supercell.copy()
     t = find_tripple(supercell, unit)
+
     # t is the found index of first 3 atoms of unit in supercell
     assert t is not None
+
     # We are going to find the transform to move unit to the target 3 atoms
     tatoms = supercell[t]
     unit, rot = find_transform(unit, tatoms)
@@ -84,6 +86,7 @@ def others_match(unit, supercell):
     direct, phi, direct1, phi1 = rot
     M1 = rotationMatrix(direct, phi)
     M2 = rotationMatrix(direct1, phi1)
+
     # r'=M2.M1.r
     rot = M2.dot(M1)
     print(rot)
@@ -171,7 +174,7 @@ def mapforce(fc, map0):
     consider a 1d chain, whose period=3
 
     |-O-k-O-k-O-k|-O-k-O-k-O-k|-O-k-O-k-O-k|-O-k-O-k-O-k
- the next-neighbor interaction is f
+    the next-neighbor interaction is f
     the fc is
     -2k-2f     k+f       k+f
     k+f      -2k-2f    k+f
@@ -341,3 +344,56 @@ def binmeanx(q, xlim=[0.0, 5.0], dx=0.4):
             xx.append([p + dx * .5, q[f1, 1].mean()])
     xx = np.array(xx)
     return xx[:, 0], xx[:, 1]
+
+# Plank Constant in J*s
+hbar = 6.6260755e-34 / np.pi / 2.0
+
+# Boltzmann Constant in SI
+kb = 1.3806488e-23
+
+
+def BE(w, T):
+    """Bose-Einstein Distribution
+
+
+    Arguments:
+        w {array} -- frequency in rad
+        T {number} -- Temperature in K
+
+    Returns:
+        number -- Bose-Einstein Distribution function
+    """
+    w = np.array(w)
+    t = hbar * w / kb / T
+
+    # return np.exp(-t)
+    return 1.0 / (np.exp(t) - 1.0000001)
+
+
+def capacity(omega, T, V):
+    """Heat Capacity
+
+
+    Arguments:
+        omega {array} -- frequency in THz
+        T {number} -- temperature in K
+        V {number} -- Volumn in $\AA^3$
+
+    Returns:
+        array -- heat capacity in SI ,J/m^3/K
+    """
+
+    # convert to Hz
+    omega *= 1e12
+
+    # convert to rad/s
+    w = omega * 2.0 * np.pi
+    dx = 0.01
+
+    # \frac{d BE}{dT}
+    dBE = (BE(w, T + dx / 2) - BE(w, T - dx / 2)) / dx
+
+    # convert to unit $m^3$
+    V *= 1e-30
+    c = hbar * w * dBE / V
+    return c

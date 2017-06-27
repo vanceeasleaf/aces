@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-16 20:09:09
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-21 21:39:07
+# @Last Modified time: 2017-06-27 16:02:34
 
 from aces.tools import mkdir, mv, cd, cp, mkcd, shell_exec,\
     exists, write, passthru, toString, pwd, debug, ls, parseyaml
@@ -15,6 +15,7 @@ import aces.script.vasprun as vasprun
 import time
 import numpy as np
 from aces.io.phonopy.bandplot import plotband, plotbanddos
+from aces.io.phonopy.meshyaml import meshyaml
 from aces.io.phonopy.fc import readfc2
 from aces.pbs.jobManager import jobManager, th, pbs
 from aces.io.vasp import writePOTCAR, writevasp, parseVasprun
@@ -526,11 +527,23 @@ class runner(Runner):
             dos=np.sum(pdos, axis=1),
             labels=' '.join(self.m.bandpath))
 
+    def modulation(self):
+        m = self.m
+        conf = """
+        DIM = %s
+        MODULATION = 1 1 1, 0 0 0 0 1 0
+        ATOM_NAME = %s
+        FORCE_CONSTANTS = READ
+        """ % (m.dim, ' '.join(m.elements))
+        write(conf, 'modulation.conf')
+
+        passthru(config.phonopy + "--tolerance=1e-4    modulation.conf")
+
     def animate(self):
         m = self.m
         conf = """
         DIM = %s
-        ANIME = 0 0 20
+        ANIME = 0 5 20
         ANIME_TYPE = xyz
         ATOM_NAME = %s
         FORCE_CONSTANTS = READ
@@ -579,6 +592,14 @@ class runner(Runner):
                                         'Density of States'),
             filename='total_dos.png')
         # calculate paticipation ratio
+
+    def mesh(self):
+        """ save mesh.yaml to mesh.npz
+
+        [description]
+        """
+        data = meshyaml('mesh.yaml')
+        np.savez('mesh', **data)
 
     def drawpr(self):
         pr()

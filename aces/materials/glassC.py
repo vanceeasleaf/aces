@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   2017-06-12 18:37:34
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-20 16:07:16
+# @Last Modified time: 2017-06-26 14:24:56
 #
 """pressed glass carbon synthised in
 
@@ -31,15 +31,8 @@ import numpy as np
 
 class structure(Material):
 
-    def set_parameters(self):
-        self.strain = 0.0
-
     def setup(self):
-
-        if self.strain == 0.0:
-            self.enforceThick = False
-        else:
-            self.enforceThick = True
+        self.enforceThick = False
 
     def lmp_structure(self):
         atoms = Atoms()
@@ -90,8 +83,4 @@ class structure(Material):
         atoms.translate([0.01, 0, 0])
         atomic.wrap(atoms)
 
-        s = self.strain
-        cell = atoms.get_cell()
-        cell[2] *= 1 - s
-        atoms.set_cell(cell, scale_atoms=True)
         return atoms
