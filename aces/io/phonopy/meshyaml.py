@@ -2,7 +2,7 @@
 # @Author: YangZhou
 # @Date:   1970-01-01 08:00:00
 # @Last Modified by:   YangZhou
-# @Last Modified time: 2017-06-27 22:41:33
+# @Last Modified time: 2017-06-28 12:52:54
 import aces.tools as tl
 import numpy as np
 
@@ -57,9 +57,9 @@ def get_eigs(file="mesh.npz"):
 def get_pr(eigs):
     """participation ratio calculation
 
-    $Pr_{k\sigma}= \frac{1}{N \sum_{i\alpha}
-    {(\epsilon^{\ialpha}_{k\sigma} \cdot
-     \epsilon^{*\ialpha}_{k\sigma})^2}}$
+    $P_{k\sigma}= \frac{1}{N \sum_{i}
+    {(\sum_\alpha{\epsilon^{i\alpha}_{k\sigma}
+     \epsilon^{*i\alpha}_{k\sigma}})^2}}$
 
     Arguments:
         eigs {array[nqpoints,nbranch,natom,3]} -- eigenvector
