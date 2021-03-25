@@ -14,4 +14,4 @@ scipy==0.14.0
 scikit_learn==0.15.2
 atlas==0.27.0
 vapory==0.1.01
-PyYAML==3.12
+PyYAML==5.4
