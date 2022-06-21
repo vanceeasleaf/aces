@@ -1,5 +1,5 @@
 ase==3.13.0
-numpy==1.9.0
+numpy==1.22.0
 Cython==0.25.2
 Pmw==2.0.1
 lxml==3.7.3
